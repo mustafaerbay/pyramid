@@ -1,0 +1,9 @@
+# oapi-codegen configuration.
+# Generates the Go DTOs from openapi/openapi.yaml. The output path is passed
+# on the command line (-o) so this config works from `make generate` and from
+# `go generate ./...`. openapi.yaml is the single source of truth.
+package: api
+generate:
+  models: true
+output-options:
+  skip-prune: true

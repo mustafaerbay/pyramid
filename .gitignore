@@ -1,0 +1,28 @@
+# ---- OS / editor ----
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# ---- Env files ----
+.env
+*.env
+!*.env.example
+
+# ---- Go (backend) ----
+backend/bin/
+*.exe
+*.test
+*.out
+
+# ---- Node / SvelteKit (frontend) ----
+node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/.vercel/
+frontend/.netlify/
+npm-debug.log*
+
+# local cleanup (safe to delete)
+_to_delete/
+.DS_Store
