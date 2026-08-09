@@ -4,6 +4,8 @@
 	import type { components } from '$lib/api/schema';
 	import LeaveRequestFormModal from '$lib/components/LeaveRequestFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import type { BadgeTone } from '$lib/badgeTones';
 
 	type LeaveRequest = components['schemas']['LeaveRequest'];
 	type LeaveStatus = components['schemas']['LeaveStatus'];
@@ -144,16 +146,16 @@
 		load();
 	}
 
-	function statusBadgeClass(status: LeaveStatus): string {
+	function statusTone(status: LeaveStatus): BadgeTone {
 		switch (status) {
 			case 'approved':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			case 'pending':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'rejected':
-				return 'bg-red-100 text-red-700';
+				return 'danger';
 			case 'cancelled':
-				return 'bg-slate-200 text-slate-600';
+				return 'neutralMuted';
 		}
 	}
 
@@ -246,9 +248,7 @@
 							<td class="px-4 py-3 text-slate-600 capitalize">{request.type}</td>
 							<td class="px-4 py-3 text-slate-600">{request.startDate} → {request.endDate}</td>
 							<td class="px-4 py-3">
-								<span class="rounded-full px-2 py-0.5 text-xs {statusBadgeClass(request.status)}">
-									{request.status}
-								</span>
+								<Badge tone={statusTone(request.status)}>{request.status}</Badge>
 							</td>
 							<td class="px-4 py-3 text-right whitespace-nowrap">
 								{#if request.status === 'pending'}

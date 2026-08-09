@@ -7,6 +7,7 @@
 	// One entry per module. New modules get a tab here as they're built.
 	const navItems = [
 		{ href: '/', label: 'Dashboard' },
+		{ href: '/me', label: 'My Tasks' },
 		{ href: '/people', label: 'People' },
 		{ href: '/projects', label: 'Projects' },
 		{ href: '/contributions', label: 'Contributions' },

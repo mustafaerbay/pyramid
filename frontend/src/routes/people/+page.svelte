@@ -4,6 +4,8 @@
 	import type { components } from '$lib/api/schema';
 	import PersonFormModal from '$lib/components/PersonFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import type { BadgeTone } from '$lib/badgeTones';
 
 	type Person = components['schemas']['Person'];
 	type PersonStatus = components['schemas']['PersonStatus'];
@@ -131,16 +133,16 @@
 		load();
 	}
 
-	function statusBadgeClass(status: PersonStatus): string {
+	function statusTone(status: PersonStatus): BadgeTone {
 		switch (status) {
 			case 'active':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			case 'on_leave':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'offboarding':
-				return 'bg-orange-100 text-orange-700';
+				return 'orange';
 			case 'inactive':
-				return 'bg-slate-200 text-slate-600';
+				return 'neutralMuted';
 		}
 	}
 
@@ -244,9 +246,7 @@
 							<td class="px-4 py-3 text-slate-600">{person.seniority ?? '—'}</td>
 							<td class="px-4 py-3 text-slate-600">{person.employmentType.replace('_', ' ')}</td>
 							<td class="px-4 py-3">
-								<span class="rounded-full px-2 py-0.5 text-xs {statusBadgeClass(person.status)}">
-									{person.status.replace('_', ' ')}
-								</span>
+								<Badge tone={statusTone(person.status)}>{person.status.replace('_', ' ')}</Badge>
 							</td>
 							<td class="px-4 py-3 text-right whitespace-nowrap">
 								<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(person)}>

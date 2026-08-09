@@ -4,7 +4,11 @@
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import ProjectFormModal from '$lib/components/ProjectFormModal.svelte';
+	import ProjectWizardModal from '$lib/components/ProjectWizardModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import { healthDotClass } from '$lib/badgeTones';
+	import type { BadgeTone } from '$lib/badgeTones';
 
 	type Project = components['schemas']['Project'];
 	type ProjectStatus = components['schemas']['ProjectStatus'];
@@ -23,8 +27,9 @@
 	// id -> "First Last", so the table can show lead names instead of raw ids.
 	let peopleNames = $state<Record<string, string>>({});
 
-	let modalMode = $state<'create' | 'edit' | null>(null);
+	let modalMode = $state<'edit' | null>(null);
 	let editingProject = $state<Project | null>(null);
+	let showWizard = $state(false);
 
 	let deletingProject = $state<Project | null>(null);
 	let deleting = $state(false);
@@ -90,8 +95,7 @@
 	}
 
 	function openCreate() {
-		editingProject = null;
-		modalMode = 'create';
+		showWizard = true;
 	}
 
 	function openEdit(p: Project) {
@@ -104,11 +108,20 @@
 		editingProject = null;
 	}
 
+	function closeWizard() {
+		showWizard = false;
+	}
+
 	function handleSaved(saved: Project) {
-		const wasEdit = editingProject !== null;
 		closeModal();
-		flash('success', wasEdit ? `${saved.name} was updated.` : `${saved.name} was added.`);
+		flash('success', `${saved.name} was updated.`);
 		load();
+	}
+
+	function handleWizardCreated(created: Project) {
+		closeWizard();
+		flash('success', `${created.name} was added.`);
+		goto(`/projects/${created.id}`);
 	}
 
 	function askDelete(p: Project) {
@@ -142,29 +155,18 @@
 		load();
 	}
 
-	function statusBadgeClass(status: ProjectStatus): string {
+	function statusTone(status: ProjectStatus): BadgeTone {
 		switch (status) {
 			case 'active':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			case 'planning':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'on_hold':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'completed':
-				return 'bg-slate-200 text-slate-600';
+				return 'neutralMuted';
 			case 'cancelled':
-				return 'bg-red-100 text-red-700';
-		}
-	}
-
-	function healthDotClass(health: Project['health']): string {
-		switch (health) {
-			case 'on_track':
-				return 'bg-emerald-500';
-			case 'at_risk':
-				return 'bg-amber-500';
-			case 'off_track':
-				return 'bg-red-500';
+				return 'danger';
 		}
 	}
 
@@ -283,14 +285,12 @@
 							<td class="px-4 py-3 text-slate-600 capitalize">{project.priority}</td>
 							<td class="px-4 py-3">
 								<span class="inline-flex items-center gap-1.5 text-slate-600">
-									<span class="h-2 w-2 rounded-full {healthDotClass(project.health)}"></span>
+									<span class="h-2 w-2 rounded-full {healthDotClass[project.health]}"></span>
 									{project.health.replace('_', ' ')}
 								</span>
 							</td>
 							<td class="px-4 py-3">
-								<span class="rounded-full px-2 py-0.5 text-xs {statusBadgeClass(project.status)}">
-									{project.status.replace('_', ' ')}
-								</span>
+								<Badge tone={statusTone(project.status)}>{project.status.replace('_', ' ')}</Badge>
 							</td>
 							<td class="px-4 py-3 text-right whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
 								<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(project)}>
@@ -331,8 +331,12 @@
 	{/if}
 </section>
 
-{#if modalMode}
+{#if modalMode === 'edit'}
 	<ProjectFormModal project={editingProject} onClose={closeModal} onSaved={handleSaved} />
+{/if}
+
+{#if showWizard}
+	<ProjectWizardModal onClose={closeWizard} onCreated={handleWizardCreated} />
 {/if}
 
 <ConfirmDialog

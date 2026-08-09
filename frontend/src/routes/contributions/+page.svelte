@@ -4,6 +4,8 @@
 	import type { components } from '$lib/api/schema';
 	import ContributionFormModal from '$lib/components/ContributionFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import type { BadgeTone } from '$lib/badgeTones';
 
 	type Contribution = components['schemas']['Contribution'];
 	type ContributionType = components['schemas']['ContributionType'];
@@ -136,20 +138,20 @@
 		load();
 	}
 
-	function typeBadgeClass(type: ContributionType): string {
+	function typeTone(type: ContributionType): BadgeTone {
 		switch (type) {
 			case 'commit':
-				return 'bg-slate-200 text-slate-700';
+				return 'neutralMuted';
 			case 'pull_request':
-				return 'bg-violet-100 text-violet-700';
+				return 'violet';
 			case 'code_review':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'issue':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'deployment':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			default:
-				return 'bg-slate-100 text-slate-600';
+				return 'neutral';
 		}
 	}
 
@@ -246,9 +248,7 @@
 						<tr class="hover:bg-slate-50">
 							<td class="px-4 py-3 font-medium">{personName(contribution.personId)}</td>
 							<td class="px-4 py-3">
-								<span class="rounded-full px-2 py-0.5 text-xs {typeBadgeClass(contribution.type)}">
-									{contribution.type.replace('_', ' ')}
-								</span>
+								<Badge tone={typeTone(contribution.type)}>{contribution.type.replace('_', ' ')}</Badge>
 							</td>
 							<td class="px-4 py-3 text-slate-600">
 								{#if contribution.url}

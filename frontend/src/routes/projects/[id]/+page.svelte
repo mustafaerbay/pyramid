@@ -11,6 +11,9 @@
 	import MilestoneTimeline from '$lib/components/MilestoneTimeline.svelte';
 	import TaskFormModal from '$lib/components/TaskFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import MetricCard from '$lib/components/MetricCard.svelte';
+	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
 
 	type Project = components['schemas']['Project'];
 	type ProjectMember = components['schemas']['ProjectMember'];
@@ -250,35 +253,35 @@
 		})()
 	);
 
-	function taskStatusBadgeClass(status: TaskStatus): string {
+	function taskStatusTone(status: TaskStatus): BadgeTone {
 		switch (status) {
 			case 'backlog':
-				return 'bg-slate-100 text-slate-500';
+				return 'neutral';
 			case 'todo':
-				return 'bg-slate-200 text-slate-700';
+				return 'neutralMuted';
 			case 'in_progress':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'in_review':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'blocked':
-				return 'bg-red-100 text-red-700';
+				return 'danger';
 			case 'done':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			case 'cancelled':
-				return 'bg-slate-200 text-slate-400';
+				return 'neutralFaint';
 		}
 	}
 
-	function taskPriorityBadgeClass(priority: Task['priority']): string {
+	function taskPriorityTone(priority: Task['priority']): BadgeTone {
 		switch (priority) {
 			case 'low':
-				return 'bg-slate-100 text-slate-500';
+				return 'neutral';
 			case 'medium':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'high':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'urgent':
-				return 'bg-red-100 text-red-700';
+				return 'danger';
 		}
 	}
 
@@ -489,44 +492,33 @@
 		loadTasks();
 	}
 
-	function statusBadgeClass(status: Project['status']): string {
+	function statusTone(status: Project['status']): BadgeTone {
 		switch (status) {
 			case 'active':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			case 'planning':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'on_hold':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'completed':
-				return 'bg-slate-200 text-slate-600';
+				return 'neutralMuted';
 			case 'cancelled':
-				return 'bg-red-100 text-red-700';
+				return 'danger';
 		}
 	}
 
-	function healthDotClass(health: Project['health']): string {
-		switch (health) {
-			case 'on_track':
-				return 'bg-emerald-500';
-			case 'at_risk':
-				return 'bg-amber-500';
-			case 'off_track':
-				return 'bg-red-500';
-		}
-	}
-
-	function roleBadgeClass(role: ProjectMember['role']): string {
+	function roleTone(role: ProjectMember['role']): BadgeTone {
 		switch (role) {
 			case 'lead':
-				return 'bg-slate-900 text-white';
+				return 'dark';
 			case 'maintainer':
-				return 'bg-violet-100 text-violet-700';
+				return 'violet';
 			case 'contributor':
-				return 'bg-slate-100 text-slate-600';
+				return 'neutral';
 			case 'reviewer':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'stakeholder':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 		}
 	}
 
@@ -566,11 +558,9 @@
 				<div>
 					<div class="flex items-center gap-2">
 						<span class="font-mono text-xs font-medium text-slate-500">{project.key}</span>
-						<span class="rounded-full px-2 py-0.5 text-xs {statusBadgeClass(project.status)}">
-							{project.status.replace('_', ' ')}
-						</span>
+						<Badge tone={statusTone(project.status)}>{project.status.replace('_', ' ')}</Badge>
 						<span class="inline-flex items-center gap-1.5 text-xs text-slate-500">
-							<span class="h-2 w-2 rounded-full {healthDotClass(project.health)}"></span>
+							<span class="h-2 w-2 rounded-full {healthDotClassMap[project.health]}"></span>
 							{project.health.replace('_', ' ')}
 						</span>
 					</div>
@@ -612,34 +602,17 @@
 			</div>
 
 			<dl class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
-				<div>
-					<dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Team members</dt>
-					<dd class="mt-1 text-xl font-semibold text-slate-900">{existingPersonIds.length}</dd>
-				</div>
-				<div>
-					<dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Contributions</dt>
-					<dd class="mt-1 text-xl font-semibold text-slate-900">
-						{loadingActivity ? '—' : (contributionsTotal ?? 0)}
-					</dd>
-				</div>
-				<div>
-					<dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">Avg. allocation</dt>
-					<dd class="mt-1 text-xl font-semibold text-slate-900">
-						{activeMembers.length > 0 ? `${avgAllocation}%` : '—'}
-					</dd>
-				</div>
-				<div>
-					<dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">
-						{daysToTarget !== null && daysToTarget < 0 ? 'Overdue by' : 'Days to target'}
-					</dt>
-					<dd
-						class="mt-1 text-xl font-semibold {daysToTarget !== null && daysToTarget < 0
-							? 'text-red-600'
-							: 'text-slate-900'}"
-					>
-						{daysToTarget !== null ? Math.abs(daysToTarget) : '—'}
-					</dd>
-				</div>
+				<MetricCard label="Team members" value={existingPersonIds.length} />
+				<MetricCard label="Contributions" value={loadingActivity ? '—' : (contributionsTotal ?? 0)} />
+				<MetricCard
+					label="Avg. allocation"
+					value={activeMembers.length > 0 ? `${avgAllocation}%` : '—'}
+				/>
+				<MetricCard
+					label={daysToTarget !== null && daysToTarget < 0 ? 'Overdue by' : 'Days to target'}
+					value={daysToTarget !== null ? Math.abs(daysToTarget) : '—'}
+					danger={daysToTarget !== null && daysToTarget < 0}
+				/>
 			</dl>
 		</section>
 
@@ -689,9 +662,7 @@
 										{/if}
 									</td>
 									<td class="px-4 py-3">
-										<span class="rounded-full px-2 py-0.5 text-xs {roleBadgeClass(member.role)}">
-											{member.role}
-										</span>
+										<Badge tone={roleTone(member.role)}>{member.role}</Badge>
 									</td>
 									<td class="px-4 py-3 text-slate-600">{member.allocationPct}%</td>
 									<td class="px-4 py-3 text-slate-600">{member.joinedAt}</td>
@@ -841,17 +812,13 @@
 													<span class="line-clamp-1">{assigneesLabel(task.assigneeIds)}</span>
 												</td>
 												<td class="px-4 py-2.5">
-													<span
-														class="rounded-full px-2 py-0.5 text-xs {taskPriorityBadgeClass(task.priority)}"
-													>
-														{task.priority}
-													</span>
+													<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
 												</td>
 												<td class="px-4 py-2.5">
 													<select
-														class="rounded-full border-0 px-2 py-0.5 text-xs font-medium {taskStatusBadgeClass(
-															task.status
-														)}"
+														class="rounded-full border-0 px-2 py-0.5 text-xs font-medium {badgeToneClass[
+															taskStatusTone(task.status)
+														]}"
 														value={task.status}
 														onchange={(e) =>
 															quickUpdateStatus(task, e.currentTarget.value as TaskStatus)}

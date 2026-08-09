@@ -4,6 +4,8 @@
 	import type { components } from '$lib/api/schema';
 	import GoalFormModal from '$lib/components/GoalFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Badge from '$lib/components/Badge.svelte';
+	import type { BadgeTone } from '$lib/badgeTones';
 
 	type Goal = components['schemas']['Goal'];
 	type GoalStatus = components['schemas']['GoalStatus'];
@@ -132,19 +134,19 @@
 		load();
 	}
 
-	function statusBadgeClass(status: GoalStatus): string {
+	function statusTone(status: GoalStatus): BadgeTone {
 		switch (status) {
 			case 'active':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			case 'draft':
-				return 'bg-slate-200 text-slate-600';
+				return 'neutralMuted';
 			case 'achieved':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'partially_achieved':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'missed':
 			case 'cancelled':
-				return 'bg-red-100 text-red-700';
+				return 'danger';
 		}
 	}
 
@@ -233,12 +235,8 @@
 						<div>
 							<div class="flex items-center gap-2">
 								<h3 class="font-medium text-slate-900">{goal.title}</h3>
-								<span class="rounded-full px-2 py-0.5 text-xs {statusBadgeClass(goal.status)}">
-									{goal.status.replace('_', ' ')}
-								</span>
-								<span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 capitalize">
-									{goal.scope}
-								</span>
+								<Badge tone={statusTone(goal.status)}>{goal.status.replace('_', ' ')}</Badge>
+								<Badge tone="neutral" capitalize>{goal.scope}</Badge>
 							</div>
 							{#if goal.description}
 								<p class="mt-1 text-sm text-slate-500">{goal.description}</p>

@@ -1,4 +1,8 @@
 <script lang="ts">
+	import Badge from '$lib/components/Badge.svelte';
+	import MetricCard from '$lib/components/MetricCard.svelte';
+	import { healthDotClass, type BadgeTone } from '$lib/badgeTones';
+
 	type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
 	type ProjectHealth = 'on_track' | 'at_risk' | 'off_track';
 
@@ -22,34 +26,24 @@
 		contributionCount: number;
 	} = $props();
 
-	function statusBadgeClass(status: ProjectStatus): string {
+	function statusTone(status: ProjectStatus): BadgeTone {
 		switch (status) {
 			case 'active':
-				return 'bg-emerald-100 text-emerald-700';
+				return 'success';
 			case 'planning':
-				return 'bg-sky-100 text-sky-700';
+				return 'info';
 			case 'on_hold':
-				return 'bg-amber-100 text-amber-700';
+				return 'warning';
 			case 'completed':
-				return 'bg-slate-200 text-slate-600';
+				return 'neutralMuted';
 			case 'cancelled':
-				return 'bg-red-100 text-red-700';
+				return 'danger';
 		}
 	}
 
-	// Also doubles as the timeline's "elapsed" fill color — same health/color
-	// association used everywhere else in the app (badges, the old shared
-	// timeline), just applied per-card now.
-	function healthColorClass(health: ProjectHealth): string {
-		switch (health) {
-			case 'on_track':
-				return 'bg-emerald-500';
-			case 'at_risk':
-				return 'bg-amber-500';
-			case 'off_track':
-				return 'bg-red-500';
-		}
-	}
+	// healthDotClass (from badgeTones) also doubles as the timeline's
+	// "elapsed" fill color — same health/color association used everywhere
+	// else in the app, just applied per-card now.
 
 	const DAY_MS = 86_400_000;
 	function toUtc(dateStr: string): number {
@@ -90,11 +84,9 @@
 			<p class="truncate font-medium text-slate-900">{project.name}</p>
 		</div>
 		<div class="flex shrink-0 items-center gap-1.5">
-			<span class="rounded-full px-2 py-0.5 text-xs {statusBadgeClass(project.status)}">
-				{project.status.replace('_', ' ')}
-			</span>
+			<Badge tone={statusTone(project.status)}>{project.status.replace('_', ' ')}</Badge>
 			<span
-				class="h-2 w-2 rounded-full {healthColorClass(project.health)}"
+				class="h-2 w-2 rounded-full {healthDotClass[project.health]}"
 				title={project.health.replace('_', ' ')}
 			></span>
 		</div>
@@ -104,7 +96,7 @@
 		{#if timeline}
 			<div class="relative h-1.5 overflow-hidden rounded-full bg-slate-100">
 				<div
-					class="absolute inset-y-0 left-0 rounded-full {healthColorClass(project.health)}"
+					class="absolute inset-y-0 left-0 rounded-full {healthDotClass[project.health]}"
 					style="width: {timeline.elapsedFraction * 100}%"
 				></div>
 			</div>
@@ -126,20 +118,9 @@
 		{/if}
 	</div>
 
-	<div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center">
-		<div>
-			<div class="text-sm font-semibold text-slate-900">{teamCount}</div>
-			<div class="text-[11px] text-slate-500">Team</div>
-		</div>
-		<div>
-			<div class="text-sm font-semibold text-slate-900">
-				{avgAllocation !== null ? `${avgAllocation}%` : '—'}
-			</div>
-			<div class="text-[11px] text-slate-500">Avg. alloc.</div>
-		</div>
-		<div>
-			<div class="text-sm font-semibold text-slate-900">{contributionCount}</div>
-			<div class="text-[11px] text-slate-500">Contributions</div>
-		</div>
+	<div class="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3">
+		<MetricCard size="compact" label="Team" value={teamCount} />
+		<MetricCard size="compact" label="Avg. alloc." value={avgAllocation !== null ? `${avgAllocation}%` : '—'} />
+		<MetricCard size="compact" label="Contributions" value={contributionCount} />
 	</div>
 </a>
