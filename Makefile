@@ -3,6 +3,7 @@
 
 OAPI_CODEGEN := go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 SPEC := openapi/openapi.yaml
+COMPOSE := docker compose
 
 .PHONY: help
 help: ## Show this help
@@ -67,3 +68,29 @@ build-frontend: ## Production build of the Svelte app
 
 check: ## Type-check the frontend
 	cd frontend && npm run check
+
+# ---------------------------------------------------------------------------
+# Docker — run the whole stack (Postgres + backend + frontend) in containers
+# ---------------------------------------------------------------------------
+.PHONY: docker-up docker-down docker-build docker-logs docker-ps docker-restart docker-clean
+docker-up: ## Build (if needed) and start all services in the background
+	$(COMPOSE) up -d --build
+	@echo "Frontend → http://localhost:3000   API → http://localhost:8080   DB → localhost:5433"
+
+docker-build: ## Build the backend + frontend images
+	$(COMPOSE) build
+
+docker-down: ## Stop and remove the containers (keeps the database volume)
+	$(COMPOSE) down
+
+docker-clean: ## Stop containers AND delete the database volume (fresh schema next up)
+	$(COMPOSE) down -v
+
+docker-logs: ## Follow logs from all services
+	$(COMPOSE) logs -f
+
+docker-ps: ## Show container status
+	$(COMPOSE) ps
+
+docker-restart: ## Rebuild and restart all services
+	$(COMPOSE) up -d --build

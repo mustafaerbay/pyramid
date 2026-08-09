@@ -39,6 +39,97 @@ const (
 	PersonStatusOnLeave     PersonStatus = "on_leave"
 )
 
+// Defines values for ProjectStatus.
+const (
+	ProjectStatusActive    ProjectStatus = "active"
+	ProjectStatusCancelled ProjectStatus = "cancelled"
+	ProjectStatusCompleted ProjectStatus = "completed"
+	ProjectStatusOnHold    ProjectStatus = "on_hold"
+	ProjectStatusPlanning  ProjectStatus = "planning"
+)
+
+// Defines values for ProjectPriority.
+const (
+	ProjectPriorityLow      ProjectPriority = "low"
+	ProjectPriorityMedium   ProjectPriority = "medium"
+	ProjectPriorityHigh     ProjectPriority = "high"
+	ProjectPriorityCritical ProjectPriority = "critical"
+)
+
+// Defines values for ProjectHealth.
+const (
+	ProjectHealthOnTrack  ProjectHealth = "on_track"
+	ProjectHealthAtRisk   ProjectHealth = "at_risk"
+	ProjectHealthOffTrack ProjectHealth = "off_track"
+)
+
+// Defines values for ProjectRole.
+const (
+	ProjectRoleLead        ProjectRole = "lead"
+	ProjectRoleMaintainer  ProjectRole = "maintainer"
+	ProjectRoleContributor ProjectRole = "contributor"
+	ProjectRoleReviewer    ProjectRole = "reviewer"
+	ProjectRoleStakeholder ProjectRole = "stakeholder"
+)
+
+// Defines values for MilestoneStatus.
+const (
+	MilestoneStatusPending    MilestoneStatus = "pending"
+	MilestoneStatusInProgress MilestoneStatus = "in_progress"
+	MilestoneStatusCompleted  MilestoneStatus = "completed"
+	MilestoneStatusMissed     MilestoneStatus = "missed"
+)
+
+// Defines values for GoalScope.
+const (
+	GoalScopeIndividual GoalScope = "individual"
+	GoalScopeTeam       GoalScope = "team"
+	GoalScopeDepartment GoalScope = "department"
+	GoalScopeCompany    GoalScope = "company"
+)
+
+// Defines values for GoalStatus.
+const (
+	GoalStatusDraft             GoalStatus = "draft"
+	GoalStatusActive            GoalStatus = "active"
+	GoalStatusAchieved          GoalStatus = "achieved"
+	GoalStatusPartiallyAchieved GoalStatus = "partially_achieved"
+	GoalStatusMissed            GoalStatus = "missed"
+	GoalStatusCancelled         GoalStatus = "cancelled"
+)
+
+// Defines values for LeaveType.
+const (
+	LeaveTypeVacation    LeaveType = "vacation"
+	LeaveTypeSick        LeaveType = "sick"
+	LeaveTypePersonal    LeaveType = "personal"
+	LeaveTypeParental    LeaveType = "parental"
+	LeaveTypeBereavement LeaveType = "bereavement"
+	LeaveTypeUnpaid      LeaveType = "unpaid"
+	LeaveTypeOther       LeaveType = "other"
+)
+
+// Defines values for LeaveStatus.
+const (
+	LeaveStatusPending   LeaveStatus = "pending"
+	LeaveStatusApproved  LeaveStatus = "approved"
+	LeaveStatusRejected  LeaveStatus = "rejected"
+	LeaveStatusCancelled LeaveStatus = "cancelled"
+)
+
+// Defines values for ContributionType.
+const (
+	ContributionTypeCommit        ContributionType = "commit"
+	ContributionTypePullRequest   ContributionType = "pull_request"
+	ContributionTypeCodeReview    ContributionType = "code_review"
+	ContributionTypeIssue         ContributionType = "issue"
+	ContributionTypeDesign        ContributionType = "design"
+	ContributionTypeDocumentation ContributionType = "documentation"
+	ContributionTypeDeployment    ContributionType = "deployment"
+	ContributionTypeSupport       ContributionType = "support"
+	ContributionTypeOther         ContributionType = "other"
+)
+
 // EmploymentType mirrors the employment_type enum in db/schema.sql.
 type EmploymentType string
 
@@ -47,6 +138,36 @@ type SeniorityLevel string
 
 // PersonStatus mirrors the person_status enum in db/schema.sql.
 type PersonStatus string
+
+// ProjectStatus mirrors the project_status enum in db/schema.sql.
+type ProjectStatus string
+
+// ProjectPriority mirrors the project_priority enum in db/schema.sql.
+type ProjectPriority string
+
+// ProjectHealth mirrors the project_health enum in db/schema.sql.
+type ProjectHealth string
+
+// ProjectRole mirrors the project_role enum in db/schema.sql.
+type ProjectRole string
+
+// MilestoneStatus mirrors the milestone_status enum in db/schema.sql.
+type MilestoneStatus string
+
+// GoalScope mirrors the goal_scope enum in db/schema.sql.
+type GoalScope string
+
+// GoalStatus mirrors the goal_status enum in db/schema.sql.
+type GoalStatus string
+
+// LeaveType mirrors the leave_type enum in db/schema.sql.
+type LeaveType string
+
+// LeaveStatus mirrors the leave_status enum in db/schema.sql.
+type LeaveStatus string
+
+// ContributionType mirrors the contribution_type enum in db/schema.sql.
+type ContributionType string
 
 // Error defines model for Error.
 type Error struct {
@@ -126,4 +247,247 @@ type PersonUpdate struct {
 type PersonList struct {
 	Data       []Person   `json:"data"`
 	Pagination Pagination `json:"pagination"`
+}
+
+// Project defines model for Project.
+type Project struct {
+	CreatedAt   time.Time           `json:"createdAt"`
+	Description *string             `json:"description,omitempty"`
+	Health      ProjectHealth       `json:"health"`
+	Id          openapi_types.UUID  `json:"id"`
+	Key         string              `json:"key"`
+	LeadId      *openapi_types.UUID `json:"leadId,omitempty"`
+	Name        string              `json:"name"`
+	Priority    ProjectPriority     `json:"priority"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+	Status      ProjectStatus       `json:"status"`
+	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+}
+
+// ProjectCreate defines model for ProjectCreate.
+type ProjectCreate struct {
+	Description *string             `json:"description,omitempty"`
+	Key         string              `json:"key"`
+	LeadId      *openapi_types.UUID `json:"leadId,omitempty"`
+	Name        string              `json:"name"`
+	Priority    *ProjectPriority    `json:"priority,omitempty"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
+}
+
+// ProjectUpdate defines model for ProjectUpdate.
+type ProjectUpdate struct {
+	Description *string             `json:"description,omitempty"`
+	Health      *ProjectHealth      `json:"health,omitempty"`
+	Key         *string             `json:"key,omitempty"`
+	LeadId      *openapi_types.UUID `json:"leadId,omitempty"`
+	Name        *string             `json:"name,omitempty"`
+	Priority    *ProjectPriority    `json:"priority,omitempty"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+	Status      *ProjectStatus      `json:"status,omitempty"`
+	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
+}
+
+// ProjectList defines model for ProjectList.
+type ProjectList struct {
+	Data       []Project  `json:"data"`
+	Pagination Pagination `json:"pagination"`
+}
+
+// ProjectMember defines model for ProjectMember.
+type ProjectMember struct {
+	AllocationPct float64             `json:"allocationPct"`
+	Id            openapi_types.UUID  `json:"id"`
+	JoinedAt      openapi_types.Date  `json:"joinedAt"`
+	LeftAt        *openapi_types.Date `json:"leftAt,omitempty"`
+	PersonId      openapi_types.UUID  `json:"personId"`
+	ProjectId     openapi_types.UUID  `json:"projectId"`
+	Role          ProjectRole         `json:"role"`
+}
+
+// ProjectMemberCreate defines model for ProjectMemberCreate.
+type ProjectMemberCreate struct {
+	AllocationPct *float64            `json:"allocationPct,omitempty"`
+	JoinedAt      *openapi_types.Date `json:"joinedAt,omitempty"`
+	PersonId      openapi_types.UUID  `json:"personId"`
+	ProjectId     openapi_types.UUID  `json:"projectId"`
+	Role          *ProjectRole        `json:"role,omitempty"`
+}
+
+// ProjectMemberUpdate defines model for ProjectMemberUpdate.
+type ProjectMemberUpdate struct {
+	AllocationPct *float64            `json:"allocationPct,omitempty"`
+	JoinedAt      *openapi_types.Date `json:"joinedAt,omitempty"`
+	LeftAt        *openapi_types.Date `json:"leftAt,omitempty"`
+	Role          *ProjectRole        `json:"role,omitempty"`
+}
+
+// ProjectMemberList defines model for ProjectMemberList.
+type ProjectMemberList struct {
+	Data       []ProjectMember `json:"data"`
+	Pagination Pagination      `json:"pagination"`
+}
+
+// Milestone defines model for Milestone.
+type Milestone struct {
+	CompletedAt *openapi_types.Date `json:"completedAt,omitempty"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	Id          openapi_types.UUID  `json:"id"`
+	Name        string              `json:"name"`
+	ProjectId   openapi_types.UUID  `json:"projectId"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+	Status      MilestoneStatus     `json:"status"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+}
+
+// MilestoneCreate defines model for MilestoneCreate.
+type MilestoneCreate struct {
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	Name        string              `json:"name"`
+	ProjectId   openapi_types.UUID  `json:"projectId"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+}
+
+// MilestoneUpdate defines model for MilestoneUpdate.
+type MilestoneUpdate struct {
+	CompletedAt *openapi_types.Date `json:"completedAt,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	Name        *string             `json:"name,omitempty"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+	Status      *MilestoneStatus    `json:"status,omitempty"`
+}
+
+// MilestoneList defines model for MilestoneList.
+type MilestoneList struct {
+	Data       []Milestone `json:"data"`
+	Pagination Pagination  `json:"pagination"`
+}
+
+// Goal defines model for Goal.
+type Goal struct {
+	CreatedAt     time.Time           `json:"createdAt"`
+	Description   *string             `json:"description,omitempty"`
+	DueDate       *openapi_types.Date `json:"dueDate,omitempty"`
+	Id            openapi_types.UUID  `json:"id"`
+	OwnerPersonId *openapi_types.UUID `json:"ownerPersonId,omitempty"`
+	ProgressPct   float64             `json:"progressPct"`
+	Scope         GoalScope           `json:"scope"`
+	StartDate     *openapi_types.Date `json:"startDate,omitempty"`
+	Status        GoalStatus          `json:"status"`
+	Title         string              `json:"title"`
+	UpdatedAt     time.Time           `json:"updatedAt"`
+}
+
+// GoalCreate defines model for GoalCreate.
+type GoalCreate struct {
+	Description   *string             `json:"description,omitempty"`
+	DueDate       *openapi_types.Date `json:"dueDate,omitempty"`
+	OwnerPersonId *openapi_types.UUID `json:"ownerPersonId,omitempty"`
+	Scope         *GoalScope          `json:"scope,omitempty"`
+	StartDate     *openapi_types.Date `json:"startDate,omitempty"`
+	Title         string              `json:"title"`
+}
+
+// GoalUpdate defines model for GoalUpdate.
+type GoalUpdate struct {
+	Description   *string             `json:"description,omitempty"`
+	DueDate       *openapi_types.Date `json:"dueDate,omitempty"`
+	OwnerPersonId *openapi_types.UUID `json:"ownerPersonId,omitempty"`
+	ProgressPct   *float64            `json:"progressPct,omitempty"`
+	Scope         *GoalScope          `json:"scope,omitempty"`
+	StartDate     *openapi_types.Date `json:"startDate,omitempty"`
+	Status        *GoalStatus         `json:"status,omitempty"`
+	Title         *string             `json:"title,omitempty"`
+}
+
+// GoalList defines model for GoalList.
+type GoalList struct {
+	Data       []Goal     `json:"data"`
+	Pagination Pagination `json:"pagination"`
+}
+
+// LeaveRequest defines model for LeaveRequest.
+type LeaveRequest struct {
+	ApproverId *openapi_types.UUID `json:"approverId,omitempty"`
+	CreatedAt  time.Time           `json:"createdAt"`
+	EndDate    openapi_types.Date  `json:"endDate"`
+	Id         openapi_types.UUID  `json:"id"`
+	PersonId   openapi_types.UUID  `json:"personId"`
+	Reason     *string             `json:"reason,omitempty"`
+	StartDate  openapi_types.Date  `json:"startDate"`
+	Status     LeaveStatus         `json:"status"`
+	Type       LeaveType           `json:"type"`
+	UpdatedAt  time.Time           `json:"updatedAt"`
+}
+
+// LeaveRequestCreate defines model for LeaveRequestCreate.
+type LeaveRequestCreate struct {
+	EndDate   openapi_types.Date `json:"endDate"`
+	PersonId  openapi_types.UUID `json:"personId"`
+	Reason    *string            `json:"reason,omitempty"`
+	StartDate openapi_types.Date `json:"startDate"`
+	Type      *LeaveType         `json:"type,omitempty"`
+}
+
+// LeaveRequestUpdate defines model for LeaveRequestUpdate.
+type LeaveRequestUpdate struct {
+	ApproverId *openapi_types.UUID `json:"approverId,omitempty"`
+	EndDate    *openapi_types.Date `json:"endDate,omitempty"`
+	PersonId   *openapi_types.UUID `json:"personId,omitempty"`
+	Reason     *string             `json:"reason,omitempty"`
+	StartDate  *openapi_types.Date `json:"startDate,omitempty"`
+	Status     *LeaveStatus        `json:"status,omitempty"`
+	Type       *LeaveType          `json:"type,omitempty"`
+}
+
+// LeaveRequestList defines model for LeaveRequestList.
+type LeaveRequestList struct {
+	Data       []LeaveRequest `json:"data"`
+	Pagination Pagination     `json:"pagination"`
+}
+
+// Contribution defines model for Contribution.
+type Contribution struct {
+	CreatedAt  time.Time           `json:"createdAt"`
+	Id         openapi_types.UUID  `json:"id"`
+	OccurredAt time.Time           `json:"occurredAt"`
+	PersonId   openapi_types.UUID  `json:"personId"`
+	ProjectId  *openapi_types.UUID `json:"projectId,omitempty"`
+	Title      *string             `json:"title,omitempty"`
+	Type       ContributionType    `json:"type"`
+	Url        *string             `json:"url,omitempty"`
+	Weight     float64             `json:"weight"`
+}
+
+// ContributionCreate defines model for ContributionCreate.
+type ContributionCreate struct {
+	OccurredAt *time.Time          `json:"occurredAt,omitempty"`
+	PersonId   openapi_types.UUID  `json:"personId"`
+	ProjectId  *openapi_types.UUID `json:"projectId,omitempty"`
+	Title      *string             `json:"title,omitempty"`
+	Type       ContributionType    `json:"type"`
+	Url        *string             `json:"url,omitempty"`
+	Weight     *float64            `json:"weight,omitempty"`
+}
+
+// ContributionUpdate defines model for ContributionUpdate.
+type ContributionUpdate struct {
+	OccurredAt *time.Time          `json:"occurredAt,omitempty"`
+	PersonId   *openapi_types.UUID `json:"personId,omitempty"`
+	ProjectId  *openapi_types.UUID `json:"projectId,omitempty"`
+	Title      *string             `json:"title,omitempty"`
+	Type       *ContributionType   `json:"type,omitempty"`
+	Url        *string             `json:"url,omitempty"`
+	Weight     *float64            `json:"weight,omitempty"`
+}
+
+// ContributionList defines model for ContributionList.
+type ContributionList struct {
+	Data       []Contribution `json:"data"`
+	Pagination Pagination     `json:"pagination"`
 }

@@ -228,6 +228,7 @@ CREATE TABLE milestones (
     name         TEXT NOT NULL,
     description  TEXT,
     status       milestone_status NOT NULL DEFAULT 'pending',
+    start_date   DATE,
     due_date     DATE,
     completed_at DATE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -60,6 +60,246 @@ export interface paths {
         patch: operations["updatePerson"];
         trace?: never;
     };
+    "/api/v1/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List projects */
+        get: operations["listProjects"];
+        put?: never;
+        /** Create a project */
+        post: operations["createProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a project by id */
+        get: operations["getProject"];
+        put?: never;
+        post?: never;
+        /** Delete a project */
+        delete: operations["deleteProject"];
+        options?: never;
+        head?: never;
+        /** Update a project */
+        patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/api/v1/project-members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project memberships
+         * @description Filter by projectId to see a project's team, or by personId to see every project a person is assigned to (useful for spotting over-allocation before adding someone to another project).
+         */
+        get: operations["listProjectMembers"];
+        put?: never;
+        /** Assign a person to a project */
+        post: operations["createProjectMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-members/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a project membership by id */
+        get: operations["getProjectMember"];
+        put?: never;
+        post?: never;
+        /** Remove a person from a project */
+        delete: operations["deleteProjectMember"];
+        options?: never;
+        head?: never;
+        /** Update a project membership (role, allocation, or departure date) */
+        patch: operations["updateProjectMember"];
+        trace?: never;
+    };
+    "/api/v1/milestones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List milestones
+         * @description Filter by projectId to see a single project's milestones (the usual case — the project dashboard's monthly timeline uses this).
+         */
+        get: operations["listMilestones"];
+        put?: never;
+        /** Create a milestone */
+        post: operations["createMilestone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/milestones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a milestone by id */
+        get: operations["getMilestone"];
+        put?: never;
+        post?: never;
+        /** Delete a milestone */
+        delete: operations["deleteMilestone"];
+        options?: never;
+        head?: never;
+        /** Update a milestone */
+        patch: operations["updateMilestone"];
+        trace?: never;
+    };
+    "/api/v1/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List goals */
+        get: operations["listGoals"];
+        put?: never;
+        /** Create a goal */
+        post: operations["createGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/goals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a goal by id */
+        get: operations["getGoal"];
+        put?: never;
+        post?: never;
+        /** Delete a goal */
+        delete: operations["deleteGoal"];
+        options?: never;
+        head?: never;
+        /** Update a goal */
+        patch: operations["updateGoal"];
+        trace?: never;
+    };
+    "/api/v1/leave-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List leave requests */
+        get: operations["listLeaveRequests"];
+        put?: never;
+        /** Create a leave request */
+        post: operations["createLeaveRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a leave request by id */
+        get: operations["getLeaveRequest"];
+        put?: never;
+        post?: never;
+        /** Delete a leave request */
+        delete: operations["deleteLeaveRequest"];
+        options?: never;
+        head?: never;
+        /** Update a leave request */
+        patch: operations["updateLeaveRequest"];
+        trace?: never;
+    };
+    "/api/v1/contributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List contributions */
+        get: operations["listContributions"];
+        put?: never;
+        /** Log a contribution */
+        post: operations["createContribution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/contributions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a contribution by id */
+        get: operations["getContribution"];
+        put?: never;
+        post?: never;
+        /** Delete a contribution */
+        delete: operations["deleteContribution"];
+        options?: never;
+        head?: never;
+        /** Update a contribution */
+        patch: operations["updateContribution"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -153,6 +393,301 @@ export interface components {
         };
         PersonList: {
             data: components["schemas"]["Person"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        ProjectStatus: "planning" | "active" | "on_hold" | "completed" | "cancelled";
+        /** @enum {string} */
+        ProjectPriority: "low" | "medium" | "high" | "critical";
+        /** @enum {string} */
+        ProjectHealth: "on_track" | "at_risk" | "off_track";
+        Project: {
+            /** Format: uuid */
+            id: string;
+            key: string;
+            name: string;
+            description?: string | null;
+            status: components["schemas"]["ProjectStatus"];
+            priority: components["schemas"]["ProjectPriority"];
+            health: components["schemas"]["ProjectHealth"];
+            /** Format: uuid */
+            leadId?: string | null;
+            /** Format: date */
+            startDate?: string | null;
+            /** Format: date */
+            targetDate?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProjectCreate: {
+            key: string;
+            name: string;
+            description?: string;
+            priority?: components["schemas"]["ProjectPriority"];
+            /** Format: uuid */
+            leadId?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            targetDate?: string;
+        };
+        ProjectUpdate: {
+            key?: string;
+            name?: string;
+            description?: string;
+            status?: components["schemas"]["ProjectStatus"];
+            priority?: components["schemas"]["ProjectPriority"];
+            health?: components["schemas"]["ProjectHealth"];
+            /** Format: uuid */
+            leadId?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            targetDate?: string;
+        };
+        ProjectList: {
+            data: components["schemas"]["Project"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        ProjectRole: "lead" | "maintainer" | "contributor" | "reviewer" | "stakeholder";
+        ProjectMember: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            personId: string;
+            role: components["schemas"]["ProjectRole"];
+            /** Format: double */
+            allocationPct: number;
+            /** Format: date */
+            joinedAt: string;
+            /** Format: date */
+            leftAt?: string | null;
+        };
+        ProjectMemberCreate: {
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            personId: string;
+            role?: components["schemas"]["ProjectRole"];
+            /** Format: double */
+            allocationPct?: number;
+            /** Format: date */
+            joinedAt?: string;
+        };
+        ProjectMemberUpdate: {
+            role?: components["schemas"]["ProjectRole"];
+            /** Format: double */
+            allocationPct?: number;
+            /** Format: date */
+            joinedAt?: string;
+            /** Format: date */
+            leftAt?: string;
+        };
+        ProjectMemberList: {
+            data: components["schemas"]["ProjectMember"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        MilestoneStatus: "pending" | "in_progress" | "completed" | "missed";
+        Milestone: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            description?: string | null;
+            status: components["schemas"]["MilestoneStatus"];
+            /** Format: date */
+            startDate?: string | null;
+            /** Format: date */
+            dueDate?: string | null;
+            /** Format: date */
+            completedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        MilestoneCreate: {
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            description?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            dueDate?: string;
+        };
+        MilestoneUpdate: {
+            name?: string;
+            description?: string;
+            status?: components["schemas"]["MilestoneStatus"];
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            dueDate?: string;
+            /** Format: date */
+            completedAt?: string;
+        };
+        MilestoneList: {
+            data: components["schemas"]["Milestone"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        GoalScope: "individual" | "team" | "department" | "company";
+        /** @enum {string} */
+        GoalStatus: "draft" | "active" | "achieved" | "partially_achieved" | "missed" | "cancelled";
+        Goal: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description?: string | null;
+            scope: components["schemas"]["GoalScope"];
+            status: components["schemas"]["GoalStatus"];
+            /** Format: uuid */
+            ownerPersonId?: string | null;
+            /** Format: double */
+            progressPct: number;
+            /** Format: date */
+            startDate?: string | null;
+            /** Format: date */
+            dueDate?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        GoalCreate: {
+            title: string;
+            description?: string;
+            scope?: components["schemas"]["GoalScope"];
+            /** Format: uuid */
+            ownerPersonId?: string;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            dueDate?: string;
+        };
+        GoalUpdate: {
+            title?: string;
+            description?: string;
+            scope?: components["schemas"]["GoalScope"];
+            status?: components["schemas"]["GoalStatus"];
+            /** Format: uuid */
+            ownerPersonId?: string;
+            /** Format: double */
+            progressPct?: number;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            dueDate?: string;
+        };
+        GoalList: {
+            data: components["schemas"]["Goal"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        LeaveType: "vacation" | "sick" | "personal" | "parental" | "bereavement" | "unpaid" | "other";
+        /** @enum {string} */
+        LeaveStatus: "pending" | "approved" | "rejected" | "cancelled";
+        LeaveRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            type: components["schemas"]["LeaveType"];
+            status: components["schemas"]["LeaveStatus"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            reason?: string | null;
+            /** Format: uuid */
+            approverId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        LeaveRequestCreate: {
+            /** Format: uuid */
+            personId: string;
+            type?: components["schemas"]["LeaveType"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            reason?: string;
+        };
+        LeaveRequestUpdate: {
+            /** Format: uuid */
+            personId?: string;
+            type?: components["schemas"]["LeaveType"];
+            status?: components["schemas"]["LeaveStatus"];
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
+            reason?: string;
+            /** Format: uuid */
+            approverId?: string;
+        };
+        LeaveRequestList: {
+            data: components["schemas"]["LeaveRequest"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        ContributionType: "commit" | "pull_request" | "code_review" | "issue" | "design" | "documentation" | "deployment" | "support" | "other";
+        Contribution: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            projectId?: string | null;
+            type: components["schemas"]["ContributionType"];
+            title?: string | null;
+            url?: string | null;
+            /** Format: double */
+            weight: number;
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ContributionCreate: {
+            /** Format: uuid */
+            personId: string;
+            /** Format: uuid */
+            projectId?: string;
+            type: components["schemas"]["ContributionType"];
+            title?: string;
+            url?: string;
+            /** Format: double */
+            weight?: number;
+            /** Format: date-time */
+            occurredAt?: string;
+        };
+        ContributionUpdate: {
+            /** Format: uuid */
+            personId?: string;
+            /** Format: uuid */
+            projectId?: string;
+            type?: components["schemas"]["ContributionType"];
+            title?: string;
+            url?: string;
+            /** Format: double */
+            weight?: number;
+            /** Format: date-time */
+            occurredAt?: string;
+        };
+        ContributionList: {
+            data: components["schemas"]["Contribution"][];
             pagination: components["schemas"]["Pagination"];
         };
     };
@@ -337,6 +872,768 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Person"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                status?: components["schemas"]["ProjectStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of projects */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listProjectMembers: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                projectId?: string;
+                personId?: string;
+                role?: components["schemas"]["ProjectRole"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of project memberships */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMemberList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project membership */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateProjectMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectMemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listMilestones: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                projectId?: string;
+                status?: components["schemas"]["MilestoneStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of milestones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MilestoneList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createMilestone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Milestone"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getMilestone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The milestone */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Milestone"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteMilestone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateMilestone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MilestoneUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Milestone"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listGoals: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                status?: components["schemas"]["GoalStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of goals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The goal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listLeaveRequests: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                status?: components["schemas"]["LeaveStatus"];
+                personId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of leave requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The leave request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveRequestUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listContributions: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                type?: components["schemas"]["ContributionType"];
+                personId?: string;
+                projectId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of contributions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContributionCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contribution"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The contribution */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contribution"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContributionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contribution"];
                 };
             };
             400: components["responses"]["BadRequest"];

@@ -32,6 +32,42 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.GET("/people/:id", h.GetPerson)
 		v1.PATCH("/people/:id", h.UpdatePerson)
 		v1.DELETE("/people/:id", h.DeletePerson)
+
+		v1.GET("/projects", h.ListProjects)
+		v1.POST("/projects", h.CreateProject)
+		v1.GET("/projects/:id", h.GetProject)
+		v1.PATCH("/projects/:id", h.UpdateProject)
+		v1.DELETE("/projects/:id", h.DeleteProject)
+
+		v1.GET("/project-members", h.ListProjectMembers)
+		v1.POST("/project-members", h.CreateProjectMember)
+		v1.GET("/project-members/:id", h.GetProjectMember)
+		v1.PATCH("/project-members/:id", h.UpdateProjectMember)
+		v1.DELETE("/project-members/:id", h.DeleteProjectMember)
+
+		v1.GET("/milestones", h.ListMilestones)
+		v1.POST("/milestones", h.CreateMilestone)
+		v1.GET("/milestones/:id", h.GetMilestone)
+		v1.PATCH("/milestones/:id", h.UpdateMilestone)
+		v1.DELETE("/milestones/:id", h.DeleteMilestone)
+
+		v1.GET("/goals", h.ListGoals)
+		v1.POST("/goals", h.CreateGoal)
+		v1.GET("/goals/:id", h.GetGoal)
+		v1.PATCH("/goals/:id", h.UpdateGoal)
+		v1.DELETE("/goals/:id", h.DeleteGoal)
+
+		v1.GET("/leave-requests", h.ListLeaveRequests)
+		v1.POST("/leave-requests", h.CreateLeaveRequest)
+		v1.GET("/leave-requests/:id", h.GetLeaveRequest)
+		v1.PATCH("/leave-requests/:id", h.UpdateLeaveRequest)
+		v1.DELETE("/leave-requests/:id", h.DeleteLeaveRequest)
+
+		v1.GET("/contributions", h.ListContributions)
+		v1.POST("/contributions", h.CreateContribution)
+		v1.GET("/contributions/:id", h.GetContribution)
+		v1.PATCH("/contributions/:id", h.UpdateContribution)
+		v1.DELETE("/contributions/:id", h.DeleteContribution)
 	}
 }
 

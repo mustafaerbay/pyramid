@@ -15,6 +15,12 @@ servers:
 tags:
   - name: system
   - name: people
+  - name: projects
+  - name: project-members
+  - name: milestones
+  - name: goals
+  - name: leave
+  - name: contributions
 
 paths:
   /health:
@@ -127,6 +133,631 @@ paths:
       operationId: deletePerson
       tags: [people]
       summary: Delete a person
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List projects
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ProjectStatus"
+      responses:
+        "200":
+          description: A page of projects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/projects/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project by id
+      responses:
+        "200":
+          description: The project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/project-members:
+    get:
+      operationId: listProjectMembers
+      tags: [project-members]
+      summary: List project memberships
+      description: >
+        Filter by projectId to see a project's team, or by personId to see
+        every project a person is assigned to (useful for spotting
+        over-allocation before adding someone to another project).
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: personId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ProjectRole"
+      responses:
+        "200":
+          description: A page of project memberships
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMemberList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createProjectMember
+      tags: [project-members]
+      summary: Assign a person to a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectMemberCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/project-members/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getProjectMember
+      tags: [project-members]
+      summary: Get a project membership by id
+      responses:
+        "200":
+          description: The project membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateProjectMember
+      tags: [project-members]
+      summary: Update a project membership (role, allocation, or departure date)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectMemberUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteProjectMember
+      tags: [project-members]
+      summary: Remove a person from a project
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/milestones:
+    get:
+      operationId: listMilestones
+      tags: [milestones]
+      summary: List milestones
+      description: >
+        Filter by projectId to see a single project's milestones (the usual
+        case — the project dashboard's monthly timeline uses this).
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/MilestoneStatus"
+      responses:
+        "200":
+          description: A page of milestones
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MilestoneList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createMilestone
+      tags: [milestones]
+      summary: Create a milestone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MilestoneCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/milestones/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getMilestone
+      tags: [milestones]
+      summary: Get a milestone by id
+      responses:
+        "200":
+          description: The milestone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateMilestone
+      tags: [milestones]
+      summary: Update a milestone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MilestoneUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteMilestone
+      tags: [milestones]
+      summary: Delete a milestone
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/goals:
+    get:
+      operationId: listGoals
+      tags: [goals]
+      summary: List goals
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/GoalStatus"
+      responses:
+        "200":
+          description: A page of goals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoalList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createGoal
+      tags: [goals]
+      summary: Create a goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/goals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getGoal
+      tags: [goals]
+      summary: Get a goal by id
+      responses:
+        "200":
+          description: The goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateGoal
+      tags: [goals]
+      summary: Update a goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteGoal
+      tags: [goals]
+      summary: Delete a goal
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/leave-requests:
+    get:
+      operationId: listLeaveRequests
+      tags: [leave]
+      summary: List leave requests
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/LeaveStatus"
+        - name: personId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A page of leave requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaveRequestList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createLeaveRequest
+      tags: [leave]
+      summary: Create a leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveRequestCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaveRequest"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/leave-requests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getLeaveRequest
+      tags: [leave]
+      summary: Get a leave request by id
+      responses:
+        "200":
+          description: The leave request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaveRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateLeaveRequest
+      tags: [leave]
+      summary: Update a leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveRequestUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaveRequest"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteLeaveRequest
+      tags: [leave]
+      summary: Delete a leave request
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/contributions:
+    get:
+      operationId: listContributions
+      tags: [contributions]
+      summary: List contributions
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: type
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContributionType"
+        - name: personId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A page of contributions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContributionList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createContribution
+      tags: [contributions]
+      summary: Log a contribution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributionCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contribution"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/contributions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getContribution
+      tags: [contributions]
+      summary: Get a contribution by id
+      responses:
+        "200":
+          description: The contribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contribution"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateContribution
+      tags: [contributions]
+      summary: Update a contribution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contribution"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteContribution
+      tags: [contributions]
+      summary: Delete a contribution
       responses:
         "204":
           description: Deleted
@@ -364,5 +995,584 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Person"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Projects ----
+    ProjectStatus:
+      type: string
+      enum: [planning, active, on_hold, completed, cancelled]
+    ProjectPriority:
+      type: string
+      enum: [low, medium, high, critical]
+    ProjectHealth:
+      type: string
+      enum: [on_track, at_risk, off_track]
+
+    Project:
+      type: object
+      required: [id, key, name, status, priority, health, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        priority:
+          $ref: "#/components/schemas/ProjectPriority"
+        health:
+          $ref: "#/components/schemas/ProjectHealth"
+        leadId:
+          type: string
+          format: uuid
+          nullable: true
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectCreate:
+      type: object
+      required: [key, name]
+      properties:
+        key:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        priority:
+          $ref: "#/components/schemas/ProjectPriority"
+        leadId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        targetDate:
+          type: string
+          format: date
+
+    ProjectUpdate:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        priority:
+          $ref: "#/components/schemas/ProjectPriority"
+        health:
+          $ref: "#/components/schemas/ProjectHealth"
+        leadId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        targetDate:
+          type: string
+          format: date
+
+    ProjectList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Project Members ----
+    ProjectRole:
+      type: string
+      enum: [lead, maintainer, contributor, reviewer, stakeholder]
+
+    ProjectMember:
+      type: object
+      required: [id, projectId, personId, role, allocationPct, joinedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/ProjectRole"
+        allocationPct:
+          type: number
+          format: double
+        joinedAt:
+          type: string
+          format: date
+        leftAt:
+          type: string
+          format: date
+          nullable: true
+
+    ProjectMemberCreate:
+      type: object
+      required: [projectId, personId]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/ProjectRole"
+        allocationPct:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+        joinedAt:
+          type: string
+          format: date
+
+    ProjectMemberUpdate:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/ProjectRole"
+        allocationPct:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+        joinedAt:
+          type: string
+          format: date
+        leftAt:
+          type: string
+          format: date
+
+    ProjectMemberList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectMember"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Milestones ----
+    MilestoneStatus:
+      type: string
+      enum: [pending, in_progress, completed, missed]
+
+    Milestone:
+      type: object
+      required: [id, projectId, name, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/MilestoneStatus"
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        completedAt:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    MilestoneCreate:
+      type: object
+      required: [projectId, name]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+
+    MilestoneUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/MilestoneStatus"
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        completedAt:
+          type: string
+          format: date
+
+    MilestoneList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Milestone"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Growth (Goals) ----
+    GoalScope:
+      type: string
+      enum: [individual, team, department, company]
+    GoalStatus:
+      type: string
+      enum: [draft, active, achieved, partially_achieved, missed, cancelled]
+
+    Goal:
+      type: object
+      required: [id, title, scope, status, progressPct, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        scope:
+          $ref: "#/components/schemas/GoalScope"
+        status:
+          $ref: "#/components/schemas/GoalStatus"
+        ownerPersonId:
+          type: string
+          format: uuid
+          nullable: true
+        progressPct:
+          type: number
+          format: double
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GoalCreate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        scope:
+          $ref: "#/components/schemas/GoalScope"
+        ownerPersonId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+
+    GoalUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        scope:
+          $ref: "#/components/schemas/GoalScope"
+        status:
+          $ref: "#/components/schemas/GoalStatus"
+        ownerPersonId:
+          type: string
+          format: uuid
+        progressPct:
+          type: number
+          format: double
+        startDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+
+    GoalList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Goal"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Time Off ----
+    LeaveType:
+      type: string
+      enum: [vacation, sick, personal, parental, bereavement, unpaid, other]
+    LeaveStatus:
+      type: string
+      enum: [pending, approved, rejected, cancelled]
+
+    LeaveRequest:
+      type: object
+      required: [id, personId, type, status, startDate, endDate, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/LeaveType"
+        status:
+          $ref: "#/components/schemas/LeaveStatus"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+          nullable: true
+        approverId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    LeaveRequestCreate:
+      type: object
+      required: [personId, startDate, endDate]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/LeaveType"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+
+    LeaveRequestUpdate:
+      type: object
+      properties:
+        personId:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/LeaveType"
+        status:
+          $ref: "#/components/schemas/LeaveStatus"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+        approverId:
+          type: string
+          format: uuid
+
+    LeaveRequestList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaveRequest"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Contributions ----
+    ContributionType:
+      type: string
+      enum:
+        [
+          commit,
+          pull_request,
+          code_review,
+          issue,
+          design,
+          documentation,
+          deployment,
+          support,
+          other,
+        ]
+
+    Contribution:
+      type: object
+      required: [id, personId, type, weight, occurredAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+          nullable: true
+        type:
+          $ref: "#/components/schemas/ContributionType"
+        title:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        weight:
+          type: number
+          format: double
+        occurredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    ContributionCreate:
+      type: object
+      required: [personId, type]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/ContributionType"
+        title:
+          type: string
+        url:
+          type: string
+        weight:
+          type: number
+          format: double
+        occurredAt:
+          type: string
+          format: date-time
+
+    ContributionUpdate:
+      type: object
+      properties:
+        personId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/ContributionType"
+        title:
+          type: string
+        url:
+          type: string
+        weight:
+          type: number
+          format: double
+        occurredAt:
+          type: string
+          format: date-time
+
+    ContributionList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contribution"
         pagination:
           $ref: "#/components/schemas/Pagination"
