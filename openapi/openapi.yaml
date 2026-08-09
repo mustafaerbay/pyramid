@@ -18,6 +18,7 @@ tags:
   - name: projects
   - name: project-members
   - name: milestones
+  - name: tasks
   - name: goals
   - name: leave
   - name: contributions
@@ -449,6 +450,125 @@ paths:
       operationId: deleteMilestone
       tags: [milestones]
       summary: Delete a milestone
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      summary: List tasks
+      description: >
+        The breakdown of a project's (and optionally a milestone's) work into
+        assignable units. Filter by projectId to see a single project's
+        tasks — the usual case, the project dashboard's Tasks section.
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: milestoneId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: assigneeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TaskStatus"
+      responses:
+        "200":
+          description: A page of tasks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/tasks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get a task by id
+      responses:
+        "200":
+          description: The task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete a task
       responses:
         "204":
           description: Deleted
@@ -1275,6 +1395,120 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Milestone"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Tasks ----
+    TaskStatus:
+      type: string
+      enum: [backlog, todo, in_progress, in_review, blocked, done, cancelled]
+
+    TaskPriority:
+      type: string
+      enum: [low, medium, high, urgent]
+
+    Task:
+      type: object
+      required: [id, projectId, number, title, status, priority, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        milestoneId:
+          type: string
+          format: uuid
+          nullable: true
+        number:
+          type: integer
+          description: Per-project sequential number, e.g. 42 for "PYR-42".
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        priority:
+          $ref: "#/components/schemas/TaskPriority"
+        assigneeId:
+          type: string
+          format: uuid
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskCreate:
+      type: object
+      required: [projectId, title]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        milestoneId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        priority:
+          $ref: "#/components/schemas/TaskPriority"
+        assigneeId:
+          type: string
+          format: uuid
+        dueDate:
+          type: string
+          format: date
+
+    TaskUpdate:
+      type: object
+      properties:
+        milestoneId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        priority:
+          $ref: "#/components/schemas/TaskPriority"
+        assigneeId:
+          type: string
+          format: uuid
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+
+    TaskList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
         pagination:
           $ref: "#/components/schemas/Pagination"
 

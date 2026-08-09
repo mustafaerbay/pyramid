@@ -9,6 +9,7 @@
 	import ContributionFormModal from '$lib/components/ContributionFormModal.svelte';
 	import MilestoneFormModal from '$lib/components/MilestoneFormModal.svelte';
 	import MilestoneTimeline from '$lib/components/MilestoneTimeline.svelte';
+	import TaskFormModal from '$lib/components/TaskFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	type Project = components['schemas']['Project'];
@@ -16,6 +17,8 @@
 	type Person = components['schemas']['Person'];
 	type Contribution = components['schemas']['Contribution'];
 	type Milestone = components['schemas']['Milestone'];
+	type Task = components['schemas']['Task'];
+	type TaskStatus = components['schemas']['TaskStatus'];
 
 	const projectId = page.params.id ?? '';
 
@@ -49,6 +52,24 @@
 	let removingMilestone = $state<Milestone | null>(null);
 	let removingMilestoneBusy = $state(false);
 	let removingMilestoneError = $state<string | null>(null);
+
+	let tasks = $state<Task[]>([]);
+	let loadingTasks = $state(true);
+	let tasksError = $state<string | null>(null);
+
+	let taskModalMode = $state<'create' | 'edit' | null>(null);
+	let editingTask = $state<Task | null>(null);
+	// Prefills the milestone picker when "+ Add task" is clicked from inside
+	// a specific milestone's group, rather than the section-level button.
+	let taskModalMilestoneId = $state<string | null>(null);
+
+	let removingTask = $state<Task | null>(null);
+	let removingTaskBusy = $state(false);
+	let removingTaskError = $state<string | null>(null);
+
+	let taskStatusFilter = $state<TaskStatus | ''>('');
+	// '' = everyone, '__unassigned__' = the unassigned sentinel, else a personId.
+	let taskAssigneeFilter = $state('');
 
 	let contributionsTotal = $state<number | null>(null);
 	let recentContributions = $state<Contribution[]>([]);
@@ -115,6 +136,20 @@
 		loadingMilestones = false;
 	}
 
+	async function loadTasks() {
+		loadingTasks = true;
+		tasksError = null;
+		const { data, error: err } = await api.GET('/api/v1/tasks', {
+			params: { query: { projectId, pageSize: 100 } }
+		});
+		if (err) {
+			tasksError = err.message ?? 'Failed to load tasks';
+		} else if (data) {
+			tasks = data.data;
+		}
+		loadingTasks = false;
+	}
+
 	async function loadActivity() {
 		loadingActivity = true;
 		const { data } = await api.GET('/api/v1/contributions', {
@@ -147,6 +182,170 @@
 					activeMembers.reduce((sum, m) => sum + m.allocationPct, 0) / activeMembers.length
 				)
 	);
+
+	const milestoneOptions = $derived(milestones.map((m) => ({ id: m.id, name: m.name })));
+
+	const assigneeOptions = $derived(
+		activeMembers.map((m) => ({ id: m.personId, name: personLabel(m.personId) }))
+	);
+
+	// Tasks grouped by milestone (same order as the milestones list — due
+	// date ascending, undated last), then a trailing "No milestone" group for
+	// project-level backlog tasks. A milestone with zero tasks ever created
+	// against it is omitted entirely rather than showing an empty group —
+	// use the "+ Add task" button (section-level or per-group) to start one.
+	// Progress counts (done/total) always reflect ALL of that milestone's
+	// tasks, not just the ones matching the current filters, so the filter
+	// can't make progress look better or worse than it really is.
+	const taskGroups = $derived(
+		(() => {
+			const matchesFilters = (t: Task) => {
+				if (taskStatusFilter && t.status !== taskStatusFilter) return false;
+				if (taskAssigneeFilter === '__unassigned__' && t.assigneeId) return false;
+				if (
+					taskAssigneeFilter &&
+					taskAssigneeFilter !== '__unassigned__' &&
+					t.assigneeId !== taskAssigneeFilter
+				)
+					return false;
+				return true;
+			};
+
+			type Group = {
+				key: string;
+				milestoneId: string | null;
+				name: string;
+				totalCount: number;
+				doneCount: number;
+				tasks: Task[];
+			};
+			const groups: Group[] = [];
+
+			for (const m of milestones) {
+				const all = tasks.filter((t) => t.milestoneId === m.id);
+				if (all.length === 0) continue;
+				groups.push({
+					key: m.id,
+					milestoneId: m.id,
+					name: m.name,
+					totalCount: all.length,
+					doneCount: all.filter((t) => t.status === 'done').length,
+					tasks: all.filter(matchesFilters)
+				});
+			}
+
+			const unassignedToMilestone = tasks.filter((t) => !t.milestoneId);
+			if (unassignedToMilestone.length > 0) {
+				groups.push({
+					key: '__none__',
+					milestoneId: null,
+					name: 'No milestone',
+					totalCount: unassignedToMilestone.length,
+					doneCount: unassignedToMilestone.filter((t) => t.status === 'done').length,
+					tasks: unassignedToMilestone.filter(matchesFilters)
+				});
+			}
+
+			return groups;
+		})()
+	);
+
+	function taskStatusBadgeClass(status: TaskStatus): string {
+		switch (status) {
+			case 'backlog':
+				return 'bg-slate-100 text-slate-500';
+			case 'todo':
+				return 'bg-slate-200 text-slate-700';
+			case 'in_progress':
+				return 'bg-amber-100 text-amber-700';
+			case 'in_review':
+				return 'bg-sky-100 text-sky-700';
+			case 'blocked':
+				return 'bg-red-100 text-red-700';
+			case 'done':
+				return 'bg-emerald-100 text-emerald-700';
+			case 'cancelled':
+				return 'bg-slate-200 text-slate-400';
+		}
+	}
+
+	function taskPriorityBadgeClass(priority: Task['priority']): string {
+		switch (priority) {
+			case 'low':
+				return 'bg-slate-100 text-slate-500';
+			case 'medium':
+				return 'bg-sky-100 text-sky-700';
+			case 'high':
+				return 'bg-amber-100 text-amber-700';
+			case 'urgent':
+				return 'bg-red-100 text-red-700';
+		}
+	}
+
+	function openAddTask(milestoneId: string | null) {
+		editingTask = null;
+		taskModalMilestoneId = milestoneId;
+		taskModalMode = 'create';
+	}
+
+	function openEditTask(t: Task) {
+		editingTask = t;
+		taskModalMilestoneId = null;
+		taskModalMode = 'edit';
+	}
+
+	function closeTaskModal() {
+		taskModalMode = null;
+		editingTask = null;
+		taskModalMilestoneId = null;
+	}
+
+	function handleTaskSaved(saved: Task) {
+		const wasEdit = editingTask !== null;
+		closeTaskModal();
+		flash('success', wasEdit ? `Updated "${saved.title}".` : `Added task "${saved.title}".`);
+		loadTasks();
+	}
+
+	async function quickUpdateStatus(task: Task, status: TaskStatus) {
+		const { data, error: err } = await api.PATCH('/api/v1/tasks/{id}', {
+			params: { path: { id: task.id } },
+			body: { status }
+		});
+		if (err) {
+			flash('error', err.message ?? 'Failed to update task status.');
+			return;
+		}
+		if (data) {
+			tasks = tasks.map((t) => (t.id === data.id ? data : t));
+		}
+	}
+
+	function askRemoveTask(t: Task) {
+		closeTaskModal();
+		removingTaskError = null;
+		removingTask = t;
+	}
+
+	async function confirmRemoveTask() {
+		if (!removingTask) return;
+		const target = removingTask;
+		removingTaskBusy = true;
+		removingTaskError = null;
+
+		const { error: err } = await api.DELETE('/api/v1/tasks/{id}', {
+			params: { path: { id: target.id } }
+		});
+
+		removingTaskBusy = false;
+		if (err) {
+			removingTaskError = err.message ?? 'Failed to delete task.';
+			return;
+		}
+		removingTask = null;
+		flash('success', `Deleted task "${target.title}".`);
+		loadTasks();
+	}
 
 	// UTC-safe day diff: comparing plain "YYYY-MM-DD" dates via `new Date(str)`
 	// parses as UTC midnight, so as long as "today" is also built from UTC
@@ -281,6 +480,9 @@
 		removingMilestone = null;
 		flash('success', `Deleted milestone "${target.name}".`);
 		loadMilestones();
+		// Deleting a milestone doesn't delete its tasks — they fall back to
+		// "No milestone" server-side — so refresh the Tasks grouping too.
+		loadTasks();
 	}
 
 	function statusBadgeClass(status: Project['status']): string {
@@ -330,6 +532,7 @@
 		loadPeople();
 		loadActivity();
 		loadMilestones();
+		loadTasks();
 	});
 </script>
 
@@ -547,6 +750,149 @@
 
 		<section class="space-y-3">
 			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div>
+					<h2 class="text-lg font-semibold tracking-tight">Tasks</h2>
+					<p class="mt-0.5 text-sm text-slate-500">
+						{tasks.length}
+						{tasks.length === 1 ? 'task' : 'tasks'}
+					</p>
+				</div>
+				<button type="button" class="btn-primary" onclick={() => openAddTask(null)}>+ Add task</button>
+			</div>
+
+			{#if loadingTasks}
+				<p class="text-slate-500">Loading…</p>
+			{:else if tasksError}
+				<div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+					<p class="text-sm">{tasksError}</p>
+				</div>
+			{:else if tasks.length === 0}
+				<div class="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-500">
+					No tasks yet. Click "Add task" to break this project's milestones down into work.
+				</div>
+			{:else}
+				<div class="flex flex-wrap items-center gap-3">
+					<select
+						class="input w-auto"
+						value={taskStatusFilter}
+						onchange={(e) => (taskStatusFilter = e.currentTarget.value as TaskStatus | '')}
+					>
+						<option value="">All statuses</option>
+						<option value="backlog">Backlog</option>
+						<option value="todo">To do</option>
+						<option value="in_progress">In progress</option>
+						<option value="in_review">In review</option>
+						<option value="blocked">Blocked</option>
+						<option value="done">Done</option>
+						<option value="cancelled">Cancelled</option>
+					</select>
+					<select
+						class="input w-auto"
+						value={taskAssigneeFilter}
+						onchange={(e) => (taskAssigneeFilter = e.currentTarget.value)}
+					>
+						<option value="">All assignees</option>
+						<option value="__unassigned__">Unassigned</option>
+						{#each assigneeOptions as person (person.id)}
+							<option value={person.id}>{person.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="space-y-4">
+					{#each taskGroups as group (group.key)}
+						<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+							<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+								<div class="flex items-center gap-2">
+									<h3 class="text-sm font-semibold text-slate-800">{group.name}</h3>
+									<span class="text-xs text-slate-500">
+										{group.doneCount}/{group.totalCount} done
+									</span>
+								</div>
+								<button
+									type="button"
+									class="btn-ghost px-2 py-1 text-xs"
+									onclick={() => openAddTask(group.milestoneId)}
+								>
+									+ Add task
+								</button>
+							</div>
+							{#if group.tasks.length === 0}
+								<p class="px-4 py-3 text-sm text-slate-400">No tasks match the current filters.</p>
+							{:else}
+								<table class="w-full text-left text-sm">
+									<tbody class="divide-y divide-slate-100">
+										{#each group.tasks as task (task.id)}
+											<tr class="hover:bg-slate-50">
+												<td class="px-4 py-2.5">
+													<button
+														type="button"
+														class="text-left font-medium text-slate-800 hover:underline"
+														onclick={() => openEditTask(task)}
+													>
+														{task.title}
+													</button>
+												</td>
+												<td class="px-4 py-2.5 text-slate-600">
+													{task.assigneeId ? personLabel(task.assigneeId) : 'Unassigned'}
+												</td>
+												<td class="px-4 py-2.5">
+													<span
+														class="rounded-full px-2 py-0.5 text-xs {taskPriorityBadgeClass(task.priority)}"
+													>
+														{task.priority}
+													</span>
+												</td>
+												<td class="px-4 py-2.5">
+													<select
+														class="rounded-full border-0 px-2 py-0.5 text-xs font-medium {taskStatusBadgeClass(
+															task.status
+														)}"
+														value={task.status}
+														onchange={(e) =>
+															quickUpdateStatus(task, e.currentTarget.value as TaskStatus)}
+													>
+														<option value="backlog">backlog</option>
+														<option value="todo">todo</option>
+														<option value="in_progress">in progress</option>
+														<option value="in_review">in review</option>
+														<option value="blocked">blocked</option>
+														<option value="done">done</option>
+														<option value="cancelled">cancelled</option>
+													</select>
+												</td>
+												<td class="px-4 py-2.5 text-xs text-slate-400">
+													{task.dueDate ?? ''}
+												</td>
+												<td class="px-4 py-2.5 text-right whitespace-nowrap">
+													<button
+														type="button"
+														class="btn-ghost px-2 py-1"
+														onclick={() => openEditTask(task)}
+													>
+														Edit
+													</button>
+													<button
+														type="button"
+														class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
+														onclick={() => askRemoveTask(task)}
+													>
+														Delete
+													</button>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</section>
+
+		<section class="space-y-3">
+			<div class="flex flex-wrap items-center justify-between gap-3">
 				<h2 class="text-lg font-semibold tracking-tight">Recent activity</h2>
 				<a href="/contributions" class="text-sm text-slate-500 hover:text-slate-700">
 					View all →
@@ -641,6 +987,19 @@
 	onCancel={() => (removingMember = null)}
 />
 
+{#if taskModalMode}
+	<TaskFormModal
+		{projectId}
+		task={editingTask}
+		{milestoneOptions}
+		{assigneeOptions}
+		initialMilestoneId={taskModalMilestoneId}
+		onClose={closeTaskModal}
+		onSaved={handleTaskSaved}
+		onDelete={editingTask ? () => askRemoveTask(editingTask!) : undefined}
+	/>
+{/if}
+
 <ConfirmDialog
 	open={removingMilestone !== null}
 	title="Delete milestone"
@@ -652,4 +1011,15 @@
 	error={removingMilestoneError}
 	onConfirm={confirmRemoveMilestone}
 	onCancel={() => (removingMilestone = null)}
+/>
+
+<ConfirmDialog
+	open={removingTask !== null}
+	title="Delete task"
+	message={removingTask ? `Delete "${removingTask.title}"? This can't be undone.` : ''}
+	confirmLabel={removingTaskBusy ? 'Deleting…' : 'Delete'}
+	danger
+	error={removingTaskError}
+	onConfirm={confirmRemoveTask}
+	onCancel={() => (removingTask = null)}
 />

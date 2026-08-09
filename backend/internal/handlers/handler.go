@@ -51,6 +51,12 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.PATCH("/milestones/:id", h.UpdateMilestone)
 		v1.DELETE("/milestones/:id", h.DeleteMilestone)
 
+		v1.GET("/tasks", h.ListTasks)
+		v1.POST("/tasks", h.CreateTask)
+		v1.GET("/tasks/:id", h.GetTask)
+		v1.PATCH("/tasks/:id", h.UpdateTask)
+		v1.DELETE("/tasks/:id", h.DeleteTask)
+
 		v1.GET("/goals", h.ListGoals)
 		v1.POST("/goals", h.CreateGoal)
 		v1.GET("/goals/:id", h.GetGoal)

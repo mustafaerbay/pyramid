@@ -183,6 +183,48 @@ export interface paths {
         patch: operations["updateMilestone"];
         trace?: never;
     };
+    "/api/v1/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tasks
+         * @description The breakdown of a project's (and optionally a milestone's) work into assignable units. Filter by projectId to see a single project's tasks — the usual case, the project dashboard's Tasks section.
+         */
+        get: operations["listTasks"];
+        put?: never;
+        /** Create a task */
+        post: operations["createTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a task by id */
+        get: operations["getTask"];
+        put?: never;
+        post?: never;
+        /** Delete a task */
+        delete: operations["deleteTask"];
+        options?: never;
+        head?: never;
+        /** Update a task */
+        patch: operations["updateTask"];
+        trace?: never;
+    };
     "/api/v1/goals": {
         parameters: {
             query?: never;
@@ -536,6 +578,64 @@ export interface components {
         };
         MilestoneList: {
             data: components["schemas"]["Milestone"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        TaskStatus: "backlog" | "todo" | "in_progress" | "in_review" | "blocked" | "done" | "cancelled";
+        /** @enum {string} */
+        TaskPriority: "low" | "medium" | "high" | "urgent";
+        Task: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            milestoneId?: string | null;
+            /** @description Per-project sequential number, e.g. 42 for "PYR-42". */
+            number: number;
+            title: string;
+            description?: string | null;
+            status: components["schemas"]["TaskStatus"];
+            priority: components["schemas"]["TaskPriority"];
+            /** Format: uuid */
+            assigneeId?: string | null;
+            /** Format: date */
+            dueDate?: string | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        TaskCreate: {
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            milestoneId?: string;
+            title: string;
+            description?: string;
+            status?: components["schemas"]["TaskStatus"];
+            priority?: components["schemas"]["TaskPriority"];
+            /** Format: uuid */
+            assigneeId?: string;
+            /** Format: date */
+            dueDate?: string;
+        };
+        TaskUpdate: {
+            /** Format: uuid */
+            milestoneId?: string | null;
+            title?: string;
+            description?: string;
+            status?: components["schemas"]["TaskStatus"];
+            priority?: components["schemas"]["TaskPriority"];
+            /** Format: uuid */
+            assigneeId?: string | null;
+            /** Format: date */
+            dueDate?: string;
+        };
+        TaskList: {
+            data: components["schemas"]["Task"][];
             pagination: components["schemas"]["Pagination"];
         };
         /** @enum {string} */
@@ -1253,6 +1353,135 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Milestone"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listTasks: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                projectId?: string;
+                milestoneId?: string;
+                assigneeId?: string;
+                status?: components["schemas"]["TaskStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of tasks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The task */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
                 };
             };
             400: components["responses"]["BadRequest"];

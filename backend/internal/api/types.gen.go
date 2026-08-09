@@ -80,6 +80,25 @@ const (
 	MilestoneStatusMissed     MilestoneStatus = "missed"
 )
 
+// Defines values for TaskStatus.
+const (
+	TaskStatusBacklog    TaskStatus = "backlog"
+	TaskStatusTodo       TaskStatus = "todo"
+	TaskStatusInProgress TaskStatus = "in_progress"
+	TaskStatusInReview   TaskStatus = "in_review"
+	TaskStatusBlocked    TaskStatus = "blocked"
+	TaskStatusDone       TaskStatus = "done"
+	TaskStatusCancelled  TaskStatus = "cancelled"
+)
+
+// Defines values for TaskPriority.
+const (
+	TaskPriorityLow    TaskPriority = "low"
+	TaskPriorityMedium TaskPriority = "medium"
+	TaskPriorityHigh   TaskPriority = "high"
+	TaskPriorityUrgent TaskPriority = "urgent"
+)
+
 // Defines values for GoalScope.
 const (
 	GoalScopeIndividual GoalScope = "individual"
@@ -153,6 +172,12 @@ type ProjectRole string
 
 // MilestoneStatus mirrors the milestone_status enum in db/schema.sql.
 type MilestoneStatus string
+
+// TaskStatus mirrors the task_status enum in db/schema.sql.
+type TaskStatus string
+
+// TaskPriority mirrors the task_priority enum in db/schema.sql.
+type TaskPriority string
 
 // GoalScope mirrors the goal_scope enum in db/schema.sql.
 type GoalScope string
@@ -366,6 +391,52 @@ type MilestoneUpdate struct {
 type MilestoneList struct {
 	Data       []Milestone `json:"data"`
 	Pagination Pagination  `json:"pagination"`
+}
+
+// Task defines model for Task.
+type Task struct {
+	AssigneeId  *openapi_types.UUID `json:"assigneeId,omitempty"`
+	CompletedAt *time.Time          `json:"completedAt,omitempty"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	Id          openapi_types.UUID  `json:"id"`
+	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
+	Number      int                 `json:"number"`
+	Priority    TaskPriority        `json:"priority"`
+	ProjectId   openapi_types.UUID  `json:"projectId"`
+	Status      TaskStatus          `json:"status"`
+	Title       string              `json:"title"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+}
+
+// TaskCreate defines model for TaskCreate.
+type TaskCreate struct {
+	AssigneeId  *openapi_types.UUID `json:"assigneeId,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
+	Priority    *TaskPriority       `json:"priority,omitempty"`
+	ProjectId   openapi_types.UUID  `json:"projectId"`
+	Status      *TaskStatus         `json:"status,omitempty"`
+	Title       string              `json:"title"`
+}
+
+// TaskUpdate defines model for TaskUpdate.
+type TaskUpdate struct {
+	AssigneeId  *openapi_types.UUID `json:"assigneeId,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
+	Priority    *TaskPriority       `json:"priority,omitempty"`
+	Status      *TaskStatus         `json:"status,omitempty"`
+	Title       *string             `json:"title,omitempty"`
+}
+
+// TaskList defines model for TaskList.
+type TaskList struct {
+	Data       []Task     `json:"data"`
+	Pagination Pagination `json:"pagination"`
 }
 
 // Goal defines model for Goal.
