@@ -23,8 +23,29 @@ type Project struct {
 	LeadID      *uuid.UUID          `gorm:"type:uuid"`
 	StartDate   *time.Time          `gorm:"type:date"`
 	TargetDate  *time.Time          `gorm:"type:date"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+
+	// Stakeholder / reporting metadata block, shown in the project header on
+	// the detail page and edited via a dedicated "Edit project info" modal
+	// separate from the core fields above. All optional; all free text
+	// except the two team-size counts.
+	Sponsor          *string `gorm:"type:text;column:sponsor"`
+	ProjectDirector  *string `gorm:"type:text;column:project_director"`
+	ReportPeriod     *string `gorm:"type:text;column:report_period"`
+	HqPm             *string `gorm:"type:text;column:hq_pm"`
+	TurkeyPm         *string `gorm:"type:text;column:turkey_pm"`
+	ChineseInterface *string `gorm:"type:text;column:chinese_interface"`
+	HqInterface      *string `gorm:"type:text;column:hq_interface"`
+	TurkeyQa         *string `gorm:"type:text;column:turkey_qa"`
+	AccountName      *string `gorm:"type:text;column:account_name"`
+	HqSe             *string `gorm:"type:text;column:hq_se"`
+	TurkeySe         *string `gorm:"type:text;column:turkey_se"`
+	ReleaseVersion   *string `gorm:"type:text;column:release_version"`
+	ProjectCode      *string `gorm:"type:text;column:project_code"`
+	TeamSizeActual   *int    `gorm:"column:team_size_actual"`
+	TeamSizePlanned  *int    `gorm:"column:team_size_planned"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -33,16 +54,31 @@ func (Project) TableName() string { return "projects" }
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {
 	out := api.Project{
-		Id:          p.ID,
-		Key:         p.Key,
-		Name:        p.Name,
-		Description: p.Description,
-		Status:      p.Status,
-		Priority:    p.Priority,
-		Health:      p.Health,
-		LeadId:      p.LeadID,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+		Id:               p.ID,
+		Key:              p.Key,
+		Name:             p.Name,
+		Description:      p.Description,
+		Status:           p.Status,
+		Priority:         p.Priority,
+		Health:           p.Health,
+		LeadId:           p.LeadID,
+		Sponsor:          p.Sponsor,
+		ProjectDirector:  p.ProjectDirector,
+		ReportPeriod:     p.ReportPeriod,
+		HqPm:             p.HqPm,
+		TurkeyPm:         p.TurkeyPm,
+		ChineseInterface: p.ChineseInterface,
+		HqInterface:      p.HqInterface,
+		TurkeyQa:         p.TurkeyQa,
+		AccountName:      p.AccountName,
+		HqSe:             p.HqSe,
+		TurkeySe:         p.TurkeySe,
+		ReleaseVersion:   p.ReleaseVersion,
+		ProjectCode:      p.ProjectCode,
+		TeamSizeActual:   p.TeamSizeActual,
+		TeamSizePlanned:  p.TeamSizePlanned,
+		CreatedAt:        p.CreatedAt,
+		UpdatedAt:        p.UpdatedAt,
 	}
 	if p.StartDate != nil {
 		out.StartDate = &openapi_types.Date{Time: *p.StartDate}
@@ -109,5 +145,50 @@ func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
 	if in.TargetDate != nil {
 		t := in.TargetDate.Time
 		p.TargetDate = &t
+	}
+	if in.Sponsor != nil {
+		p.Sponsor = in.Sponsor
+	}
+	if in.ProjectDirector != nil {
+		p.ProjectDirector = in.ProjectDirector
+	}
+	if in.ReportPeriod != nil {
+		p.ReportPeriod = in.ReportPeriod
+	}
+	if in.HqPm != nil {
+		p.HqPm = in.HqPm
+	}
+	if in.TurkeyPm != nil {
+		p.TurkeyPm = in.TurkeyPm
+	}
+	if in.ChineseInterface != nil {
+		p.ChineseInterface = in.ChineseInterface
+	}
+	if in.HqInterface != nil {
+		p.HqInterface = in.HqInterface
+	}
+	if in.TurkeyQa != nil {
+		p.TurkeyQa = in.TurkeyQa
+	}
+	if in.AccountName != nil {
+		p.AccountName = in.AccountName
+	}
+	if in.HqSe != nil {
+		p.HqSe = in.HqSe
+	}
+	if in.TurkeySe != nil {
+		p.TurkeySe = in.TurkeySe
+	}
+	if in.ReleaseVersion != nil {
+		p.ReleaseVersion = in.ReleaseVersion
+	}
+	if in.ProjectCode != nil {
+		p.ProjectCode = in.ProjectCode
+	}
+	if in.TeamSizeActual != nil {
+		p.TeamSizeActual = in.TeamSizeActual
+	}
+	if in.TeamSizePlanned != nil {
+		p.TeamSizePlanned = in.TeamSizePlanned
 	}
 }

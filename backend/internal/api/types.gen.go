@@ -276,18 +276,39 @@ type PersonList struct {
 
 // Project defines model for Project.
 type Project struct {
-	CreatedAt   time.Time           `json:"createdAt"`
-	Description *string             `json:"description,omitempty"`
-	Health      ProjectHealth       `json:"health"`
-	Id          openapi_types.UUID  `json:"id"`
-	Key         string              `json:"key"`
-	LeadId      *openapi_types.UUID `json:"leadId,omitempty"`
-	Name        string              `json:"name"`
-	Priority    ProjectPriority     `json:"priority"`
-	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
-	Status      ProjectStatus       `json:"status"`
-	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
-	UpdatedAt   time.Time           `json:"updatedAt"`
+	// AccountName, ChineseInterface, HqInterface, HqPm, HqSe, ProjectCode,
+	// ProjectDirector, ReleaseVersion, ReportPeriod, Sponsor, TeamSizeActual,
+	// TeamSizePlanned, TurkeyPm, TurkeyQa, TurkeySe: a stakeholder/reporting
+	// metadata block shown in the project header on the detail page, edited
+	// via a dedicated "Edit project info" modal separate from the core
+	// fields above.
+	AccountName      *string             `json:"accountName,omitempty"`
+	ChineseInterface *string             `json:"chineseInterface,omitempty"`
+	CreatedAt        time.Time           `json:"createdAt"`
+	Description      *string             `json:"description,omitempty"`
+	Health           ProjectHealth       `json:"health"`
+	HqInterface      *string             `json:"hqInterface,omitempty"`
+	HqPm             *string             `json:"hqPm,omitempty"`
+	HqSe             *string             `json:"hqSe,omitempty"`
+	Id               openapi_types.UUID  `json:"id"`
+	Key              string              `json:"key"`
+	LeadId           *openapi_types.UUID `json:"leadId,omitempty"`
+	Name             string              `json:"name"`
+	Priority         ProjectPriority     `json:"priority"`
+	ProjectCode      *string             `json:"projectCode,omitempty"`
+	ProjectDirector  *string             `json:"projectDirector,omitempty"`
+	ReleaseVersion   *string             `json:"releaseVersion,omitempty"`
+	ReportPeriod     *string             `json:"reportPeriod,omitempty"`
+	Sponsor          *string             `json:"sponsor,omitempty"`
+	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
+	Status           ProjectStatus       `json:"status"`
+	TargetDate       *openapi_types.Date `json:"targetDate,omitempty"`
+	TeamSizeActual   *int                `json:"teamSizeActual,omitempty"`
+	TeamSizePlanned  *int                `json:"teamSizePlanned,omitempty"`
+	TurkeyPm         *string             `json:"turkeyPm,omitempty"`
+	TurkeyQa         *string             `json:"turkeyQa,omitempty"`
+	TurkeySe         *string             `json:"turkeySe,omitempty"`
+	UpdatedAt        time.Time           `json:"updatedAt"`
 }
 
 // ProjectCreate defines model for ProjectCreate.
@@ -303,15 +324,30 @@ type ProjectCreate struct {
 
 // ProjectUpdate defines model for ProjectUpdate.
 type ProjectUpdate struct {
-	Description *string             `json:"description,omitempty"`
-	Health      *ProjectHealth      `json:"health,omitempty"`
-	Key         *string             `json:"key,omitempty"`
-	LeadId      *openapi_types.UUID `json:"leadId,omitempty"`
-	Name        *string             `json:"name,omitempty"`
-	Priority    *ProjectPriority    `json:"priority,omitempty"`
-	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
-	Status      *ProjectStatus      `json:"status,omitempty"`
-	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
+	AccountName      *string             `json:"accountName,omitempty"`
+	ChineseInterface *string             `json:"chineseInterface,omitempty"`
+	Description      *string             `json:"description,omitempty"`
+	Health           *ProjectHealth      `json:"health,omitempty"`
+	HqInterface      *string             `json:"hqInterface,omitempty"`
+	HqPm             *string             `json:"hqPm,omitempty"`
+	HqSe             *string             `json:"hqSe,omitempty"`
+	Key              *string             `json:"key,omitempty"`
+	LeadId           *openapi_types.UUID `json:"leadId,omitempty"`
+	Name             *string             `json:"name,omitempty"`
+	Priority         *ProjectPriority    `json:"priority,omitempty"`
+	ProjectCode      *string             `json:"projectCode,omitempty"`
+	ProjectDirector  *string             `json:"projectDirector,omitempty"`
+	ReleaseVersion   *string             `json:"releaseVersion,omitempty"`
+	ReportPeriod     *string             `json:"reportPeriod,omitempty"`
+	Sponsor          *string             `json:"sponsor,omitempty"`
+	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
+	Status           *ProjectStatus      `json:"status,omitempty"`
+	TargetDate       *openapi_types.Date `json:"targetDate,omitempty"`
+	TeamSizeActual   *int                `json:"teamSizeActual,omitempty"`
+	TeamSizePlanned  *int                `json:"teamSizePlanned,omitempty"`
+	TurkeyPm         *string             `json:"turkeyPm,omitempty"`
+	TurkeyQa         *string             `json:"turkeyQa,omitempty"`
+	TurkeySe         *string             `json:"turkeySe,omitempty"`
 }
 
 // ProjectList defines model for ProjectList.

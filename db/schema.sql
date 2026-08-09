@@ -206,6 +206,26 @@ CREATE TABLE projects (
     completed_at  DATE,
     budget_amount NUMERIC(14,2),
     budget_currency CHAR(3) DEFAULT 'USD',
+    -- Stakeholder / reporting metadata block, shown in the project header on
+    -- the project detail page (its own "Edit project info" modal, kept
+    -- separate from the core Edit Project fields above since it's a large,
+    -- optional, org-reporting-specific block rather than core project data).
+    -- All free text except the two team-size counts.
+    sponsor            TEXT,
+    project_director   TEXT,
+    report_period      TEXT,
+    hq_pm              TEXT,
+    turkey_pm          TEXT,
+    chinese_interface  TEXT,
+    hq_interface       TEXT,
+    turkey_qa          TEXT,
+    account_name       TEXT,
+    hq_se              TEXT,
+    turkey_se          TEXT,
+    release_version    TEXT,
+    project_code       TEXT,
+    team_size_actual   INTEGER,
+    team_size_planned  INTEGER,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );

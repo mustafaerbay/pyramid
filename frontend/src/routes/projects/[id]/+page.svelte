@@ -4,6 +4,7 @@
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import ProjectFormModal from '$lib/components/ProjectFormModal.svelte';
+	import ProjectInfoFormModal from '$lib/components/ProjectInfoFormModal.svelte';
 	import ProjectMemberFormModal from '$lib/components/ProjectMemberFormModal.svelte';
 	import AddTeamMembersModal from '$lib/components/AddTeamMembersModal.svelte';
 	import ContributionFormModal from '$lib/components/ContributionFormModal.svelte';
@@ -39,6 +40,10 @@
 	let people = $state<Record<string, Person>>({});
 
 	let editingProject = $state(false);
+	// The stakeholder/reporting metadata block (Sponsor, PM contacts, team
+	// size, …) shown in the header — edited via its own modal, separate from
+	// the core Edit Project modal above, since it's a large optional block.
+	let editingProjectInfo = $state(false);
 
 	let memberModalMode = $state<'create' | 'edit' | null>(null);
 	let editingMember = $state<ProjectMember | null>(null);
@@ -91,7 +96,32 @@
 	let removingTaskBusy = $state(false);
 	let removingTaskError = $state<string | null>(null);
 
-	let taskStatusFilter = $state<TaskStatus | ''>('');
+	// Toggleable chips, not a dropdown — several statuses can be shown at
+	// once. Empty array = no filter (show every status), same default
+	// meaning the old single-select's '' value had. A plain array that gets
+	// reassigned on every toggle, not a Set — $state(new Set()) only makes
+	// the Set *reference* reactive (swapping it triggers updates), not its
+	// .add()/.delete() mutations; those need the SvelteSet class from
+	// svelte/reactivity, or (simpler, and consistent with the
+	// reassign-a-new-array pattern already used elsewhere on this page,
+	// e.g. draftMilestones) just reassign a new array each time.
+	let taskStatusFilters = $state<TaskStatus[]>([]);
+	const statusFilterOptions: { value: TaskStatus; label: string }[] = [
+		{ value: 'backlog', label: 'Backlog' },
+		{ value: 'todo', label: 'To do' },
+		{ value: 'in_progress', label: 'In progress' },
+		{ value: 'in_review', label: 'In review' },
+		{ value: 'blocked', label: 'Blocked' },
+		{ value: 'done', label: 'Done' },
+		{ value: 'cancelled', label: 'Cancelled' }
+	];
+
+	function toggleStatusFilter(status: TaskStatus) {
+		taskStatusFilters = taskStatusFilters.includes(status)
+			? taskStatusFilters.filter((s) => s !== status)
+			: [...taskStatusFilters, status];
+	}
+
 	// '' = everyone, '__unassigned__' = the unassigned sentinel, else a personId.
 	let taskAssigneeFilter = $state('');
 
@@ -238,7 +268,7 @@
 	const taskGroups = $derived(
 		(() => {
 			const matchesFilters = (t: Task) => {
-				if (taskStatusFilter && t.status !== taskStatusFilter) return false;
+				if (taskStatusFilters.length > 0 && !taskStatusFilters.includes(t.status)) return false;
 				if (taskAssigneeFilter === '__unassigned__' && t.assigneeIds.length > 0) return false;
 				if (
 					taskAssigneeFilter &&
@@ -462,6 +492,42 @@
 		project = saved;
 		flash('success', 'Project updated.');
 	}
+
+	function handleProjectInfoSaved(saved: Project) {
+		editingProjectInfo = false;
+		project = saved;
+		flash('success', 'Project info updated.');
+	}
+
+	// Rows for the read-only "project info" block in the header, in the same
+	// order as the edit modal. Filtered down to only the fields that have a
+	// value when rendered — undefined/'' entries are skipped.
+	const projectInfoRows = $derived(
+		project
+			? [
+					{ label: 'Sponsor', value: project.sponsor },
+					{ label: 'Project Director', value: project.projectDirector },
+					{ label: 'Report Period', value: project.reportPeriod },
+					{ label: 'Account Name', value: project.accountName },
+					{ label: 'Project Code', value: project.projectCode },
+					{ label: 'Release Version', value: project.releaseVersion },
+					{ label: 'HQ PM', value: project.hqPm },
+					{ label: 'Turkey PM', value: project.turkeyPm },
+					{ label: 'HQ SE', value: project.hqSe },
+					{ label: 'Turkey SE', value: project.turkeySe },
+					{ label: 'HQ Interface', value: project.hqInterface },
+					{ label: 'Chinese Interface', value: project.chineseInterface },
+					{ label: 'Turkey QA', value: project.turkeyQa },
+					{
+						label: 'Team size (Actual/Planned)',
+						value:
+							project.teamSizeActual != null || project.teamSizePlanned != null
+								? `${project.teamSizeActual ?? '—'} / ${project.teamSizePlanned ?? '—'}`
+								: null
+					}
+				].filter((row): row is { label: string; value: string } => !!row.value)
+			: []
+	);
 
 	function openKickoff() {
 		showKickoffModal = true;
@@ -709,6 +775,13 @@
 					<button type="button" class="btn-secondary" onclick={() => (editingProject = true)}>
 						Edit project
 					</button>
+					<button
+						type="button"
+						class="btn-secondary"
+						onclick={() => (editingProjectInfo = true)}
+					>
+						{projectInfoRows.length > 0 ? 'Edit project info' : '+ Add project info'}
+					</button>
 				</div>
 			</div>
 
@@ -725,6 +798,17 @@
 					danger={daysToTarget !== null && daysToTarget < 0}
 				/>
 			</dl>
+
+			{#if projectInfoRows.length > 0}
+				<dl class="mt-6 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-slate-100 pt-4 text-sm sm:grid-cols-3">
+					{#each projectInfoRows as row (row.label)}
+						<div>
+							<dt class="text-xs font-medium tracking-wide text-slate-500 uppercase">{row.label}</dt>
+							<dd class="mt-0.5 text-slate-800">{row.value}</dd>
+						</div>
+					{/each}
+				</dl>
+			{/if}
 		</section>
 
 		<section class="space-y-3">
@@ -1018,20 +1102,30 @@
 				</div>
 			{:else}
 				<div class="flex flex-wrap items-center gap-3">
-					<select
-						class="input w-auto"
-						value={taskStatusFilter}
-						onchange={(e) => (taskStatusFilter = e.currentTarget.value as TaskStatus | '')}
-					>
-						<option value="">All statuses</option>
-						<option value="backlog">Backlog</option>
-						<option value="todo">To do</option>
-						<option value="in_progress">In progress</option>
-						<option value="in_review">In review</option>
-						<option value="blocked">Blocked</option>
-						<option value="done">Done</option>
-						<option value="cancelled">Cancelled</option>
-					</select>
+					<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by status">
+						{#each statusFilterOptions as opt (opt.value)}
+							{@const selected = taskStatusFilters.includes(opt.value)}
+							<button
+								type="button"
+								class="rounded-full px-2.5 py-1 text-xs font-medium transition-colors {selected
+									? badgeToneClass[taskStatusTone(opt.value)] + ' ring-1 ring-inset ring-transparent'
+									: 'bg-white text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50'}"
+								aria-pressed={selected}
+								onclick={() => toggleStatusFilter(opt.value)}
+							>
+								{opt.label}
+							</button>
+						{/each}
+						{#if taskStatusFilters.length > 0}
+							<button
+								type="button"
+								class="px-1 text-xs text-slate-500 hover:text-slate-700 hover:underline"
+								onclick={() => (taskStatusFilters = [])}
+							>
+								Clear
+							</button>
+						{/if}
+					</div>
 					<select
 						class="input w-auto"
 						value={taskAssigneeFilter}
@@ -1172,6 +1266,14 @@
 
 {#if editingProject && project}
 	<ProjectFormModal {project} onClose={() => (editingProject = false)} onSaved={handleProjectSaved} />
+{/if}
+
+{#if editingProjectInfo && project}
+	<ProjectInfoFormModal
+		{project}
+		onClose={() => (editingProjectInfo = false)}
+		onSaved={handleProjectInfoSaved}
+	/>
 {/if}
 
 {#if memberModalMode}

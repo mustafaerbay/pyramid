@@ -500,6 +500,21 @@ export interface components {
             startDate?: string | null;
             /** Format: date */
             targetDate?: string | null;
+            sponsor?: string | null;
+            projectDirector?: string | null;
+            reportPeriod?: string | null;
+            hqPm?: string | null;
+            turkeyPm?: string | null;
+            chineseInterface?: string | null;
+            hqInterface?: string | null;
+            turkeyQa?: string | null;
+            accountName?: string | null;
+            hqSe?: string | null;
+            turkeySe?: string | null;
+            releaseVersion?: string | null;
+            projectCode?: string | null;
+            teamSizeActual?: number | null;
+            teamSizePlanned?: number | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -530,6 +545,21 @@ export interface components {
             startDate?: string;
             /** Format: date */
             targetDate?: string;
+            sponsor?: string | null;
+            projectDirector?: string | null;
+            reportPeriod?: string | null;
+            hqPm?: string | null;
+            turkeyPm?: string | null;
+            chineseInterface?: string | null;
+            hqInterface?: string | null;
+            turkeyQa?: string | null;
+            accountName?: string | null;
+            hqSe?: string | null;
+            turkeySe?: string | null;
+            releaseVersion?: string | null;
+            projectCode?: string | null;
+            teamSizeActual?: number | null;
+            teamSizePlanned?: number | null;
         };
         ProjectList: {
             data: components["schemas"]["Project"][];
@@ -2012,7 +2042,8 @@ export interface operations {
             query?: {
                 page?: components["parameters"]["PageParam"];
                 pageSize?: components["parameters"]["PageSizeParam"];
-                type?: components["schemas"]["ContributionType"];
+                /** @description Repeat this parameter to filter by multiple types at once (type=commit&type=issue), e.g. ?type=commit&type=issue. A contribution matches if its type is any of the given values. */
+                type?: components["schemas"]["ContributionType"][];
                 personId?: string;
                 projectId?: string;
             };

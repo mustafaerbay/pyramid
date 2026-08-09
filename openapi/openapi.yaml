@@ -892,8 +892,16 @@ paths:
         - name: type
           in: query
           required: false
+          description: >
+            Repeat this parameter to filter by multiple types at once
+            (type=commit&type=issue), e.g. ?type=commit&type=issue. A
+            contribution matches if its type is any of the given values.
+          style: form
+          explode: true
           schema:
-            $ref: "#/components/schemas/ContributionType"
+            type: array
+            items:
+              $ref: "#/components/schemas/ContributionType"
         - name: personId
           in: query
           required: false
@@ -1265,6 +1273,55 @@ components:
           type: string
           format: date
           nullable: true
+        # Stakeholder / reporting metadata block — shown in its own group in
+        # the project header on the detail page, edited via a dedicated
+        # "Edit project info" modal separate from the core fields above.
+        # All optional; all free text except the two team-size counts.
+        sponsor:
+          type: string
+          nullable: true
+        projectDirector:
+          type: string
+          nullable: true
+        reportPeriod:
+          type: string
+          nullable: true
+        hqPm:
+          type: string
+          nullable: true
+        turkeyPm:
+          type: string
+          nullable: true
+        chineseInterface:
+          type: string
+          nullable: true
+        hqInterface:
+          type: string
+          nullable: true
+        turkeyQa:
+          type: string
+          nullable: true
+        accountName:
+          type: string
+          nullable: true
+        hqSe:
+          type: string
+          nullable: true
+        turkeySe:
+          type: string
+          nullable: true
+        releaseVersion:
+          type: string
+          nullable: true
+        projectCode:
+          type: string
+          nullable: true
+        teamSizeActual:
+          type: integer
+          nullable: true
+        teamSizePlanned:
+          type: integer
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -1320,6 +1377,51 @@ components:
         targetDate:
           type: string
           format: date
+        sponsor:
+          type: string
+          nullable: true
+        projectDirector:
+          type: string
+          nullable: true
+        reportPeriod:
+          type: string
+          nullable: true
+        hqPm:
+          type: string
+          nullable: true
+        turkeyPm:
+          type: string
+          nullable: true
+        chineseInterface:
+          type: string
+          nullable: true
+        hqInterface:
+          type: string
+          nullable: true
+        turkeyQa:
+          type: string
+          nullable: true
+        accountName:
+          type: string
+          nullable: true
+        hqSe:
+          type: string
+          nullable: true
+        turkeySe:
+          type: string
+          nullable: true
+        releaseVersion:
+          type: string
+          nullable: true
+        projectCode:
+          type: string
+          nullable: true
+        teamSizeActual:
+          type: integer
+          nullable: true
+        teamSizePlanned:
+          type: integer
+          nullable: true
 
     ProjectList:
       type: object

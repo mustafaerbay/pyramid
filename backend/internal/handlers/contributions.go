@@ -19,8 +19,12 @@ func (h *Handler) ListContributions(c *gin.Context) {
 	pageSize := clamp(parseIntDefault(c.Query("pageSize"), 25), 1, 100)
 
 	q := h.db.Model(&models.Contribution{})
-	if t := c.Query("type"); t != "" {
-		q = q.Where("type = ?", t)
+	// Repeatable ?type=commit&type=issue — a contribution matches if its
+	// type is any of the given values. QueryArray returns an empty slice
+	// (not an error) when the key is absent, so this is a no-op filter by
+	// default, same as the old single-value check.
+	if types := c.QueryArray("type"); len(types) > 0 {
+		q = q.Where("type IN ?", types)
 	}
 	if p := c.Query("personId"); p != "" {
 		q = q.Where("person_id = ?", p)

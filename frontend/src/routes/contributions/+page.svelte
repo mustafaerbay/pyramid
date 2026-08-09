@@ -5,7 +5,7 @@
 	import ContributionFormModal from '$lib/components/ContributionFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
-	import type { BadgeTone } from '$lib/badgeTones';
+	import { badgeToneClass, type BadgeTone } from '$lib/badgeTones';
 
 	type Contribution = components['schemas']['Contribution'];
 	type ContributionType = components['schemas']['ContributionType'];
@@ -19,7 +19,26 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
-	let typeFilter = $state<ContributionType | ''>('');
+	// Toggleable chips, not a dropdown — several types can be filtered at
+	// once. Empty array = no filter (show every type), same default meaning
+	// the old single-select's '' value had. A plain array reassigned on
+	// every toggle (not a Set — see the Tasks-section status filter for why
+	// $state(new Set()) silently fails to trigger re-renders on .add()/
+	// .delete()). Server-side filter: every toggle resets to page 1 and
+	// re-fetches, since this page paginates on the backend rather than
+	// filtering an already-loaded list client-side.
+	let typeFilters = $state<ContributionType[]>([]);
+	const typeFilterOptions: { value: ContributionType; label: string }[] = [
+		{ value: 'commit', label: 'Commit' },
+		{ value: 'pull_request', label: 'Pull request' },
+		{ value: 'code_review', label: 'Code review' },
+		{ value: 'issue', label: 'Issue' },
+		{ value: 'design', label: 'Design' },
+		{ value: 'documentation', label: 'Documentation' },
+		{ value: 'deployment', label: 'Deployment' },
+		{ value: 'support', label: 'Support' },
+		{ value: 'other', label: 'Other' }
+	];
 	let peopleNames = $state<Record<string, string>>({});
 	let projectKeys = $state<Record<string, string>>({});
 
@@ -65,7 +84,7 @@
 				query: {
 					page: currentPage,
 					pageSize,
-					...(typeFilter ? { type: typeFilter } : {})
+					...(typeFilters.length > 0 ? { type: typeFilters } : {})
 				}
 			}
 		});
@@ -132,8 +151,16 @@
 		load();
 	}
 
-	function applyTypeFilter(value: string) {
-		typeFilter = value as ContributionType | '';
+	function toggleTypeFilter(type: ContributionType) {
+		typeFilters = typeFilters.includes(type)
+			? typeFilters.filter((t) => t !== type)
+			: [...typeFilters, type];
+		currentPage = 1;
+		load();
+	}
+
+	function clearTypeFilters() {
+		typeFilters = [];
 		currentPage = 1;
 		load();
 	}
@@ -197,23 +224,29 @@
 		</div>
 	{/if}
 
-	<div class="flex flex-wrap items-center gap-3">
-		<select
-			class="input w-auto"
-			value={typeFilter}
-			onchange={(e) => applyTypeFilter(e.currentTarget.value)}
-		>
-			<option value="">All types</option>
-			<option value="commit">Commit</option>
-			<option value="pull_request">Pull request</option>
-			<option value="code_review">Code review</option>
-			<option value="issue">Issue</option>
-			<option value="design">Design</option>
-			<option value="documentation">Documentation</option>
-			<option value="deployment">Deployment</option>
-			<option value="support">Support</option>
-			<option value="other">Other</option>
-		</select>
+	<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by type">
+		{#each typeFilterOptions as opt (opt.value)}
+			{@const selected = typeFilters.includes(opt.value)}
+			<button
+				type="button"
+				class="rounded-full px-2.5 py-1 text-xs font-medium transition-colors {selected
+					? badgeToneClass[typeTone(opt.value)] + ' ring-1 ring-inset ring-transparent'
+					: 'bg-white text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50'}"
+				aria-pressed={selected}
+				onclick={() => toggleTypeFilter(opt.value)}
+			>
+				{opt.label}
+			</button>
+		{/each}
+		{#if typeFilters.length > 0}
+			<button
+				type="button"
+				class="px-1 text-xs text-slate-500 hover:text-slate-700 hover:underline"
+				onclick={clearTypeFilters}
+			>
+				Clear
+			</button>
+		{/if}
 	</div>
 
 	{#if loading}
