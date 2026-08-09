@@ -485,6 +485,7 @@ paths:
         - name: assigneeId
           in: query
           required: false
+          description: Only tasks that have this person among their assignees.
           schema:
             type: string
             format: uuid
@@ -1409,7 +1410,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, number, title, status, priority, createdAt, updatedAt]
+      required: [id, projectId, number, title, status, priority, assigneeIds, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -1433,10 +1434,12 @@ components:
           $ref: "#/components/schemas/TaskStatus"
         priority:
           $ref: "#/components/schemas/TaskPriority"
-        assigneeId:
-          type: string
-          format: uuid
-          nullable: true
+        assigneeIds:
+          type: array
+          description: People assigned to this task. Empty array means unassigned.
+          items:
+            type: string
+            format: uuid
         dueDate:
           type: string
           format: date
@@ -1471,9 +1474,12 @@ components:
           $ref: "#/components/schemas/TaskStatus"
         priority:
           $ref: "#/components/schemas/TaskPriority"
-        assigneeId:
-          type: string
-          format: uuid
+        assigneeIds:
+          type: array
+          description: People to assign at creation. Defaults to none if omitted.
+          items:
+            type: string
+            format: uuid
         dueDate:
           type: string
           format: date
@@ -1493,10 +1499,15 @@ components:
           $ref: "#/components/schemas/TaskStatus"
         priority:
           $ref: "#/components/schemas/TaskPriority"
-        assigneeId:
-          type: string
-          format: uuid
-          nullable: true
+        assigneeIds:
+          type: array
+          description: >
+            Replaces the full assignee set when present — send every
+            assignee the task should have, or an empty array to unassign
+            everyone. Omit the field entirely to leave assignees unchanged.
+          items:
+            type: string
+            format: uuid
         dueDate:
           type: string
           format: date

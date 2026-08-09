@@ -395,42 +395,46 @@ type MilestoneList struct {
 
 // Task defines model for Task.
 type Task struct {
-	AssigneeId  *openapi_types.UUID `json:"assigneeId,omitempty"`
-	CompletedAt *time.Time          `json:"completedAt,omitempty"`
-	CreatedAt   time.Time           `json:"createdAt"`
-	Description *string             `json:"description,omitempty"`
-	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
-	Id          openapi_types.UUID  `json:"id"`
-	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
-	Number      int                 `json:"number"`
-	Priority    TaskPriority        `json:"priority"`
-	ProjectId   openapi_types.UUID  `json:"projectId"`
-	Status      TaskStatus          `json:"status"`
-	Title       string              `json:"title"`
-	UpdatedAt   time.Time           `json:"updatedAt"`
+	AssigneeIds []openapi_types.UUID `json:"assigneeIds"`
+	CompletedAt *time.Time           `json:"completedAt,omitempty"`
+	CreatedAt   time.Time            `json:"createdAt"`
+	Description *string              `json:"description,omitempty"`
+	DueDate     *openapi_types.Date  `json:"dueDate,omitempty"`
+	Id          openapi_types.UUID   `json:"id"`
+	MilestoneId *openapi_types.UUID  `json:"milestoneId,omitempty"`
+	Number      int                  `json:"number"`
+	Priority    TaskPriority         `json:"priority"`
+	ProjectId   openapi_types.UUID   `json:"projectId"`
+	Status      TaskStatus           `json:"status"`
+	Title       string               `json:"title"`
+	UpdatedAt   time.Time            `json:"updatedAt"`
 }
 
 // TaskCreate defines model for TaskCreate.
 type TaskCreate struct {
-	AssigneeId  *openapi_types.UUID `json:"assigneeId,omitempty"`
-	Description *string             `json:"description,omitempty"`
-	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
-	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
-	Priority    *TaskPriority       `json:"priority,omitempty"`
-	ProjectId   openapi_types.UUID  `json:"projectId"`
-	Status      *TaskStatus         `json:"status,omitempty"`
-	Title       string              `json:"title"`
+	// AssigneeIds People to assign at creation. Defaults to none if omitted.
+	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
+	Description *string               `json:"description,omitempty"`
+	DueDate     *openapi_types.Date   `json:"dueDate,omitempty"`
+	MilestoneId *openapi_types.UUID   `json:"milestoneId,omitempty"`
+	Priority    *TaskPriority         `json:"priority,omitempty"`
+	ProjectId   openapi_types.UUID    `json:"projectId"`
+	Status      *TaskStatus           `json:"status,omitempty"`
+	Title       string                `json:"title"`
 }
 
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
-	AssigneeId  *openapi_types.UUID `json:"assigneeId,omitempty"`
-	Description *string             `json:"description,omitempty"`
-	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
-	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
-	Priority    *TaskPriority       `json:"priority,omitempty"`
-	Status      *TaskStatus         `json:"status,omitempty"`
-	Title       *string             `json:"title,omitempty"`
+	// AssigneeIds Replaces the full assignee set when present — send every
+	// assignee the task should have, or an empty (non-nil) array to unassign
+	// everyone. Omit the field entirely (nil) to leave assignees unchanged.
+	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
+	Description *string               `json:"description,omitempty"`
+	DueDate     *openapi_types.Date   `json:"dueDate,omitempty"`
+	MilestoneId *openapi_types.UUID   `json:"milestoneId,omitempty"`
+	Priority    *TaskPriority         `json:"priority,omitempty"`
+	Status      *TaskStatus           `json:"status,omitempty"`
+	Title       *string               `json:"title,omitempty"`
 }
 
 // TaskList defines model for TaskList.

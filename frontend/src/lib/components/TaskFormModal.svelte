@@ -44,7 +44,8 @@
 	let description = $state(initial?.description ?? '');
 	// svelte-ignore state_referenced_locally
 	let milestoneId = $state(initial?.milestoneId ?? initialMilestoneId ?? '');
-	let assigneeId = $state(initial?.assigneeId ?? '');
+	// svelte-ignore state_referenced_locally
+	let assigneeIds = $state<string[]>(initial?.assigneeIds ?? []);
 	// Unlike milestones (always start "pending"), a task's initial status is
 	// caller-settable — it's normal to log work retroactively that's already
 	// in progress or done.
@@ -66,6 +67,12 @@
 	];
 	const priorityOptions: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
+	function toggleAssignee(id: string) {
+		assigneeIds = assigneeIds.includes(id)
+			? assigneeIds.filter((x) => x !== id)
+			: [...assigneeIds, id];
+	}
+
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		formError = null;
@@ -86,7 +93,10 @@
 						// Explicit null (not undefined) so the backend can tell
 						// "clear this" apart from "field wasn't touched".
 						milestoneId: milestoneId || null,
-						assigneeId: assigneeId || null,
+						// assigneeIds always replaces the full set — sending it
+						// (even as []) is how the backend knows to update it, vs.
+						// omitting the field entirely to leave it untouched.
+						assigneeIds,
 						status,
 						priority,
 						dueDate: dueDate || undefined
@@ -104,7 +114,7 @@
 						milestoneId: milestoneId || undefined,
 						title,
 						description: description || undefined,
-						assigneeId: assigneeId || undefined,
+						assigneeIds,
 						status,
 						priority,
 						dueDate: dueDate || undefined
@@ -165,25 +175,36 @@
 				<textarea class="input" rows="2" bind:value={description}></textarea>
 			</label>
 
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				<label class="block text-sm">
-					<span class="mb-1 block font-medium text-slate-700">Milestone</span>
-					<select class="input" bind:value={milestoneId}>
-						<option value="">No milestone</option>
-						{#each milestoneOptions as m (m.id)}
-							<option value={m.id}>{m.name}</option>
-						{/each}
-					</select>
-				</label>
-				<label class="block text-sm">
-					<span class="mb-1 block font-medium text-slate-700">Assignee</span>
-					<select class="input" bind:value={assigneeId}>
-						<option value="">Unassigned</option>
+			<label class="block text-sm">
+				<span class="mb-1 block font-medium text-slate-700">Milestone</span>
+				<select class="input" bind:value={milestoneId}>
+					<option value="">No milestone</option>
+					{#each milestoneOptions as m (m.id)}
+						<option value={m.id}>{m.name}</option>
+					{/each}
+				</select>
+			</label>
+
+			<div class="block text-sm">
+				<span class="mb-1 block font-medium text-slate-700">
+					Assignees{assigneeIds.length > 0 ? ` (${assigneeIds.length})` : ''}
+				</span>
+				<div class="max-h-32 space-y-1 overflow-y-auto rounded-md border border-slate-300 px-3 py-2">
+					{#if assigneeOptions.length === 0}
+						<p class="text-xs text-slate-400">No active team members to assign.</p>
+					{:else}
 						{#each assigneeOptions as person (person.id)}
-							<option value={person.id}>{person.name}</option>
+							<label class="flex items-center gap-2 text-sm text-slate-700">
+								<input
+									type="checkbox"
+									checked={assigneeIds.includes(person.id)}
+									onchange={() => toggleAssignee(person.id)}
+								/>
+								{person.name}
+							</label>
 						{/each}
-					</select>
-				</label>
+					{/if}
+				</div>
 			</div>
 
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">

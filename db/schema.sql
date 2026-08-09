@@ -259,7 +259,6 @@ CREATE TABLE tasks (
     type          task_type     NOT NULL DEFAULT 'task',
     status        task_status   NOT NULL DEFAULT 'backlog',
     priority      task_priority NOT NULL DEFAULT 'medium',
-    assignee_id   UUID REFERENCES people(id) ON DELETE SET NULL,
     reporter_id   UUID REFERENCES people(id) ON DELETE SET NULL,
     story_points  NUMERIC(5,2),
     estimate_hours NUMERIC(6,2),
@@ -269,6 +268,14 @@ CREATE TABLE tasks (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (project_id, number)
+);
+
+-- A task can have multiple people assigned to it (replaces the earlier
+-- single assignee_id column on tasks).
+CREATE TABLE task_assignees (
+    task_id   UUID NOT NULL REFERENCES tasks(id)  ON DELETE CASCADE,
+    person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    PRIMARY KEY (task_id, person_id)
 );
 
 CREATE TABLE labels (
@@ -546,10 +553,10 @@ CREATE INDEX idx_project_members_project ON project_members(project_id);
 CREATE INDEX idx_milestones_project      ON milestones(project_id);
 CREATE INDEX idx_sprints_project         ON sprints(project_id);
 CREATE INDEX idx_tasks_project           ON tasks(project_id);
-CREATE INDEX idx_tasks_assignee          ON tasks(assignee_id);
 CREATE INDEX idx_tasks_status            ON tasks(status);
 CREATE INDEX idx_tasks_sprint            ON tasks(sprint_id);
 CREATE INDEX idx_tasks_milestone         ON tasks(milestone_id);
+CREATE INDEX idx_task_assignees_person   ON task_assignees(person_id);
 CREATE INDEX idx_tasks_parent            ON tasks(parent_id);
 CREATE INDEX idx_task_comments_task      ON task_comments(task_id);
 

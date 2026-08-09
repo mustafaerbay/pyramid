@@ -201,11 +201,11 @@
 		(() => {
 			const matchesFilters = (t: Task) => {
 				if (taskStatusFilter && t.status !== taskStatusFilter) return false;
-				if (taskAssigneeFilter === '__unassigned__' && t.assigneeId) return false;
+				if (taskAssigneeFilter === '__unassigned__' && t.assigneeIds.length > 0) return false;
 				if (
 					taskAssigneeFilter &&
 					taskAssigneeFilter !== '__unassigned__' &&
-					t.assigneeId !== taskAssigneeFilter
+					!t.assigneeIds.includes(taskAssigneeFilter)
 				)
 					return false;
 				return true;
@@ -367,6 +367,10 @@
 	function personLabel(id: string): string {
 		const p = people[id];
 		return p ? `${p.firstName} ${p.lastName}` : 'Unknown person';
+	}
+
+	function assigneesLabel(ids: string[]): string {
+		return ids.length === 0 ? 'Unassigned' : ids.map((id) => personLabel(id)).join(', ');
 	}
 
 	function openAddMembers() {
@@ -833,8 +837,8 @@
 														{task.title}
 													</button>
 												</td>
-												<td class="px-4 py-2.5 text-slate-600">
-													{task.assigneeId ? personLabel(task.assigneeId) : 'Unassigned'}
+												<td class="px-4 py-2.5 text-slate-600" title={assigneesLabel(task.assigneeIds)}>
+													<span class="line-clamp-1">{assigneesLabel(task.assigneeIds)}</span>
 												</td>
 												<td class="px-4 py-2.5">
 													<span

@@ -597,8 +597,8 @@ export interface components {
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
             priority: components["schemas"]["TaskPriority"];
-            /** Format: uuid */
-            assigneeId?: string | null;
+            /** @description People assigned to this task. Empty array means unassigned. */
+            assigneeIds: string[];
             /** Format: date */
             dueDate?: string | null;
             /** Format: date-time */
@@ -617,8 +617,8 @@ export interface components {
             description?: string;
             status?: components["schemas"]["TaskStatus"];
             priority?: components["schemas"]["TaskPriority"];
-            /** Format: uuid */
-            assigneeId?: string;
+            /** @description People to assign at creation. Defaults to none if omitted. */
+            assigneeIds?: string[];
             /** Format: date */
             dueDate?: string;
         };
@@ -629,8 +629,8 @@ export interface components {
             description?: string;
             status?: components["schemas"]["TaskStatus"];
             priority?: components["schemas"]["TaskPriority"];
-            /** Format: uuid */
-            assigneeId?: string | null;
+            /** @description Replaces the full assignee set when present — send every assignee the task should have, or an empty array to unassign everyone. Omit the field entirely to leave assignees unchanged. */
+            assigneeIds?: string[];
             /** Format: date */
             dueDate?: string;
         };
@@ -1367,6 +1367,7 @@ export interface operations {
                 pageSize?: components["parameters"]["PageSizeParam"];
                 projectId?: string;
                 milestoneId?: string;
+                /** @description Only tasks that have this person among their assignees. */
                 assigneeId?: string;
                 status?: components["schemas"]["TaskStatus"];
             };

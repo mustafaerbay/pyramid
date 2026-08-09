@@ -13,7 +13,7 @@ import (
 // estimate/reporter/dependencies/comments/labels columns — none of those are
 // wired up yet (flagged as future work); this model covers the breakdown-
 // into-assignable-work slice the project Tasks section needs: title,
-// milestone, assignee, status, priority, due date.
+// milestone, assignees, status, priority, due date.
 type Task struct {
 	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	ProjectID uuid.UUID `gorm:"type:uuid;not null;index"`
@@ -25,18 +25,39 @@ type Task struct {
 	Description *string          `gorm:"type:text"`
 	Status      api.TaskStatus   `gorm:"type:task_status;not null;default:backlog"`
 	Priority    api.TaskPriority `gorm:"type:task_priority;not null;default:medium"`
-	AssigneeID  *uuid.UUID       `gorm:"type:uuid;index"`
 	DueDate     *time.Time       `gorm:"type:date"`
 	CompletedAt *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+
+	// AssigneeIDs holds the task's assignees (see the task_assignees join
+	// table). It's not a column on this table — `gorm:"-"` keeps GORM from
+	// trying to persist it directly — so the handler must populate it with a
+	// separate task_assignees query (or a fresh write) before calling ToAPI.
+	// Zero value is a nil slice; ToAPI normalizes that to `[]`, never `null`.
+	AssigneeIDs []uuid.UUID `gorm:"-"`
 }
 
 // TableName pins the model to the existing pluralized table.
 func (Task) TableName() string { return "tasks" }
 
-// ToAPI converts the persistence model into the generated API DTO.
+// TaskAssignee is the GORM persistence model for the task_assignees join
+// table — a task can have any number of assignees (replaces the earlier
+// single assignee_id column on tasks).
+type TaskAssignee struct {
+	TaskID   uuid.UUID `gorm:"type:uuid;primaryKey"`
+	PersonID uuid.UUID `gorm:"type:uuid;primaryKey"`
+}
+
+func (TaskAssignee) TableName() string { return "task_assignees" }
+
+// ToAPI converts the persistence model into the generated API DTO. The
+// caller must have already populated t.AssigneeIDs (see the field comment).
 func (t Task) ToAPI() api.Task {
+	assigneeIDs := make([]openapi_types.UUID, len(t.AssigneeIDs))
+	for i, id := range t.AssigneeIDs {
+		assigneeIDs[i] = id
+	}
 	out := api.Task{
 		Id:          t.ID,
 		ProjectId:   t.ProjectID,
@@ -45,7 +66,7 @@ func (t Task) ToAPI() api.Task {
 		Description: t.Description,
 		Status:      t.Status,
 		Priority:    t.Priority,
-		AssigneeId:  t.AssigneeID,
+		AssigneeIds: assigneeIDs,
 		MilestoneId: t.MilestoneID,
 		CreatedAt:   t.CreatedAt,
 		UpdatedAt:   t.UpdatedAt,
@@ -65,14 +86,15 @@ func (t Task) ToAPI() api.Task {
 // shouldn't own. Status/priority default the same way the DB columns do
 // (backlog/medium) when the request doesn't specify them, but — unlike
 // Milestone/Goal — a task's initial status IS caller-settable: it's normal
-// to log a task retroactively that's already in progress or done.
+// to log a task retroactively that's already in progress or done. Assignees
+// aren't set here either — they need the task's generated ID first, so the
+// handler inserts the task_assignees rows after the Create call succeeds.
 func NewTaskFromCreate(in api.TaskCreate) Task {
 	t := Task{
 		ProjectID:   in.ProjectId,
 		MilestoneID: in.MilestoneId,
 		Title:       in.Title,
 		Description: in.Description,
-		AssigneeID:  in.AssigneeId,
 		Status:      api.TaskStatusBacklog,
 		Priority:    api.TaskPriorityMedium,
 	}
@@ -94,14 +116,19 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 }
 
 // ApplyUpdate mutates the model in place with the fields of a patch.
-// clearMilestone/clearAssignee distinguish "the request explicitly set this
-// field to null" (unassign / move to backlog) from "the request didn't
-// mention this field at all" — both unmarshal a plain `*uuid.UUID` to nil,
-// so the handler parses the raw JSON body once to tell them apart before
-// calling this (see handlers.UpdateTask). Every other optional field in this
-// app currently can only be set, not cleared, via PATCH; unassigning a task
-// is common enough to be worth the extra plumbing here.
-func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone, clearAssignee bool) {
+// clearMilestone distinguishes "the request explicitly set milestoneId to
+// null" (move to backlog) from "the request didn't mention the field at
+// all" — both unmarshal a plain `*uuid.UUID` to nil, so the handler parses
+// the raw JSON body once to tell them apart before calling this (see
+// handlers.UpdateTask). Every other optional field in this app currently can
+// only be set, not cleared, via PATCH; unassigning a task's milestone is
+// common enough to be worth the extra plumbing here.
+//
+// Assignees are NOT handled here — in.AssigneeIds replaces the full
+// task_assignees set for this task, which needs its own DB statements
+// (delete-then-insert), so the handler manages that directly rather than
+// through this in-memory mutation.
+func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 	if in.Title != nil {
 		t.Title = *in.Title
 	}
@@ -112,11 +139,6 @@ func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone, clearAssignee bool
 		t.MilestoneID = nil
 	} else if in.MilestoneId != nil {
 		t.MilestoneID = in.MilestoneId
-	}
-	if clearAssignee {
-		t.AssigneeID = nil
-	} else if in.AssigneeId != nil {
-		t.AssigneeID = in.AssigneeId
 	}
 	if in.Priority != nil {
 		t.Priority = *in.Priority
