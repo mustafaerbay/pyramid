@@ -9,6 +9,7 @@
 	import StackedBar from '$lib/components/StackedBar.svelte';
 	import TrendChart from '$lib/components/TrendChart.svelte';
 	import ProjectCard from '$lib/components/ProjectCard.svelte';
+	import { DAY_MS, toUtc, todayUtc } from '$lib/dateMath';
 
 	type Person = components['schemas']['Person'];
 	type Project = components['schemas']['Project'];
@@ -19,17 +20,10 @@
 
 	type ModuleKey = 'people' | 'projects' | 'contributions' | 'goals' | 'timeOff';
 
-	const DAY_MS = 86_400_000;
 	// "Today" at UTC midnight, computed once. Every date comparison below
-	// parses plain "YYYY-MM-DD" values as `${d}T00:00:00Z` and compares
-	// against this, so results don't shift with the viewer's timezone.
-	function todayUtc(): number {
-		const now = new Date();
-		return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-	}
-	function toUtc(dateStr: string): number {
-		return new Date(`${dateStr}T00:00:00Z`).getTime();
-	}
+	// parses plain "YYYY-MM-DD" values as `${d}T00:00:00Z` (via the shared
+	// dateMath helpers) and compares against this, so results don't shift
+	// with the viewer's timezone.
 	const TODAY = todayUtc();
 
 	let counts = $state<Record<ModuleKey, number | null>>({

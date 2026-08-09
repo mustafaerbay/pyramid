@@ -141,6 +141,48 @@ export interface paths {
         patch: operations["updateProjectMember"];
         trace?: never;
     };
+    "/api/v1/project-kickoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project kickoffs
+         * @description Filter by projectId to check for/fetch the one kickoff record a project has (project_id is unique — there is at most one per project).
+         */
+        get: operations["listProjectKickoffs"];
+        put?: never;
+        /** Record a project's kickoff meeting */
+        post: operations["createProjectKickoff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-kickoffs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a project kickoff by id */
+        get: operations["getProjectKickoff"];
+        put?: never;
+        post?: never;
+        /** Delete a project kickoff */
+        delete: operations["deleteProjectKickoff"];
+        options?: never;
+        head?: never;
+        /** Update a project kickoff */
+        patch: operations["updateProjectKickoff"];
+        trace?: never;
+    };
     "/api/v1/milestones": {
         parameters: {
             query?: never;
@@ -532,6 +574,102 @@ export interface components {
         };
         ProjectMemberList: {
             data: components["schemas"]["ProjectMember"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        KickoffActionItem: {
+            /** Format: uuid */
+            id: string;
+            description: string;
+            /** Format: uuid */
+            ownerId?: string | null;
+            /**
+             * Format: uuid
+             * @description Set once this action item has been converted into a real task.
+             */
+            taskId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        KickoffActionItemInput: {
+            description: string;
+            /** Format: uuid */
+            ownerId?: string;
+            /** Format: uuid */
+            taskId?: string;
+        };
+        ProjectKickoff: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** Format: date */
+            meetingDate?: string | null;
+            /** Format: uuid */
+            facilitatorId?: string | null;
+            attendees?: string | null;
+            businessProblem?: string | null;
+            successDefinition?: string | null;
+            primaryUsers?: string | null;
+            painPoints?: string | null;
+            mvpFeature?: string | null;
+            constraintsNotes?: string | null;
+            biggestRisk?: string | null;
+            signOffOwner?: string | null;
+            meetingCadence?: string | null;
+            primaryTools?: string | null;
+            /** Format: date */
+            nextSessionDate?: string | null;
+            actionItems: components["schemas"]["KickoffActionItem"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProjectKickoffCreate: {
+            /** Format: uuid */
+            projectId: string;
+            /** Format: date */
+            meetingDate?: string;
+            /** Format: uuid */
+            facilitatorId?: string;
+            attendees?: string;
+            businessProblem?: string;
+            successDefinition?: string;
+            primaryUsers?: string;
+            painPoints?: string;
+            mvpFeature?: string;
+            constraintsNotes?: string;
+            biggestRisk?: string;
+            signOffOwner?: string;
+            meetingCadence?: string;
+            primaryTools?: string;
+            /** Format: date */
+            nextSessionDate?: string;
+            actionItems?: components["schemas"]["KickoffActionItemInput"][];
+        };
+        ProjectKickoffUpdate: {
+            /** Format: date */
+            meetingDate?: string;
+            /** Format: uuid */
+            facilitatorId?: string;
+            attendees?: string;
+            businessProblem?: string;
+            successDefinition?: string;
+            primaryUsers?: string;
+            painPoints?: string;
+            mvpFeature?: string;
+            constraintsNotes?: string;
+            biggestRisk?: string;
+            signOffOwner?: string;
+            meetingCadence?: string;
+            primaryTools?: string;
+            /** Format: date */
+            nextSessionDate?: string;
+            /** @description Present (even as an empty array) replaces the whole action-item set. Omit the field entirely to leave existing action items untouched — same replace-whole-set convention as TaskUpdate.assigneeIds. */
+            actionItems?: components["schemas"]["KickoffActionItemInput"][];
+        };
+        ProjectKickoffList: {
+            data: components["schemas"]["ProjectKickoff"][];
             pagination: components["schemas"]["Pagination"];
         };
         /** @enum {string} */
@@ -1226,6 +1364,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectMember"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listProjectKickoffs: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                projectId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of project kickoffs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectKickoffList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createProjectKickoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectKickoffCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectKickoff"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getProjectKickoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project kickoff */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectKickoff"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteProjectKickoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateProjectKickoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectKickoffUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectKickoff"];
                 };
             };
             400: components["responses"]["BadRequest"];

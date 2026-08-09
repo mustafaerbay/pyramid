@@ -7,6 +7,7 @@
 	import ProjectMemberFormModal from '$lib/components/ProjectMemberFormModal.svelte';
 	import AddTeamMembersModal from '$lib/components/AddTeamMembersModal.svelte';
 	import ContributionFormModal from '$lib/components/ContributionFormModal.svelte';
+	import KickoffFormModal from '$lib/components/KickoffFormModal.svelte';
 	import MilestoneFormModal from '$lib/components/MilestoneFormModal.svelte';
 	import MilestoneTimeline from '$lib/components/MilestoneTimeline.svelte';
 	import TaskFormModal from '$lib/components/TaskFormModal.svelte';
@@ -14,12 +15,14 @@
 	import Badge from '$lib/components/Badge.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
 	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
+	import { daysUntil } from '$lib/dateMath';
 
 	type Project = components['schemas']['Project'];
 	type ProjectMember = components['schemas']['ProjectMember'];
 	type Person = components['schemas']['Person'];
 	type Contribution = components['schemas']['Contribution'];
 	type Milestone = components['schemas']['Milestone'];
+	type ProjectKickoff = components['schemas']['ProjectKickoff'];
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
 
@@ -44,6 +47,24 @@
 	let removingMember = $state<ProjectMember | null>(null);
 	let removing = $state(false);
 	let removeError = $state<string | null>(null);
+
+	// A project has at most one kickoff (project_id is unique at the DB
+	// level), so there's no list of these to manage — just a single nullable
+	// record, unlike members/milestones/tasks.
+	let kickoff = $state<ProjectKickoff | null>(null);
+	let loadingKickoff = $state(true);
+	let kickoffError = $state<string | null>(null);
+
+	let showKickoffModal = $state(false);
+
+	let removingKickoff = $state(false);
+	let removingKickoffBusy = $state(false);
+	let removingKickoffError = $state<string | null>(null);
+
+	// Per-action-item "Convert to task" busy indicator (index into
+	// kickoff.actionItems), so only the clicked row shows a pending state.
+	let convertingActionItemIndex = $state<number | null>(null);
+	let convertActionItemError = $state<string | null>(null);
 
 	let milestones = $state<Milestone[]>([]);
 	let loadingMilestones = $state(true);
@@ -123,6 +144,20 @@
 			for (const p of data.data) map[p.id] = p;
 			people = map;
 		}
+	}
+
+	async function loadKickoff() {
+		loadingKickoff = true;
+		kickoffError = null;
+		const { data, error: err } = await api.GET('/api/v1/project-kickoffs', {
+			params: { query: { projectId, pageSize: 1 } }
+		});
+		if (err) {
+			kickoffError = err.message ?? 'Failed to load the kickoff.';
+		} else if (data) {
+			kickoff = data.data[0] ?? null;
+		}
+		loadingKickoff = false;
 	}
 
 	async function loadMilestones() {
@@ -350,17 +385,6 @@
 		loadTasks();
 	}
 
-	// UTC-safe day diff: comparing plain "YYYY-MM-DD" dates via `new Date(str)`
-	// parses as UTC midnight, so as long as "today" is also built from UTC
-	// components (not local wall-clock time) the diff can't be off by one
-	// depending on the viewer's timezone.
-	function daysUntil(dateStr: string): number {
-		const target = new Date(`${dateStr}T00:00:00Z`).getTime();
-		const now = new Date();
-		const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-		return Math.round((target - todayUtc) / 86_400_000);
-	}
-
 	const daysToTarget = $derived(project?.targetDate ? daysUntil(project.targetDate) : null);
 
 	function contributionTypeLabel(type: Contribution['type']): string {
@@ -437,6 +461,92 @@
 		editingProject = false;
 		project = saved;
 		flash('success', 'Project updated.');
+	}
+
+	function openKickoff() {
+		showKickoffModal = true;
+	}
+
+	function closeKickoffModal() {
+		showKickoffModal = false;
+	}
+
+	function handleKickoffSaved(saved: ProjectKickoff) {
+		closeKickoffModal();
+		flash('success', kickoff ? 'Kickoff updated.' : 'Kickoff saved.');
+		kickoff = saved;
+	}
+
+	function askDeleteKickoff() {
+		closeKickoffModal();
+		removingKickoffError = null;
+		removingKickoff = true;
+	}
+
+	async function confirmDeleteKickoff() {
+		if (!kickoff) return;
+		removingKickoffBusy = true;
+		removingKickoffError = null;
+
+		const { error: err } = await api.DELETE('/api/v1/project-kickoffs/{id}', {
+			params: { path: { id: kickoff.id } }
+		});
+
+		removingKickoffBusy = false;
+		if (err) {
+			removingKickoffError = err.message ?? 'Failed to delete the kickoff.';
+			return;
+		}
+		removingKickoff = false;
+		kickoff = null;
+		flash('success', 'Kickoff deleted.');
+	}
+
+	// Creates a real task from an action item (title = the item's
+	// description, assignee = its owner if one was set), then PATCHes the
+	// kickoff's full action-item set with that item's taskId filled in —
+	// actionItems is a replace-whole-set field, so every other item's
+	// current description/owner/taskId is echoed back unchanged. Refreshes
+	// Tasks too, since a new task now exists on this project.
+	async function convertActionItemToTask(index: number) {
+		if (!kickoff) return;
+		const item = kickoff.actionItems[index];
+		if (!item || item.taskId) return;
+
+		convertActionItemError = null;
+		convertingActionItemIndex = index;
+		try {
+			const { data: task, error: taskErr } = await api.POST('/api/v1/tasks', {
+				body: {
+					projectId,
+					title: item.description,
+					assigneeIds: item.ownerId ? [item.ownerId] : undefined
+				}
+			});
+			if (taskErr || !task) {
+				convertActionItemError = taskErr?.message ?? 'Failed to create the task.';
+				return;
+			}
+
+			const nextItems = kickoff.actionItems.map((a, i) =>
+				i === index
+					? { description: a.description, ownerId: a.ownerId ?? undefined, taskId: task.id }
+					: { description: a.description, ownerId: a.ownerId ?? undefined, taskId: a.taskId ?? undefined }
+			);
+			const { data: updated, error: kickoffErr } = await api.PATCH('/api/v1/project-kickoffs/{id}', {
+				params: { path: { id: kickoff.id } },
+				body: { actionItems: nextItems }
+			});
+			if (kickoffErr) {
+				convertActionItemError = kickoffErr.message ?? 'Task was created, but the kickoff failed to update.';
+				return;
+			}
+			if (updated) kickoff = updated;
+			flash('success', `Created task "${task.title}".`);
+			loadTasks();
+		} finally {
+			convertingActionItemIndex = null;
+		}
 	}
 
 	function openAddMilestone() {
@@ -527,6 +637,7 @@
 		loadMembers();
 		loadPeople();
 		loadActivity();
+		loadKickoff();
 		loadMilestones();
 		loadTasks();
 	});
@@ -686,6 +797,166 @@
 							{/each}
 						</tbody>
 					</table>
+				</div>
+			{/if}
+		</section>
+
+		<section class="space-y-3">
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div>
+					<h2 class="text-lg font-semibold tracking-tight">Kickoff</h2>
+					<p class="mt-0.5 text-sm text-slate-500">
+						{kickoff ? 'The kickoff meeting record for this project.' : 'No kickoff recorded yet.'}
+					</p>
+				</div>
+				<button type="button" class="btn-primary" onclick={openKickoff}>
+					{kickoff ? 'Edit kickoff' : 'Run kickoff'}
+				</button>
+			</div>
+
+			{#if loadingKickoff}
+				<p class="text-slate-500">Loading…</p>
+			{:else if kickoffError}
+				<div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+					<p class="text-sm">{kickoffError}</p>
+				</div>
+			{:else if !kickoff}
+				<div class="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-500">
+					This project hasn't been kicked off yet. Click "Run kickoff" to capture the meeting.
+				</div>
+			{:else}
+				<div class="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
+					<dl class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-500">
+						{#if kickoff.meetingDate}
+							<div>
+								<dt class="inline font-medium text-slate-600">Meeting date:</dt>
+								<dd class="inline">{kickoff.meetingDate}</dd>
+							</div>
+						{/if}
+						{#if kickoff.facilitatorId}
+							<div>
+								<dt class="inline font-medium text-slate-600">Facilitator:</dt>
+								<dd class="inline">{personLabel(kickoff.facilitatorId)}</dd>
+							</div>
+						{/if}
+						{#if kickoff.attendees}
+							<div>
+								<dt class="inline font-medium text-slate-600">Attendees:</dt>
+								<dd class="inline">{kickoff.attendees}</dd>
+							</div>
+						{/if}
+					</dl>
+
+					{#if kickoff.businessProblem || kickoff.successDefinition}
+						<div class="border-t border-slate-100 pt-4">
+							<h3 class="text-sm font-semibold text-slate-700">Vision &amp; business goals</h3>
+							{#if kickoff.businessProblem}
+								<p class="mt-1 text-sm text-slate-600">{kickoff.businessProblem}</p>
+							{/if}
+							{#if kickoff.successDefinition}
+								<p class="mt-1 text-sm text-slate-600">{kickoff.successDefinition}</p>
+							{/if}
+						</div>
+					{/if}
+
+					{#if kickoff.primaryUsers || kickoff.painPoints || kickoff.mvpFeature}
+						<div class="border-t border-slate-100 pt-4">
+							<h3 class="text-sm font-semibold text-slate-700">Target audience &amp; value proposition</h3>
+							{#if kickoff.primaryUsers}
+								<p class="mt-1 text-sm text-slate-600">{kickoff.primaryUsers}</p>
+							{/if}
+							{#if kickoff.painPoints}
+								<p class="mt-1 text-sm text-slate-600">{kickoff.painPoints}</p>
+							{/if}
+							{#if kickoff.mvpFeature}
+								<p class="mt-1 text-sm text-slate-600">
+									<span class="font-medium text-slate-700">MVP:</span> {kickoff.mvpFeature}
+								</p>
+							{/if}
+						</div>
+					{/if}
+
+					{#if kickoff.constraintsNotes || kickoff.biggestRisk}
+						<div class="border-t border-slate-100 pt-4">
+							<h3 class="text-sm font-semibold text-slate-700">Constraints, risks &amp; compliance</h3>
+							{#if kickoff.constraintsNotes}
+								<p class="mt-1 text-sm text-slate-600">{kickoff.constraintsNotes}</p>
+							{/if}
+							{#if kickoff.biggestRisk}
+								<p class="mt-1 text-sm text-slate-600">{kickoff.biggestRisk}</p>
+							{/if}
+						</div>
+					{/if}
+
+					{#if kickoff.signOffOwner || kickoff.meetingCadence || kickoff.primaryTools}
+						<div class="border-t border-slate-100 pt-4">
+							<h3 class="text-sm font-semibold text-slate-700">Governance &amp; communication</h3>
+							<dl class="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
+								{#if kickoff.signOffOwner}
+									<div>
+										<dt class="inline font-medium text-slate-700">Sign-off:</dt>
+										<dd class="inline">{kickoff.signOffOwner}</dd>
+									</div>
+								{/if}
+								{#if kickoff.meetingCadence}
+									<div>
+										<dt class="inline font-medium text-slate-700">Cadence:</dt>
+										<dd class="inline">{kickoff.meetingCadence}</dd>
+									</div>
+								{/if}
+								{#if kickoff.primaryTools}
+									<div>
+										<dt class="inline font-medium text-slate-700">Tools:</dt>
+										<dd class="inline">{kickoff.primaryTools}</dd>
+									</div>
+								{/if}
+							</dl>
+						</div>
+					{/if}
+
+					<div class="border-t border-slate-100 pt-4">
+						<h3 class="text-sm font-semibold text-slate-700">Next steps &amp; action items</h3>
+						{#if kickoff.nextSessionDate}
+							<p class="mt-1 text-sm text-slate-600">
+								<span class="font-medium text-slate-700">Next session:</span> {kickoff.nextSessionDate}
+							</p>
+						{/if}
+
+						{#if convertActionItemError}
+							<div class="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+								{convertActionItemError}
+							</div>
+						{/if}
+
+						{#if kickoff.actionItems.length === 0}
+							<p class="mt-1 text-sm text-slate-500">No action items captured.</p>
+						{:else}
+							<ul class="mt-2 divide-y divide-slate-100 rounded-md border border-slate-200">
+								{#each kickoff.actionItems as item, i (item.id)}
+									<li class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+										<span class="text-slate-700">
+											{item.description}
+											{#if item.ownerId}
+												<span class="ml-1.5 text-xs text-slate-500">— {personLabel(item.ownerId)}</span>
+											{/if}
+										</span>
+										{#if item.taskId}
+											<Badge tone="success">Task created</Badge>
+										{:else}
+											<button
+												type="button"
+												class="btn-ghost shrink-0 px-2 py-1 text-xs"
+												disabled={convertingActionItemIndex === i}
+												onclick={() => convertActionItemToTask(i)}
+											>
+												{convertingActionItemIndex === i ? 'Creating…' : 'Convert to task'}
+											</button>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
 				</div>
 			{/if}
 		</section>
@@ -934,6 +1205,27 @@
 		}}
 	/>
 {/if}
+
+{#if showKickoffModal}
+	<KickoffFormModal
+		{projectId}
+		{kickoff}
+		onClose={closeKickoffModal}
+		onSaved={handleKickoffSaved}
+		onDelete={kickoff ? askDeleteKickoff : undefined}
+	/>
+{/if}
+
+<ConfirmDialog
+	open={removingKickoff}
+	title="Delete kickoff"
+	message="Delete this project's kickoff record? This can't be undone (any tasks already created from its action items are kept)."
+	confirmLabel={removingKickoffBusy ? 'Deleting…' : 'Delete'}
+	danger
+	error={removingKickoffError}
+	onConfirm={confirmDeleteKickoff}
+	onCancel={() => (removingKickoff = false)}
+/>
 
 {#if milestoneModalMode}
 	<MilestoneFormModal

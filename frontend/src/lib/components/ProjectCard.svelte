@@ -2,6 +2,7 @@
 	import Badge from '$lib/components/Badge.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
 	import { healthDotClass, type BadgeTone } from '$lib/badgeTones';
+	import { DAY_MS, toUtc, todayUtc } from '$lib/dateMath';
 
 	type ProjectStatus = 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled';
 	type ProjectHealth = 'on_track' | 'at_risk' | 'off_track';
@@ -45,14 +46,6 @@
 	// "elapsed" fill color — same health/color association used everywhere
 	// else in the app, just applied per-card now.
 
-	const DAY_MS = 86_400_000;
-	function toUtc(dateStr: string): number {
-		return new Date(`${dateStr}T00:00:00Z`).getTime();
-	}
-	function todayUtc(): number {
-		const now = new Date();
-		return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-	}
 	const today = todayUtc();
 
 	// Each card's timeline uses its OWN start..target range (not a shared

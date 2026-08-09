@@ -4,7 +4,7 @@
 --
 -- Modules:
 --   1. People Management        (departments, teams, people, users, skills)
---   2. Project Management        (projects, milestones, sprints, tasks, labels)
+--   2. Project Management        (projects, kickoffs, milestones, sprints, tasks, labels)
 --   3. Contribution Management   (repositories, commits, PRs, reviews, time)
 --   4. Growth & Performance      (goals/OKRs, reviews, feedback)
 --   5. Time Off                  (leave requests)
@@ -222,6 +222,33 @@ CREATE TABLE project_members (
     UNIQUE (project_id, person_id)
 );
 
+-- One kickoff record per project (UNIQUE project_id below), modeled on the
+-- standard kickoff-meeting-agenda sections: meeting info, vision & business
+-- goals, target audience & value proposition, constraints/risks/compliance,
+-- governance & communication, and next steps. "constraints" alone is close
+-- enough to a SQL keyword to avoid as a bare column name, hence
+-- constraints_notes.
+CREATE TABLE project_kickoffs (
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id         UUID NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
+    meeting_date       DATE,
+    facilitator_id     UUID REFERENCES people(id) ON DELETE SET NULL,
+    attendees          TEXT,   -- freeform names/roles; may include external client stakeholders not in `people`
+    business_problem   TEXT,
+    success_definition TEXT,
+    primary_users      TEXT,
+    pain_points        TEXT,
+    mvp_feature        TEXT,
+    constraints_notes  TEXT,
+    biggest_risk       TEXT,
+    sign_off_owner     TEXT,
+    meeting_cadence    TEXT,
+    primary_tools      TEXT,
+    next_session_date  DATE,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE milestones (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id   UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -311,6 +338,20 @@ CREATE TABLE task_comments (
     body       TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Action items captured in the "Next Steps" section of a project kickoff
+-- (see project_kickoffs above). task_id is set once an item has been
+-- converted into a real task — conversion is optional and happens after the
+-- kickoff is saved, not automatically, so this must be declared after
+-- `tasks` exists.
+CREATE TABLE kickoff_action_items (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    kickoff_id  UUID NOT NULL REFERENCES project_kickoffs(id) ON DELETE CASCADE,
+    description TEXT NOT NULL,
+    owner_id    UUID REFERENCES people(id) ON DELETE SET NULL,
+    task_id     UUID REFERENCES tasks(id)   ON DELETE SET NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- ============================================================================

@@ -17,6 +17,7 @@ tags:
   - name: people
   - name: projects
   - name: project-members
+  - name: project-kickoffs
   - name: milestones
   - name: tasks
   - name: goals
@@ -344,6 +345,108 @@ paths:
       operationId: deleteProjectMember
       tags: [project-members]
       summary: Remove a person from a project
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/project-kickoffs:
+    get:
+      operationId: listProjectKickoffs
+      tags: [project-kickoffs]
+      summary: List project kickoffs
+      description: >
+        Filter by projectId to check for/fetch the one kickoff record a
+        project has (project_id is unique — there is at most one per
+        project).
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A page of project kickoffs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectKickoffList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createProjectKickoff
+      tags: [project-kickoffs]
+      summary: Record a project's kickoff meeting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectKickoffCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectKickoff"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/project-kickoffs/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getProjectKickoff
+      tags: [project-kickoffs]
+      summary: Get a project kickoff by id
+      responses:
+        "200":
+          description: The project kickoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectKickoff"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateProjectKickoff
+      tags: [project-kickoffs]
+      summary: Update a project kickoff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectKickoffUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectKickoff"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteProjectKickoff
+      tags: [project-kickoffs]
+      summary: Delete a project kickoff
       responses:
         "204":
           description: Deleted
@@ -1306,6 +1409,211 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProjectMember"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Project kickoffs ----
+    # Fields map 1:1 onto the sections of the standard kickoff-meeting-agenda
+    # template: meeting info, vision & business goals, target audience &
+    # value proposition, constraints/risks/compliance, governance &
+    # communication, next steps & action items.
+    KickoffActionItem:
+      type: object
+      required: [id, description, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        ownerId:
+          type: string
+          format: uuid
+          nullable: true
+        taskId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set once this action item has been converted into a real task.
+        createdAt:
+          type: string
+          format: date-time
+
+    KickoffActionItemInput:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
+          minLength: 1
+        ownerId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+
+    ProjectKickoff:
+      type: object
+      required: [id, projectId, actionItems, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        meetingDate:
+          type: string
+          format: date
+          nullable: true
+        facilitatorId:
+          type: string
+          format: uuid
+          nullable: true
+        attendees:
+          type: string
+          nullable: true
+        businessProblem:
+          type: string
+          nullable: true
+        successDefinition:
+          type: string
+          nullable: true
+        primaryUsers:
+          type: string
+          nullable: true
+        painPoints:
+          type: string
+          nullable: true
+        mvpFeature:
+          type: string
+          nullable: true
+        constraintsNotes:
+          type: string
+          nullable: true
+        biggestRisk:
+          type: string
+          nullable: true
+        signOffOwner:
+          type: string
+          nullable: true
+        meetingCadence:
+          type: string
+          nullable: true
+        primaryTools:
+          type: string
+          nullable: true
+        nextSessionDate:
+          type: string
+          format: date
+          nullable: true
+        actionItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/KickoffActionItem"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectKickoffCreate:
+      type: object
+      required: [projectId]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        meetingDate:
+          type: string
+          format: date
+        facilitatorId:
+          type: string
+          format: uuid
+        attendees:
+          type: string
+        businessProblem:
+          type: string
+        successDefinition:
+          type: string
+        primaryUsers:
+          type: string
+        painPoints:
+          type: string
+        mvpFeature:
+          type: string
+        constraintsNotes:
+          type: string
+        biggestRisk:
+          type: string
+        signOffOwner:
+          type: string
+        meetingCadence:
+          type: string
+        primaryTools:
+          type: string
+        nextSessionDate:
+          type: string
+          format: date
+        actionItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/KickoffActionItemInput"
+
+    ProjectKickoffUpdate:
+      type: object
+      properties:
+        meetingDate:
+          type: string
+          format: date
+        facilitatorId:
+          type: string
+          format: uuid
+        attendees:
+          type: string
+        businessProblem:
+          type: string
+        successDefinition:
+          type: string
+        primaryUsers:
+          type: string
+        painPoints:
+          type: string
+        mvpFeature:
+          type: string
+        constraintsNotes:
+          type: string
+        biggestRisk:
+          type: string
+        signOffOwner:
+          type: string
+        meetingCadence:
+          type: string
+        primaryTools:
+          type: string
+        nextSessionDate:
+          type: string
+          format: date
+        actionItems:
+          type: array
+          description: >
+            Present (even as an empty array) replaces the whole action-item
+            set. Omit the field entirely to leave existing action items
+            untouched — same replace-whole-set convention as
+            TaskUpdate.assigneeIds.
+          items:
+            $ref: "#/components/schemas/KickoffActionItemInput"
+
+    ProjectKickoffList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectKickoff"
         pagination:
           $ref: "#/components/schemas/Pagination"
 

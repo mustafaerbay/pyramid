@@ -354,6 +354,93 @@ type ProjectMemberList struct {
 	Pagination Pagination      `json:"pagination"`
 }
 
+// KickoffActionItem defines model for KickoffActionItem.
+type KickoffActionItem struct {
+	CreatedAt   time.Time           `json:"createdAt"`
+	Description string              `json:"description"`
+	Id          openapi_types.UUID  `json:"id"`
+	OwnerId     *openapi_types.UUID `json:"ownerId,omitempty"`
+	TaskId      *openapi_types.UUID `json:"taskId,omitempty"`
+}
+
+// KickoffActionItemInput defines model for KickoffActionItemInput.
+type KickoffActionItemInput struct {
+	Description string              `json:"description"`
+	OwnerId     *openapi_types.UUID `json:"ownerId,omitempty"`
+	TaskId      *openapi_types.UUID `json:"taskId,omitempty"`
+}
+
+// ProjectKickoff defines model for ProjectKickoff.
+type ProjectKickoff struct {
+	ActionItems       []KickoffActionItem `json:"actionItems"`
+	Attendees         *string             `json:"attendees,omitempty"`
+	BiggestRisk       *string             `json:"biggestRisk,omitempty"`
+	BusinessProblem   *string             `json:"businessProblem,omitempty"`
+	ConstraintsNotes  *string             `json:"constraintsNotes,omitempty"`
+	CreatedAt         time.Time           `json:"createdAt"`
+	FacilitatorId     *openapi_types.UUID `json:"facilitatorId,omitempty"`
+	Id                openapi_types.UUID  `json:"id"`
+	MeetingCadence    *string             `json:"meetingCadence,omitempty"`
+	MeetingDate       *openapi_types.Date `json:"meetingDate,omitempty"`
+	MvpFeature        *string             `json:"mvpFeature,omitempty"`
+	NextSessionDate   *openapi_types.Date `json:"nextSessionDate,omitempty"`
+	PainPoints        *string             `json:"painPoints,omitempty"`
+	PrimaryTools      *string             `json:"primaryTools,omitempty"`
+	PrimaryUsers      *string             `json:"primaryUsers,omitempty"`
+	ProjectId         openapi_types.UUID  `json:"projectId"`
+	SignOffOwner      *string             `json:"signOffOwner,omitempty"`
+	SuccessDefinition *string             `json:"successDefinition,omitempty"`
+	UpdatedAt         time.Time           `json:"updatedAt"`
+}
+
+// ProjectKickoffCreate defines model for ProjectKickoffCreate.
+type ProjectKickoffCreate struct {
+	ActionItems       *[]KickoffActionItemInput `json:"actionItems,omitempty"`
+	Attendees         *string                   `json:"attendees,omitempty"`
+	BiggestRisk       *string                   `json:"biggestRisk,omitempty"`
+	BusinessProblem   *string                   `json:"businessProblem,omitempty"`
+	ConstraintsNotes  *string                   `json:"constraintsNotes,omitempty"`
+	FacilitatorId     *openapi_types.UUID       `json:"facilitatorId,omitempty"`
+	MeetingCadence    *string                   `json:"meetingCadence,omitempty"`
+	MeetingDate       *openapi_types.Date       `json:"meetingDate,omitempty"`
+	MvpFeature        *string                   `json:"mvpFeature,omitempty"`
+	NextSessionDate   *openapi_types.Date       `json:"nextSessionDate,omitempty"`
+	PainPoints        *string                   `json:"painPoints,omitempty"`
+	PrimaryTools      *string                   `json:"primaryTools,omitempty"`
+	PrimaryUsers      *string                   `json:"primaryUsers,omitempty"`
+	ProjectId         openapi_types.UUID        `json:"projectId"`
+	SignOffOwner      *string                   `json:"signOffOwner,omitempty"`
+	SuccessDefinition *string                   `json:"successDefinition,omitempty"`
+}
+
+// ProjectKickoffUpdate defines model for ProjectKickoffUpdate. actionItems
+// follows the same replace-whole-set convention as TaskUpdate.AssigneeIds:
+// present (even as an empty slice) replaces every action item, nil leaves
+// the existing set untouched.
+type ProjectKickoffUpdate struct {
+	ActionItems       *[]KickoffActionItemInput `json:"actionItems,omitempty"`
+	Attendees         *string                   `json:"attendees,omitempty"`
+	BiggestRisk       *string                   `json:"biggestRisk,omitempty"`
+	BusinessProblem   *string                   `json:"businessProblem,omitempty"`
+	ConstraintsNotes  *string                   `json:"constraintsNotes,omitempty"`
+	FacilitatorId     *openapi_types.UUID       `json:"facilitatorId,omitempty"`
+	MeetingCadence    *string                   `json:"meetingCadence,omitempty"`
+	MeetingDate       *openapi_types.Date       `json:"meetingDate,omitempty"`
+	MvpFeature        *string                   `json:"mvpFeature,omitempty"`
+	NextSessionDate   *openapi_types.Date       `json:"nextSessionDate,omitempty"`
+	PainPoints        *string                   `json:"painPoints,omitempty"`
+	PrimaryTools      *string                   `json:"primaryTools,omitempty"`
+	PrimaryUsers      *string                   `json:"primaryUsers,omitempty"`
+	SignOffOwner      *string                   `json:"signOffOwner,omitempty"`
+	SuccessDefinition *string                   `json:"successDefinition,omitempty"`
+}
+
+// ProjectKickoffList defines model for ProjectKickoffList.
+type ProjectKickoffList struct {
+	Data       []ProjectKickoff `json:"data"`
+	Pagination Pagination       `json:"pagination"`
+}
+
 // Milestone defines model for Milestone.
 type Milestone struct {
 	CompletedAt *openapi_types.Date `json:"completedAt,omitempty"`

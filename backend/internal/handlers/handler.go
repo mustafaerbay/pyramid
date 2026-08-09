@@ -45,6 +45,12 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.PATCH("/project-members/:id", h.UpdateProjectMember)
 		v1.DELETE("/project-members/:id", h.DeleteProjectMember)
 
+		v1.GET("/project-kickoffs", h.ListProjectKickoffs)
+		v1.POST("/project-kickoffs", h.CreateProjectKickoff)
+		v1.GET("/project-kickoffs/:id", h.GetProjectKickoff)
+		v1.PATCH("/project-kickoffs/:id", h.UpdateProjectKickoff)
+		v1.DELETE("/project-kickoffs/:id", h.DeleteProjectKickoff)
+
 		v1.GET("/milestones", h.ListMilestones)
 		v1.POST("/milestones", h.CreateMilestone)
 		v1.GET("/milestones/:id", h.GetMilestone)
