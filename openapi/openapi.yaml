@@ -146,6 +146,35 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
 
+  /api/v1/people/{id}/workload:
+    get:
+      operationId: getPersonWorkload
+      tags: [people, capacity]
+      summary: One person's planned man-days per month for a year
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: year
+          in: query
+          required: false
+          description: Defaults to the current year.
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+      responses:
+        "200":
+          description: Twelve months, January first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonWorkload"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
   /api/v1/projects:
     get:
       operationId: listProjects
@@ -2486,6 +2515,76 @@ components:
         plannedManDays:
           type: number
           format: double
+
+    PersonWorkload:
+      type: object
+      required: [personId, year, capacityManDays, months]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        year:
+          type: integer
+        capacityManDays:
+          type: number
+          format: double
+          description: The person's monthly capacity.
+        months:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonWorkloadMonth"
+
+    PersonWorkloadMonth:
+      type: object
+      required: [month, workingDays, plannedManDays, projects, tasks]
+      properties:
+        month:
+          type: string
+          description: YYYY-MM
+        workingDays:
+          type: integer
+        plannedManDays:
+          type: number
+          format: double
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectLoad"
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonWorkloadTask"
+
+    PersonWorkloadTask:
+      type: object
+      required: [taskId, projectId, title, status, manDays, monthManDays]
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        manDays:
+          type: number
+          format: double
+          description: This person's man-days on the task (all months).
+        monthManDays:
+          type: number
+          format: double
+          description: The part of manDays that falls in this month.
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        dueDate:
+          type: string
+          format: date
+          nullable: true
 
     TaskList:
       type: object

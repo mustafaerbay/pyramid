@@ -797,6 +797,41 @@ type PersonUpdate struct {
 	Title                  *string              `json:"title,omitempty"`
 }
 
+// PersonWorkload defines model for PersonWorkload.
+type PersonWorkload struct {
+	// CapacityManDays The person's monthly capacity.
+	CapacityManDays float64               `json:"capacityManDays"`
+	Months          []PersonWorkloadMonth `json:"months"`
+	PersonId        openapi_types.UUID    `json:"personId"`
+	Year            int                   `json:"year"`
+}
+
+// PersonWorkloadMonth defines model for PersonWorkloadMonth.
+type PersonWorkloadMonth struct {
+	// Month YYYY-MM
+	Month          string               `json:"month"`
+	PlannedManDays float64              `json:"plannedManDays"`
+	Projects       []ProjectLoad        `json:"projects"`
+	Tasks          []PersonWorkloadTask `json:"tasks"`
+	WorkingDays    int                  `json:"workingDays"`
+}
+
+// PersonWorkloadTask defines model for PersonWorkloadTask.
+type PersonWorkloadTask struct {
+	DueDate *openapi_types.Date `json:"dueDate"`
+
+	// ManDays This person's man-days on the task (all months).
+	ManDays float64 `json:"manDays"`
+
+	// MonthManDays The part of manDays that falls in this month.
+	MonthManDays float64             `json:"monthManDays"`
+	ProjectId    openapi_types.UUID  `json:"projectId"`
+	StartDate    *openapi_types.Date `json:"startDate"`
+	Status       TaskStatus          `json:"status"`
+	TaskId       openapi_types.UUID  `json:"taskId"`
+	Title        string              `json:"title"`
+}
+
 // Project defines model for Project.
 type Project struct {
 	AccountName      *string             `json:"accountName"`
@@ -1214,6 +1249,12 @@ type ListPeopleParams struct {
 	PageSize     *PageSizeParam      `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 	Status       *PersonStatus       `form:"status,omitempty" json:"status,omitempty"`
 	DepartmentId *openapi_types.UUID `form:"departmentId,omitempty" json:"departmentId,omitempty"`
+}
+
+// GetPersonWorkloadParams defines parameters for GetPersonWorkload.
+type GetPersonWorkloadParams struct {
+	// Year Defaults to the current year.
+	Year *int `form:"year,omitempty" json:"year,omitempty"`
 }
 
 // ListProjectKickoffsParams defines parameters for ListProjectKickoffs.

@@ -60,6 +60,23 @@ export interface paths {
         patch: operations["updatePerson"];
         trace?: never;
     };
+    "/api/v1/people/{id}/workload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One person's planned man-days per month for a year */
+        get: operations["getPersonWorkload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects": {
         parameters: {
             query?: never;
@@ -1083,6 +1100,48 @@ export interface components {
             /** Format: double */
             plannedManDays: number;
         };
+        PersonWorkload: {
+            /** Format: uuid */
+            personId: string;
+            year: number;
+            /**
+             * Format: double
+             * @description The person's monthly capacity.
+             */
+            capacityManDays: number;
+            months: components["schemas"]["PersonWorkloadMonth"][];
+        };
+        PersonWorkloadMonth: {
+            /** @description YYYY-MM */
+            month: string;
+            workingDays: number;
+            /** Format: double */
+            plannedManDays: number;
+            projects: components["schemas"]["ProjectLoad"][];
+            tasks: components["schemas"]["PersonWorkloadTask"][];
+        };
+        PersonWorkloadTask: {
+            /** Format: uuid */
+            taskId: string;
+            /** Format: uuid */
+            projectId: string;
+            title: string;
+            status: components["schemas"]["TaskStatus"];
+            /**
+             * Format: double
+             * @description This person's man-days on the task (all months).
+             */
+            manDays: number;
+            /**
+             * Format: double
+             * @description The part of manDays that falls in this month.
+             */
+            monthManDays: number;
+            /** Format: date */
+            startDate?: string | null;
+            /** Format: date */
+            dueDate?: string | null;
+        };
         TaskList: {
             data: components["schemas"]["Task"][];
             pagination: components["schemas"]["Pagination"];
@@ -1421,6 +1480,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Person"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getPersonWorkload: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current year. */
+                year?: number;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Twelve months, January first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonWorkload"];
                 };
             };
             400: components["responses"]["BadRequest"];

@@ -163,3 +163,74 @@ func TestCapacity_DefaultsToCurrentMonth(t *testing.T) {
 		t.Errorf("month = %q, want %q", rep.Month, want)
 	}
 }
+
+func TestPersonWorkload_YearByMonth(t *testing.T) {
+	r, db := newTestRouter(t)
+
+	var me, other api.Person
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "Me", LastName: "M", Email: "me@x.dev", MonthlyCapacityManDays: f64(18)}, &me)
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "O", LastName: "O", Email: "o@x.dev"}, &other)
+	var live, dead api.Project
+	doJSON(t, r, http.MethodPost, "/api/v1/projects", api.ProjectCreate{Key: "L", Name: "Live"}, &live)
+	doJSON(t, r, http.MethodPost, "/api/v1/projects", api.ProjectCreate{Key: "D", Name: "Dead"}, &dead)
+	db.Exec("UPDATE projects SET status = 'cancelled' WHERE id = ?", dead.Id.String())
+
+	mk := func(project uuid.UUID, title string, start, due *openapi_types.Date, status api.TaskStatus, as ...api.TaskAssignment) api.Task {
+		t.Helper()
+		var task api.Task
+		doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+			ProjectId: project, Title: title, StartDate: start, DueDate: due, Status: &status, Assignments: &as,
+		}, &task)
+		return task
+	}
+	split := mk(live.Id, "Split", mdDate("2026-10-26"), mdDate("2026-11-06"), api.TaskStatusInProgress,
+		api.TaskAssignment{PersonId: me.Id, ManDays: 30}, api.TaskAssignment{PersonId: other.Id, ManDays: 10})
+	mk(live.Id, "Cancelled", nil, mdDate("2026-11-20"), api.TaskStatusCancelled, api.TaskAssignment{PersonId: me.Id, ManDays: 9})
+	mk(dead.Id, "Dead project", nil, mdDate("2026-11-20"), api.TaskStatusTodo, api.TaskAssignment{PersonId: me.Id, ManDays: 9})
+	mk(live.Id, "Next year", nil, mdDate("2027-01-10"), api.TaskStatusTodo, api.TaskAssignment{PersonId: me.Id, ManDays: 4})
+
+	var wl api.PersonWorkload
+	if status := doJSON(t, r, http.MethodGet, "/api/v1/people/"+me.Id.String()+"/workload?year=2026", nil, &wl); status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if wl.Year != 2026 || wl.CapacityManDays != 18 || len(wl.Months) != 12 {
+		t.Fatalf("year %d capacity %v months %d; want 2026, 18, 12", wl.Year, wl.CapacityManDays, len(wl.Months))
+	}
+	oct, nov, dec := wl.Months[9], wl.Months[10], wl.Months[11]
+	if oct.Month != "2026-10" || oct.PlannedManDays != 15 || nov.PlannedManDays != 15 || dec.PlannedManDays != 0 {
+		t.Errorf("oct %s %v, nov %v, dec %v; want 2026-10 15, 15, 0", oct.Month, oct.PlannedManDays, nov.PlannedManDays, dec.PlannedManDays)
+	}
+	if nov.WorkingDays != 21 {
+		t.Errorf("nov working days = %d, want 21", nov.WorkingDays)
+	}
+	if len(nov.Projects) != 1 || nov.Projects[0].ProjectId != live.Id || nov.Projects[0].PlannedManDays != 15 {
+		t.Errorf("nov projects = %+v, want Live 15", nov.Projects)
+	}
+	if len(nov.Tasks) != 1 {
+		t.Fatalf("nov tasks = %+v, want only the split task", nov.Tasks)
+	}
+	got := nov.Tasks[0]
+	if got.TaskId != split.Id || got.Title != "Split" || got.ManDays != 30 || got.MonthManDays != 15 || got.StartDate == nil {
+		t.Errorf("nov task = %+v, want Split, 30 total, 15 this month, with start date", got)
+	}
+
+	var next api.PersonWorkload
+	doJSON(t, r, http.MethodGet, "/api/v1/people/"+me.Id.String()+"/workload?year=2027", nil, &next)
+	if next.Months[0].PlannedManDays != 4 {
+		t.Errorf("2027-01 = %v, want 4", next.Months[0].PlannedManDays)
+	}
+}
+
+func TestPersonWorkload_NotFoundAndBadYear(t *testing.T) {
+	r, _ := newTestRouter(t)
+	if status := doJSON(t, r, http.MethodGet, "/api/v1/people/"+uuid.New().String()+"/workload", nil, nil); status != http.StatusNotFound {
+		t.Errorf("unknown person: %d, want 404", status)
+	}
+	var p api.Person
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "A", LastName: "A", Email: "a@x.dev"}, &p)
+	for _, y := range []string{"abc", "1999", "2101"} {
+		if status := doJSON(t, r, http.MethodGet, "/api/v1/people/"+p.Id.String()+"/workload?year="+y, nil, nil); status != http.StatusBadRequest {
+			t.Errorf("year=%s: %d, want 400", y, status)
+		}
+	}
+}

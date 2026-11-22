@@ -70,6 +70,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.DELETE("/versions/:id", h.DeleteVersion)
 
 		v1.GET("/capacity", h.GetCapacity)
+		v1.GET("/people/:id/workload", h.GetPersonWorkload)
 		v1.GET("/tasks", h.ListTasks)
 		v1.POST("/tasks", h.CreateTask)
 		v1.GET("/tasks/:id", h.GetTask)

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import PersonFormModal from '$lib/components/PersonFormModal.svelte';
@@ -276,7 +277,7 @@
 				{@const w = workloadOf(person)}
 				{@const band = loadBand(w.pct)}
 				<li class="m-card">
-					<button type="button" class="block w-full text-left" onclick={() => openEdit(person)}>
+					<a href="/people/{person.id}" class="block w-full text-left">
 						<div class="flex items-start justify-between gap-2">
 							<div class="min-w-0">
 								<p class="truncate font-medium text-slate-900">{fullName(person)}</p>
@@ -305,7 +306,7 @@
 								{formatManDays(w.planned)} / {formatManDays(w.capacity)} md
 							</span>
 						</div>
-					</button>
+					</a>
 					<div class="m-actions">
 						<button type="button" class="btn-secondary" onclick={() => openEdit(person)}>Edit</button>
 						<button
@@ -340,8 +341,10 @@
 				{@const band = loadBand(w.pct)}
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<tr class="cursor-pointer hover:bg-slate-50" onclick={() => openEdit(person)}>
-							<td class="px-4 py-3 font-medium">{fullName(person)}</td>
+						<tr class="cursor-pointer hover:bg-slate-50" onclick={() => goto(`/people/${person.id}`)}>
+							<td class="px-4 py-3 font-medium">
+								<a href="/people/{person.id}" class="hover:underline">{fullName(person)}</a>
+							</td>
 							<td class="px-4 py-3 text-slate-600">{person.email}</td>
 							<td class="px-4 py-3 text-slate-600">{person.title ?? '—'}</td>
 							<td class="px-4 py-3 text-slate-600">{person.seniority ?? '—'}</td>
