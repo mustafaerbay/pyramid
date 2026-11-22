@@ -185,9 +185,9 @@
 	const todayVisible = $derived(todayDay >= rangeStartDay && todayDay <= rangeEndDay);
 	const todayPct = $derived(pct(todayDay));
 
-	// Positioned, lane-packed dated milestones. Lanes only multiply when
-	// milestones' date ranges genuinely overlap — otherwise everything sits
-	// on a single row.
+	// Positioned dated milestones, one row each (Gantt style), ordered by
+	// start date then end date — every new milestone gets its own line below
+	// the earlier ones instead of being packed beside them.
 	const positioned = $derived(
 		(() => {
 			type Positioned = TimelineMilestone & {
@@ -218,22 +218,7 @@
 				});
 			}
 			items.sort((a, b) => a.sortStart - b.sortStart || a.sortEnd - b.sortEnd);
-			const laneEnds: number[] = [];
-			for (const item of items) {
-				let placed = false;
-				for (let lane = 0; lane < laneEnds.length; lane++) {
-					if (laneEnds[lane] <= item.sortStart) {
-						item.lane = lane;
-						laneEnds[lane] = item.sortEnd;
-						placed = true;
-						break;
-					}
-				}
-				if (!placed) {
-					item.lane = laneEnds.length;
-					laneEnds.push(item.sortEnd);
-				}
-			}
+			items.forEach((item, i) => (item.lane = i));
 			return items;
 		})()
 	);
