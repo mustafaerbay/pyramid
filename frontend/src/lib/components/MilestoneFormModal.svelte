@@ -4,16 +4,20 @@
 
 	type Milestone = components['schemas']['Milestone'];
 	type MilestoneStatus = components['schemas']['MilestoneStatus'];
+	type Version = components['schemas']['Version'];
 
 	let {
 		projectId,
 		milestone = null,
+		versions = [],
 		onClose,
 		onSaved,
 		onDelete
 	}: {
 		projectId: string;
 		milestone?: Milestone | null;
+		// The project's versions, for the Version select.
+		versions?: Version[];
 		onClose: () => void;
 		onSaved: (milestone: Milestone) => void;
 		// Shown as a "Delete milestone" link in edit mode only. The parent
@@ -32,6 +36,7 @@
 	let description = $state(initial?.description ?? '');
 	let startDate = $state(initial?.startDate ?? '');
 	let dueDate = $state(initial?.dueDate ?? '');
+	let versionId = $state(initial?.versionId ?? '');
 	// A new milestone always starts pending server-side (matches Goal — status
 	// is update-only), so this control only shows in edit mode.
 	let status = $state<MilestoneStatus>(initial?.status ?? 'pending');
@@ -65,7 +70,9 @@
 						description: description || undefined,
 						status,
 						startDate: startDate || undefined,
-						dueDate: dueDate || undefined
+						dueDate: dueDate || undefined,
+						// Explicit null unassigns; the select's '' means "no version".
+						versionId: versionId || null
 					}
 				});
 				if (error) {
@@ -80,7 +87,8 @@
 						name,
 						description: description || undefined,
 						startDate: startDate || undefined,
-						dueDate: dueDate || undefined
+						dueDate: dueDate || undefined,
+						versionId: versionId || undefined
 					}
 				});
 				if (error) {
@@ -153,6 +161,16 @@
 					<input type="date" class="input" bind:value={dueDate} />
 				</label>
 			</div>
+
+			<label class="block text-sm">
+				<span class="mb-1 block font-medium text-slate-700">Version</span>
+				<select class="input" bind:value={versionId}>
+					<option value="">— No version —</option>
+					{#each versions as v (v.id)}
+						<option value={v.id}>{v.status === 'cancelled' ? `${v.name} (cancelled)` : v.name}</option>
+					{/each}
+				</select>
+			</label>
 
 			{#if isEdit}
 				<label class="block text-sm">

@@ -11,6 +11,8 @@
 	import KickoffFormModal from '$lib/components/KickoffFormModal.svelte';
 	import MilestoneFormModal from '$lib/components/MilestoneFormModal.svelte';
 	import MilestoneTimeline from '$lib/components/MilestoneTimeline.svelte';
+	import ReleasePlan from '$lib/components/ReleasePlan.svelte';
+	import VersionFormModal from '$lib/components/VersionFormModal.svelte';
 	import WeeklySummaryFormModal from '$lib/components/WeeklySummaryFormModal.svelte';
 	import TaskFormModal from '$lib/components/TaskFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -25,6 +27,7 @@
 	type Person = components['schemas']['Person'];
 	type Contribution = components['schemas']['Contribution'];
 	type Milestone = components['schemas']['Milestone'];
+	type Version = components['schemas']['Version'];
 	type WeeklySummary = components['schemas']['WeeklySummary'];
 	type ProjectKickoff = components['schemas']['ProjectKickoff'];
 	type Task = components['schemas']['Task'];
@@ -84,6 +87,17 @@
 	let removingMilestone = $state<Milestone | null>(null);
 	let removingMilestoneBusy = $state(false);
 	let removingMilestoneError = $state<string | null>(null);
+
+	let versions = $state<Version[]>([]);
+	let loadingVersions = $state(true);
+	let versionsError = $state<string | null>(null);
+
+	let versionModalMode = $state<'create' | 'edit' | null>(null);
+	let editingVersion = $state<Version | null>(null);
+
+	let removingVersion = $state<Version | null>(null);
+	let removingVersionBusy = $state(false);
+	let removingVersionError = $state<string | null>(null);
 
 	let weeklySummaries = $state<WeeklySummary[]>([]);
 	let loadingWeeklySummaries = $state(true);
@@ -216,6 +230,20 @@
 			milestones = data.data;
 		}
 		loadingMilestones = false;
+	}
+
+	async function loadVersions() {
+		loadingVersions = true;
+		versionsError = null;
+		const { data, error: err } = await api.GET('/api/v1/versions', {
+			params: { query: { projectId, pageSize: 100 } }
+		});
+		if (err) {
+			versionsError = err.message ?? 'Failed to load versions';
+		} else if (data) {
+			versions = data.data;
+		}
+		loadingVersions = false;
 	}
 
 	async function loadWeeklySummaries() {
@@ -695,6 +723,57 @@
 		loadTasks();
 	}
 
+	function openAddVersion() {
+		editingVersion = null;
+		versionModalMode = 'create';
+	}
+
+	function openEditVersion(v: Version) {
+		editingVersion = v;
+		versionModalMode = 'edit';
+	}
+
+	function closeVersionModal() {
+		versionModalMode = null;
+		editingVersion = null;
+	}
+
+	function handleVersionSaved(saved: Version) {
+		const wasEdit = editingVersion !== null;
+		closeVersionModal();
+		flash('success', wasEdit ? `Updated "${saved.name}".` : `Added version "${saved.name}".`);
+		loadVersions();
+	}
+
+	function askRemoveVersion(v: Version) {
+		closeVersionModal();
+		removingVersionError = null;
+		removingVersion = v;
+	}
+
+	async function confirmRemoveVersion() {
+		if (!removingVersion) return;
+		const target = removingVersion;
+		removingVersionBusy = true;
+		removingVersionError = null;
+
+		const { error: err } = await api.DELETE('/api/v1/versions/{id}', {
+			params: { path: { id: target.id } }
+		});
+
+		removingVersionBusy = false;
+		if (err) {
+			removingVersionError = err.message ?? 'Failed to delete version.';
+			return;
+		}
+		removingVersion = null;
+		flash('success', `Deleted version "${target.name}".`);
+		loadVersions();
+		// Its milestones were unassigned server-side; reload so none still
+		// points at the deleted version.
+		loadMilestones();
+	}
+
 	function openAddWeeklySummary() {
 		editingWeeklySummary = null;
 		weeklySummaryModalMode = 'create';
@@ -767,6 +846,7 @@
 		loadActivity();
 		loadKickoff();
 		loadMilestones();
+		loadVersions();
 		loadWeeklySummaries();
 		loadTasks();
 	});
@@ -1119,6 +1199,35 @@
 		<section class="space-y-3">
 			<div class="flex flex-wrap items-center justify-between gap-3">
 				<div>
+					<h2 class="text-lg font-semibold tracking-tight">Releases</h2>
+					<p class="mt-0.5 text-sm text-slate-500">
+						{versions.length}
+						{versions.length === 1 ? 'version' : 'versions'}
+					</p>
+				</div>
+				<button type="button" class="btn-primary" onclick={openAddVersion}>+ Add version</button>
+			</div>
+
+			{#if loadingVersions || loadingMilestones}
+				<p class="text-slate-500">Loading…</p>
+			{:else if versionsError}
+				<div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+					<p class="text-sm">{versionsError}</p>
+				</div>
+			{:else}
+				<ReleasePlan
+					{versions}
+					{milestones}
+					{tasks}
+					onSelectVersion={openEditVersion}
+					onSelectMilestone={openEditMilestone}
+				/>
+			{/if}
+		</section>
+
+		<section class="space-y-3">
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div>
 					<h2 class="text-lg font-semibold tracking-tight">Milestones</h2>
 					<p class="mt-0.5 text-sm text-slate-500">
 						{milestones.length}
@@ -1456,6 +1565,7 @@
 	<MilestoneFormModal
 		{projectId}
 		milestone={editingMilestone}
+		{versions}
 		onClose={closeMilestoneModal}
 		onSaved={handleMilestoneSaved}
 		onDelete={editingMilestone ? () => askRemoveMilestone(editingMilestone!) : undefined}
@@ -1509,6 +1619,29 @@
 	error={removingMilestoneError}
 	onConfirm={confirmRemoveMilestone}
 	onCancel={() => (removingMilestone = null)}
+/>
+
+{#if versionModalMode}
+	<VersionFormModal
+		{projectId}
+		version={editingVersion}
+		onClose={closeVersionModal}
+		onSaved={handleVersionSaved}
+		onDelete={editingVersion ? () => askRemoveVersion(editingVersion!) : undefined}
+	/>
+{/if}
+
+<ConfirmDialog
+	open={removingVersion !== null}
+	title="Delete version"
+	message={removingVersion
+		? `Delete "${removingVersion.name}"? Milestones in "${removingVersion.name}" will move to "No version".`
+		: ''}
+	confirmLabel={removingVersionBusy ? 'Deleting…' : 'Delete'}
+	danger
+	error={removingVersionError}
+	onConfirm={confirmRemoveVersion}
+	onCancel={() => (removingVersion = null)}
 />
 
 <ConfirmDialog
