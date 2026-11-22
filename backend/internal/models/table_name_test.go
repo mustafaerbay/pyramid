@@ -18,6 +18,7 @@ func TestTableNames(t *testing.T) {
 		{"KickoffActionItem", KickoffActionItem{}.TableName(), "kickoff_action_items"},
 		{"Milestone", Milestone{}.TableName(), "milestones"},
 		{"WeeklySummary", WeeklySummary{}.TableName(), "project_weekly_summaries"},
+		{"Version", Version{}.TableName(), "project_versions"},
 		{"Task", Task{}.TableName(), "tasks"},
 		{"TaskAssignee", TaskAssignee{}.TableName(), "task_assignees"},
 		{"Goal", Goal{}.TableName(), "goals"},

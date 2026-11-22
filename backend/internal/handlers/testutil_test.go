@@ -158,8 +158,9 @@ CREATE TABLE project_versions (
 	name TEXT NOT NULL,
 	description TEXT,
 	status TEXT NOT NULL DEFAULT 'planned',
-	target_date TEXT,
-	released_at TEXT,
+	-- DATE (not TEXT) so the sqlite driver parses these back into time.Time.
+	target_date DATE,
+	released_at DATE,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	UNIQUE (project_id, name)
