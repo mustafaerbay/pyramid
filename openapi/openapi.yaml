@@ -19,6 +19,8 @@ tags:
   - name: project-members
   - name: project-kickoffs
   - name: milestones
+  - name: versions
+    description: Project versions (releases) that milestones are planned into
   - name: weekly-summaries
   - name: tasks
   - name: goals
@@ -554,6 +556,124 @@ paths:
       operationId: deleteMilestone
       tags: [milestones]
       summary: Delete a milestone
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/versions:
+    get:
+      operationId: listVersions
+      tags: [versions]
+      summary: List project versions
+      description: >
+        Filter by projectId to see a single project's versions (the usual
+        case). Ordered by target date (undated last), then name.
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A page of versions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createVersion
+      tags: [versions]
+      summary: Create a version
+      description: New versions always start as `planned`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Version"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: A version with this name already exists in the project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/versions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getVersion
+      tags: [versions]
+      summary: Get a version by id
+      responses:
+        "200":
+          description: The version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Version"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateVersion
+      tags: [versions]
+      summary: Update a version
+      description: >
+        Setting status to `released` stamps releasedAt with today unless it
+        is already set or given in the same request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Version"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: A version with this name already exists in the project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteVersion
+      tags: [versions]
+      summary: Delete a version
+      description: Its milestones are kept and become unassigned (versionId null).
       responses:
         "204":
           description: Deleted
@@ -1430,9 +1550,6 @@ components:
         turkeySe:
           type: string
           nullable: true
-        releaseVersion:
-          type: string
-          nullable: true
         projectCode:
           type: string
           nullable: true
@@ -1528,9 +1645,6 @@ components:
           type: string
           nullable: true
         turkeySe:
-          type: string
-          nullable: true
-        releaseVersion:
           type: string
           nullable: true
         projectCode:
@@ -1885,6 +1999,11 @@ components:
           type: string
           format: date
           nullable: true
+        versionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The version (release) this milestone is planned into.
         createdAt:
           type: string
           format: date-time
@@ -1910,6 +2029,10 @@ components:
         dueDate:
           type: string
           format: date
+        versionId:
+          type: string
+          format: uuid
+          description: Must belong to the same project (400 otherwise).
 
     MilestoneUpdate:
       type: object
@@ -1929,6 +2052,13 @@ components:
         completedAt:
           type: string
           format: date
+        versionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >
+            Omit to leave unchanged, send null to unassign, or a version id of
+            the same project (400 otherwise).
 
     MilestoneList:
       type: object
@@ -1938,6 +2068,87 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Milestone"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Versions ----
+    VersionStatus:
+      type: string
+      enum: [planned, in_progress, released, cancelled]
+
+    Version:
+      type: object
+      required: [id, projectId, name, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/VersionStatus"
+        targetDate:
+          type: string
+          format: date
+          nullable: true
+        releasedAt:
+          type: string
+          format: date
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    VersionCreate:
+      type: object
+      required: [projectId, name]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        targetDate:
+          type: string
+          format: date
+
+    VersionUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/VersionStatus"
+        targetDate:
+          type: string
+          format: date
+        releasedAt:
+          type: string
+          format: date
+
+    VersionList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Version"
         pagination:
           $ref: "#/components/schemas/Pagination"
 

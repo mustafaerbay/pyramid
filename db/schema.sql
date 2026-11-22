@@ -53,6 +53,7 @@ CREATE TYPE project_role     AS ENUM (
     'project_manager', 'cie', 'backend_engineer', 'frontend_engineer', 'devops_engineer'
 );
 CREATE TYPE milestone_status AS ENUM ('pending', 'in_progress', 'completed', 'missed');
+CREATE TYPE version_status   AS ENUM ('planned', 'in_progress', 'released', 'cancelled');
 CREATE TYPE sprint_status    AS ENUM ('planned', 'active', 'completed', 'cancelled');
 
 -- Tasks
@@ -227,7 +228,6 @@ CREATE TABLE projects (
     account_name       TEXT,
     hq_se              TEXT,
     turkey_se          TEXT,
-    release_version    TEXT,
     project_code       TEXT,
     team_size_actual   INTEGER,
     team_size_planned  INTEGER,
@@ -274,6 +274,22 @@ CREATE TABLE project_kickoffs (
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Added 2026-11-22: project versions (releases). Milestones attach to at
+-- most one version; the project page shows them as the release plan.
+-- Replaces the old free-text projects.release_version column.
+CREATE TABLE project_versions (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    description TEXT,
+    status      version_status NOT NULL DEFAULT 'planned',
+    target_date DATE,
+    released_at DATE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (project_id, name)
+);
+
 CREATE TABLE milestones (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id   UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -283,9 +299,11 @@ CREATE TABLE milestones (
     start_date   DATE,
     due_date     DATE,
     completed_at DATE,
+    version_id   UUID REFERENCES project_versions(id) ON DELETE SET NULL,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_milestones_version_id ON milestones (version_id);
 
 -- Added 2026-08-09 per user request: "add a section for weekly summary...
 -- summary of tasks progress." A dated log (not a single overwritten box) so

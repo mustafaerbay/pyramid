@@ -39,7 +39,6 @@ type Project struct {
 	AccountName      *string `gorm:"type:text;column:account_name"`
 	HqSe             *string `gorm:"type:text;column:hq_se"`
 	TurkeySe         *string `gorm:"type:text;column:turkey_se"`
-	ReleaseVersion   *string `gorm:"type:text;column:release_version"`
 	ProjectCode      *string `gorm:"type:text;column:project_code"`
 	TeamSizeActual   *int    `gorm:"column:team_size_actual"`
 	TeamSizePlanned  *int    `gorm:"column:team_size_planned"`
@@ -73,7 +72,6 @@ func (p Project) ToAPI() api.Project {
 		AccountName:      p.AccountName,
 		HqSe:             p.HqSe,
 		TurkeySe:         p.TurkeySe,
-		ReleaseVersion:   p.ReleaseVersion,
 		ProjectCode:      p.ProjectCode,
 		TeamSizeActual:   p.TeamSizeActual,
 		TeamSizePlanned:  p.TeamSizePlanned,
@@ -178,9 +176,6 @@ func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
 	}
 	if in.TurkeySe != nil {
 		p.TurkeySe = in.TurkeySe
-	}
-	if in.ReleaseVersion != nil {
-		p.ReleaseVersion = in.ReleaseVersion
 	}
 	if in.ProjectCode != nil {
 		p.ProjectCode = in.ProjectCode

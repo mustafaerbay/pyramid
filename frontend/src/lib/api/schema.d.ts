@@ -225,6 +225,57 @@ export interface paths {
         patch: operations["updateMilestone"];
         trace?: never;
     };
+    "/api/v1/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project versions
+         * @description Filter by projectId to see a single project's versions (the usual case). Ordered by target date (undated last), then name.
+         */
+        get: operations["listVersions"];
+        put?: never;
+        /**
+         * Create a version
+         * @description New versions always start as `planned`.
+         */
+        post: operations["createVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/versions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a version by id */
+        get: operations["getVersion"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a version
+         * @description Its milestones are kept and become unassigned (versionId null).
+         */
+        delete: operations["deleteVersion"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a version
+         * @description Setting status to `released` stamps releasedAt with today unless it is already set or given in the same request.
+         */
+        patch: operations["updateVersion"];
+        trace?: never;
+    };
     "/api/v1/weekly-summaries": {
         parameters: {
             query?: never;
@@ -558,7 +609,6 @@ export interface components {
             accountName?: string | null;
             hqSe?: string | null;
             turkeySe?: string | null;
-            releaseVersion?: string | null;
             projectCode?: string | null;
             teamSizeActual?: number | null;
             teamSizePlanned?: number | null;
@@ -603,7 +653,6 @@ export interface components {
             accountName?: string | null;
             hqSe?: string | null;
             turkeySe?: string | null;
-            releaseVersion?: string | null;
             projectCode?: string | null;
             teamSizeActual?: number | null;
             teamSizePlanned?: number | null;
@@ -765,6 +814,11 @@ export interface components {
             dueDate?: string | null;
             /** Format: date */
             completedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description The version (release) this milestone is planned into.
+             */
+            versionId?: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -779,6 +833,11 @@ export interface components {
             startDate?: string;
             /** Format: date */
             dueDate?: string;
+            /**
+             * Format: uuid
+             * @description Must belong to the same project (400 otherwise).
+             */
+            versionId?: string;
         };
         MilestoneUpdate: {
             name?: string;
@@ -790,9 +849,54 @@ export interface components {
             dueDate?: string;
             /** Format: date */
             completedAt?: string;
+            /**
+             * Format: uuid
+             * @description Omit to leave unchanged, send null to unassign, or a version id of the same project (400 otherwise).
+             */
+            versionId?: string | null;
         };
         MilestoneList: {
             data: components["schemas"]["Milestone"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** @enum {string} */
+        VersionStatus: "planned" | "in_progress" | "released" | "cancelled";
+        Version: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            description?: string | null;
+            status: components["schemas"]["VersionStatus"];
+            /** Format: date */
+            targetDate?: string | null;
+            /** Format: date */
+            releasedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        VersionCreate: {
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            description?: string;
+            /** Format: date */
+            targetDate?: string;
+        };
+        VersionUpdate: {
+            name?: string;
+            description?: string;
+            status?: components["schemas"]["VersionStatus"];
+            /** Format: date */
+            targetDate?: string;
+            /** Format: date */
+            releasedAt?: string;
+        };
+        VersionList: {
+            data: components["schemas"]["Version"][];
             pagination: components["schemas"]["Pagination"];
         };
         WeeklySummary: {
@@ -1727,6 +1831,150 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    listVersions: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                projectId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description A version with this name already exists in the project */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VersionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description A version with this name already exists in the project */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             default: components["responses"]["DefaultError"];
         };
     };

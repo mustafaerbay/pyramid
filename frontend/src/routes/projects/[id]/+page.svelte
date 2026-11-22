@@ -538,7 +538,6 @@
 					{ label: 'Report Period', value: project.reportPeriod },
 					{ label: 'Account Name', value: project.accountName },
 					{ label: 'Project Code', value: project.projectCode },
-					{ label: 'Release Version', value: project.releaseVersion },
 					{ label: 'HQ PM', value: project.hqPm },
 					{ label: 'Turkey PM', value: project.turkeyPm },
 					{ label: 'HQ SE', value: project.hqSe },

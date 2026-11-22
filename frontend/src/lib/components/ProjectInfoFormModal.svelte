@@ -31,7 +31,6 @@
 	let accountName = $state(initial.accountName ?? '');
 	let hqSe = $state(initial.hqSe ?? '');
 	let turkeySe = $state(initial.turkeySe ?? '');
-	let releaseVersion = $state(initial.releaseVersion ?? '');
 	let projectCode = $state(initial.projectCode ?? '');
 	// Bound to <input type="number">, which Svelte coerces to an actual
 	// number on input (not a string) once something's typed, while an empty
@@ -69,7 +68,6 @@
 					accountName: accountName || undefined,
 					hqSe: hqSe || undefined,
 					turkeySe: turkeySe || undefined,
-					releaseVersion: releaseVersion || undefined,
 					projectCode: projectCode || undefined,
 					teamSizeActual: toIntOrUndefined(teamSizeActual),
 					teamSizePlanned: toIntOrUndefined(teamSizePlanned)
@@ -147,10 +145,6 @@
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Project Code</span>
 					<input class="input" bind:value={projectCode} />
-				</label>
-				<label class="block text-sm">
-					<span class="mb-1 block font-medium text-slate-700">Release Version</span>
-					<input class="input" bind:value={releaseVersion} />
 				</label>
 			</div>
 

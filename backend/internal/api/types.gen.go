@@ -441,6 +441,30 @@ func (e TaskStatus) Valid() bool {
 	}
 }
 
+// Defines values for VersionStatus.
+const (
+	VersionStatusCancelled  VersionStatus = "cancelled"
+	VersionStatusInProgress VersionStatus = "in_progress"
+	VersionStatusPlanned    VersionStatus = "planned"
+	VersionStatusReleased   VersionStatus = "released"
+)
+
+// Valid indicates whether the value is a known member of the VersionStatus enum.
+func (e VersionStatus) Valid() bool {
+	switch e {
+	case VersionStatusCancelled:
+		return true
+	case VersionStatusInProgress:
+		return true
+	case VersionStatusPlanned:
+		return true
+	case VersionStatusReleased:
+		return true
+	default:
+		return false
+	}
+}
+
 // Contribution defines model for Contribution.
 type Contribution struct {
 	CreatedAt  time.Time           `json:"createdAt"`
@@ -626,6 +650,9 @@ type Milestone struct {
 	StartDate   *openapi_types.Date `json:"startDate"`
 	Status      MilestoneStatus     `json:"status"`
 	UpdatedAt   time.Time           `json:"updatedAt"`
+
+	// VersionId The version (release) this milestone is planned into.
+	VersionId *openapi_types.UUID `json:"versionId"`
 }
 
 // MilestoneCreate defines model for MilestoneCreate.
@@ -635,6 +662,9 @@ type MilestoneCreate struct {
 	Name        string              `json:"name"`
 	ProjectId   openapi_types.UUID  `json:"projectId"`
 	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+
+	// VersionId Must belong to the same project (400 otherwise).
+	VersionId *openapi_types.UUID `json:"versionId,omitempty"`
 }
 
 // MilestoneList defines model for MilestoneList.
@@ -654,6 +684,9 @@ type MilestoneUpdate struct {
 	Name        *string             `json:"name,omitempty"`
 	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
 	Status      *MilestoneStatus    `json:"status,omitempty"`
+
+	// VersionId Omit to leave unchanged, send null to unassign, or a version id of the same project (400 otherwise).
+	VersionId *openapi_types.UUID `json:"versionId"`
 }
 
 // Pagination defines model for Pagination.
@@ -747,7 +780,6 @@ type Project struct {
 	Priority         ProjectPriority     `json:"priority"`
 	ProjectCode      *string             `json:"projectCode"`
 	ProjectDirector  *string             `json:"projectDirector"`
-	ReleaseVersion   *string             `json:"releaseVersion"`
 	ReportPeriod     *string             `json:"reportPeriod"`
 	Sponsor          *string             `json:"sponsor"`
 	StartDate        *openapi_types.Date `json:"startDate"`
@@ -908,7 +940,6 @@ type ProjectUpdate struct {
 	Priority         *ProjectPriority    `json:"priority,omitempty"`
 	ProjectCode      *string             `json:"projectCode"`
 	ProjectDirector  *string             `json:"projectDirector"`
-	ReleaseVersion   *string             `json:"releaseVersion"`
 	ReportPeriod     *string             `json:"reportPeriod"`
 	Sponsor          *string             `json:"sponsor"`
 	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
@@ -979,6 +1010,45 @@ type TaskUpdate struct {
 	Priority    *TaskPriority         `json:"priority,omitempty"`
 	Status      *TaskStatus           `json:"status,omitempty"`
 	Title       *string               `json:"title,omitempty"`
+}
+
+// Version defines model for Version.
+type Version struct {
+	CreatedAt   time.Time           `json:"createdAt"`
+	Description *string             `json:"description"`
+	Id          openapi_types.UUID  `json:"id"`
+	Name        string              `json:"name"`
+	ProjectId   openapi_types.UUID  `json:"projectId"`
+	ReleasedAt  *openapi_types.Date `json:"releasedAt"`
+	Status      VersionStatus       `json:"status"`
+	TargetDate  *openapi_types.Date `json:"targetDate"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+}
+
+// VersionCreate defines model for VersionCreate.
+type VersionCreate struct {
+	Description *string             `json:"description,omitempty"`
+	Name        string              `json:"name"`
+	ProjectId   openapi_types.UUID  `json:"projectId"`
+	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
+}
+
+// VersionList defines model for VersionList.
+type VersionList struct {
+	Data       []Version  `json:"data"`
+	Pagination Pagination `json:"pagination"`
+}
+
+// VersionStatus defines model for VersionStatus.
+type VersionStatus string
+
+// VersionUpdate defines model for VersionUpdate.
+type VersionUpdate struct {
+	Description *string             `json:"description,omitempty"`
+	Name        *string             `json:"name,omitempty"`
+	ReleasedAt  *openapi_types.Date `json:"releasedAt,omitempty"`
+	Status      *VersionStatus      `json:"status,omitempty"`
+	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
 }
 
 // WeeklySummary defines model for WeeklySummary.
@@ -1107,6 +1177,13 @@ type ListTasksParams struct {
 	Status     *TaskStatus         `form:"status,omitempty" json:"status,omitempty"`
 }
 
+// ListVersionsParams defines parameters for ListVersions.
+type ListVersionsParams struct {
+	Page      *PageParam          `form:"page,omitempty" json:"page,omitempty"`
+	PageSize  *PageSizeParam      `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
+}
+
 // ListWeeklySummariesParams defines parameters for ListWeeklySummaries.
 type ListWeeklySummariesParams struct {
 	Page      *PageParam          `form:"page,omitempty" json:"page,omitempty"`
@@ -1167,6 +1244,12 @@ type CreateTaskJSONRequestBody = TaskCreate
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody = TaskUpdate
+
+// CreateVersionJSONRequestBody defines body for CreateVersion for application/json ContentType.
+type CreateVersionJSONRequestBody = VersionCreate
+
+// UpdateVersionJSONRequestBody defines body for UpdateVersion for application/json ContentType.
+type UpdateVersionJSONRequestBody = VersionUpdate
 
 // CreateWeeklySummaryJSONRequestBody defines body for CreateWeeklySummary for application/json ContentType.
 type CreateWeeklySummaryJSONRequestBody = WeeklySummaryCreate

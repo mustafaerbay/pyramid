@@ -135,7 +135,6 @@ CREATE TABLE projects (
 	account_name TEXT,
 	hq_se TEXT,
 	turkey_se TEXT,
-	release_version TEXT,
 	project_code TEXT,
 	team_size_actual INTEGER,
 	team_size_planned INTEGER,
@@ -153,6 +152,19 @@ CREATE TABLE project_members (
 	left_at TEXT
 );
 
+CREATE TABLE project_versions (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	name TEXT NOT NULL,
+	description TEXT,
+	status TEXT NOT NULL DEFAULT 'planned',
+	target_date TEXT,
+	released_at TEXT,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	UNIQUE (project_id, name)
+);
+
 CREATE TABLE milestones (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	project_id TEXT NOT NULL,
@@ -162,6 +174,7 @@ CREATE TABLE milestones (
 	start_date TEXT,
 	due_date TEXT,
 	completed_at TEXT,
+	version_id TEXT,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
