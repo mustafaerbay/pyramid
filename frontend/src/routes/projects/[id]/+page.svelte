@@ -1247,6 +1247,7 @@
 				<div class="rounded-lg border border-slate-200 bg-white p-4">
 					<MilestoneTimeline
 						{milestones}
+						{versions}
 						projectStartDate={project.startDate}
 						projectTargetDate={project.targetDate}
 						onSelect={(m) => {

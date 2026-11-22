@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { groupMilestonesByVersion, versionLineDate, type VersionLike } from '$lib/releasePlan';
+
 	type MilestoneStatus = 'pending' | 'in_progress' | 'completed' | 'missed';
 
 	type TimelineMilestone = {
@@ -7,15 +9,20 @@
 		status: MilestoneStatus;
 		startDate?: string | null;
 		dueDate?: string | null;
+		versionId?: string | null;
 	};
 
 	let {
 		milestones,
 		projectStartDate = null,
 		projectTargetDate = null,
+		versions = [],
 		onSelect
 	}: {
 		milestones: TimelineMilestone[];
+		// When non-empty, rows are grouped by version (Releases order) and
+		// each version's release date is drawn as a dashed line.
+		versions?: VersionLike[];
 		// Anchor the displayed range even before any milestone has a date set,
 		// so the timeline isn't just "today ± a couple months" for a brand-new
 		// project.
@@ -107,6 +114,14 @@
 		return sDay <= eDay ? { startDay: sDay, endDay: eDay } : { startDay: eDay, endDay: sDay };
 	}
 
+	// Versions that draw a release line, with the date it sits on.
+	const releaseLines = $derived(
+		versions.flatMap((v) => {
+			const date = versionLineDate(v);
+			return date ? [{ id: v.id, name: v.name, date }] : [];
+		})
+	);
+
 	const range = $derived(
 		(() => {
 			const points: { year: number; month: number }[] = [{ year: today.year, month: today.month }];
@@ -116,6 +131,10 @@
 			}
 			if (projectTargetDate) {
 				const p = partsFromDateStr(projectTargetDate);
+				points.push({ year: p.year, month: p.month });
+			}
+			for (const l of releaseLines) {
+				const p = partsFromDateStr(l.date);
 				points.push({ year: p.year, month: p.month });
 			}
 			for (const m of dated) {
@@ -187,7 +206,8 @@
 
 	// Positioned dated milestones, one row each (Gantt style), ordered by
 	// start date then end date — every new milestone gets its own line below
-	// the earlier ones instead of being packed beside them.
+	// the earlier ones instead of being packed beside them. With versions,
+	// each version group gets a header row followed by its milestones.
 	const positioned = $derived(
 		(() => {
 			type Positioned = TimelineMilestone & {
@@ -218,12 +238,54 @@
 				});
 			}
 			items.sort((a, b) => a.sortStart - b.sortStart || a.sortEnd - b.sortEnd);
-			items.forEach((item, i) => (item.lane = i));
-			return items;
+			const headers: { key: string; label: string; status: VersionLike['status'] | null; lane: number }[] = [];
+			if (versions.length === 0) {
+				items.forEach((item, i) => (item.lane = i));
+				return { items, headers };
+			}
+			let lane = 0;
+			for (const group of groupMilestonesByVersion(versions, items)) {
+				const v = group.version;
+				// A version with nothing to show on the timeline gets no row.
+				if (group.milestones.length === 0 && !(v && versionLineDate(v))) continue;
+				headers.push({
+					key: v?.id ?? '__none__',
+					label: v?.name ?? 'No version',
+					status: v?.status ?? null,
+					lane: lane++
+				});
+				for (const item of group.milestones) item.lane = lane++;
+			}
+			return { items, headers };
 		})()
 	);
 
-	const laneCount = $derived(Math.max(1, ...positioned.map((p) => p.lane + 1)));
+	const laneCount = $derived(
+		Math.max(1, ...positioned.items.map((p) => p.lane + 1), ...positioned.headers.map((h) => h.lane + 1))
+	);
+
+	const visibleLines = $derived(
+		releaseLines.flatMap((l) => {
+			const p = partsFromDateStr(l.date);
+			const day = dayIndex(p.year, p.month, p.day);
+			return day >= rangeStartDay && day <= rangeEndDay ? [{ ...l, pct: pct(day) }] : [];
+		})
+	);
+
+	function versionDotClass(status: VersionLike['status'] | null): string {
+		switch (status) {
+			case 'planned':
+				return 'bg-slate-400';
+			case 'in_progress':
+				return 'bg-amber-500';
+			case 'released':
+				return 'bg-emerald-500';
+			case 'cancelled':
+				return 'bg-slate-300';
+			default:
+				return 'bg-transparent border border-slate-300';
+		}
+	}
 
 	// Milestones whose date range falls entirely after the (possibly capped)
 	// visible range — surfaced as a note rather than silently dropped.
@@ -253,6 +315,20 @@
 				{/each}
 			</div>
 
+			{#if visibleLines.length > 0}
+				<div class="relative h-5 text-[11px]">
+					{#each visibleLines as line (line.id)}
+						<span
+							class="absolute top-0.5 -translate-x-1/2 rounded bg-indigo-50 px-1 font-medium whitespace-nowrap text-indigo-700"
+							style="left: {line.pct}%;"
+							title="{line.name} release · {line.date}"
+						>
+							{line.name}
+						</span>
+					{/each}
+				</div>
+			{/if}
+
 			<div class="relative" style="height: {laneCount * 2.25 + 0.25}rem;">
 				{#each months as m (m.key)}
 					<div class="absolute top-0 bottom-0 border-l border-slate-100" style="left: {m.leftPct}%;"></div>
@@ -261,7 +337,28 @@
 					<div class="absolute top-0 bottom-0 w-px bg-slate-400" style="left: {todayPct}%;"></div>
 				{/if}
 
-				{#each positioned as milestone (milestone.id)}
+				{#each visibleLines as line (line.id)}
+					<div
+						class="absolute top-0 bottom-0 border-l border-dashed border-indigo-400"
+						style="left: {line.pct}%;"
+					></div>
+				{/each}
+
+				{#each positioned.headers as header (header.key)}
+					<div
+						class="absolute left-0 flex items-center gap-1.5 text-xs font-semibold {header.status === 'cancelled'
+							? 'text-slate-400 line-through'
+							: header.status === null
+								? 'text-slate-400'
+								: 'text-slate-700'}"
+						style="top: {header.lane * 2.25}rem; height: 2rem;"
+					>
+						<span class="h-1.5 w-1.5 shrink-0 rounded-full {versionDotClass(header.status)}"></span>
+						{header.label}
+					</div>
+				{/each}
+
+				{#each positioned.items as milestone (milestone.id)}
 					<button
 						type="button"
 						class="absolute flex items-center gap-1.5 overflow-hidden rounded-md border px-2 text-left text-xs {statusChipClass(
