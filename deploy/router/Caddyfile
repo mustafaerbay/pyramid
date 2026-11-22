@@ -1,0 +1,38 @@
+# Internal router for the Coolify deployment (docker-compose.coolify.yml).
+# Coolify's Traefik terminates TLS for pyramid.kimlerdensin.com and forwards
+# plain HTTP here; this puts the SPA and the API on one origin (the frontend
+# is built with VITE_API_URL="" and calls relative /api/...) and guards the
+# whole demo with basic auth (Pyramid has no login of its own).
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	encode gzip zstd
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Robots-Tag "noindex, nofollow"
+	}
+
+	# Unauthenticated liveness probe (returns only {"status":"ok"}).
+	handle /health {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		basic_auth {
+			{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+		}
+
+		handle /api/* {
+			reverse_proxy backend:8080
+		}
+
+		handle {
+			reverse_proxy frontend:3000
+		}
+	}
+}

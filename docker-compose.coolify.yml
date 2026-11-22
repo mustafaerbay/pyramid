@@ -1,0 +1,76 @@
+# Pyramid on Coolify (https://pyramid.kimlerdensin.com).
+#
+# In Coolify: Build pack "Docker Compose", Docker Compose Location
+# `/docker-compose.coolify.yml`, domain `https://pyramid.kimlerdensin.com:80`
+# on the `router` service. No host ports: Coolify's proxy is the only way in.
+#
+# Required environment variables (set in Coolify; deploy is blocked if empty):
+#   POSTGRES_PASSWORD     database password
+#   PUBLIC_URL            e.g. https://pyramid.kimlerdensin.com
+#   BASIC_AUTH_USER       demo login name
+#   BASIC_AUTH_HASH_B64   base64 of a bcrypt hash:
+#                         docker run --rm caddy:2-alpine caddy hash-password --plaintext '<pw>' | base64
+
+services:
+  db:
+    build:
+      context: ./db
+    environment:
+      POSTGRES_USER: pyramid
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: pyramid
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pyramid -d pyramid"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: production
+      PORT: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: pyramid
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?}
+      DB_NAME: pyramid
+      DB_SSLMODE: disable
+      CORS_ORIGIN: ${PUBLIC_URL:?}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Empty = relative URLs: the browser calls /api/... on the same origin.
+        VITE_API_URL: ""
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOST: 0.0.0.0
+      ORIGIN: ${PUBLIC_URL:?}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  router:
+    build:
+      context: ./deploy/router
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?}
+      BASIC_AUTH_HASH_B64: ${BASIC_AUTH_HASH_B64:?}
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
