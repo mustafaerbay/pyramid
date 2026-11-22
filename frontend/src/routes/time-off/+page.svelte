@@ -5,7 +5,7 @@
 	import LeaveRequestFormModal from '$lib/components/LeaveRequestFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
-	import type { BadgeTone } from '$lib/badgeTones';
+	import { badgeToneClass, type BadgeTone } from '$lib/badgeTones';
 
 	type LeaveRequest = components['schemas']['LeaveRequest'];
 	type LeaveStatus = components['schemas']['LeaveStatus'];
@@ -18,7 +18,17 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
-	let statusFilter = $state<LeaveStatus | ''>('');
+	// Toggleable status chips, not a dropdown — matches the Contributions
+	// page's type filter (see typeFilters there). Empty array = no filter
+	// (show every status). Server-side filter: every toggle resets to page 1
+	// and re-fetches, since this page paginates on the backend.
+	let statusFilters = $state<LeaveStatus[]>([]);
+	const statusFilterOptions: { value: LeaveStatus; label: string }[] = [
+		{ value: 'pending', label: 'Pending' },
+		{ value: 'approved', label: 'Approved' },
+		{ value: 'rejected', label: 'Rejected' },
+		{ value: 'cancelled', label: 'Cancelled' }
+	];
 	let peopleNames = $state<Record<string, string>>({});
 
 	let modalMode = $state<'create' | 'edit' | null>(null);
@@ -55,7 +65,7 @@
 				query: {
 					page: currentPage,
 					pageSize,
-					...(statusFilter ? { status: statusFilter } : {})
+					...(statusFilters.length > 0 ? { status: statusFilters } : {})
 				}
 			}
 		});
@@ -140,8 +150,16 @@
 		load();
 	}
 
-	function applyStatusFilter(value: string) {
-		statusFilter = value as LeaveStatus | '';
+	function toggleStatusFilter(status: LeaveStatus) {
+		statusFilters = statusFilters.includes(status)
+			? statusFilters.filter((s) => s !== status)
+			: [...statusFilters, status];
+		currentPage = 1;
+		load();
+	}
+
+	function clearStatusFilters() {
+		statusFilters = [];
 		currentPage = 1;
 		load();
 	}
@@ -201,18 +219,29 @@
 		</div>
 	{/if}
 
-	<div class="flex flex-wrap items-center gap-3">
-		<select
-			class="input w-auto"
-			value={statusFilter}
-			onchange={(e) => applyStatusFilter(e.currentTarget.value)}
-		>
-			<option value="">All statuses</option>
-			<option value="pending">Pending</option>
-			<option value="approved">Approved</option>
-			<option value="rejected">Rejected</option>
-			<option value="cancelled">Cancelled</option>
-		</select>
+	<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter by status">
+		{#each statusFilterOptions as opt (opt.value)}
+			{@const selected = statusFilters.includes(opt.value)}
+			<button
+				type="button"
+				class="rounded-full px-2.5 py-1 text-xs font-medium transition-colors {selected
+					? badgeToneClass[statusTone(opt.value)] + ' ring-1 ring-inset ring-transparent'
+					: 'bg-white text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50'}"
+				aria-pressed={selected}
+				onclick={() => toggleStatusFilter(opt.value)}
+			>
+				{opt.label}
+			</button>
+		{/each}
+		{#if statusFilters.length > 0}
+			<button
+				type="button"
+				class="px-1 text-xs text-slate-500 hover:text-slate-700 hover:underline"
+				onclick={clearStatusFilters}
+			>
+				Clear
+			</button>
+		{/if}
 	</div>
 
 	{#if loading}
@@ -243,14 +272,16 @@
 				</thead>
 				<tbody class="divide-y divide-slate-100">
 					{#each requests as request (request.id)}
-						<tr class="hover:bg-slate-50">
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<tr class="cursor-pointer hover:bg-slate-50" onclick={() => openEdit(request)}>
 							<td class="px-4 py-3 font-medium">{personName(request.personId)}</td>
 							<td class="px-4 py-3 text-slate-600 capitalize">{request.type}</td>
 							<td class="px-4 py-3 text-slate-600">{request.startDate} → {request.endDate}</td>
 							<td class="px-4 py-3">
 								<Badge tone={statusTone(request.status)}>{request.status}</Badge>
 							</td>
-							<td class="px-4 py-3 text-right whitespace-nowrap">
+							<td class="px-4 py-3 text-right whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
 								{#if request.status === 'pending'}
 									<button
 										type="button"

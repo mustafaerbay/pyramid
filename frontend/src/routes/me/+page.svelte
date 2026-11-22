@@ -230,6 +230,14 @@
 							</span>
 						</div>
 						<table class="w-full text-left text-sm">
+							<thead class="border-b border-slate-200 text-xs text-slate-500">
+								<tr>
+									<th class="px-4 py-2 font-medium">Task</th>
+									<th class="px-4 py-2 font-medium">Priority</th>
+									<th class="px-4 py-2 font-medium">Status</th>
+									<th class="px-4 py-2 font-medium">Due</th>
+								</tr>
+							</thead>
 							<tbody class="divide-y divide-slate-100">
 								{#each group.tasks as task (task.id)}
 									<tr class="hover:bg-slate-50">

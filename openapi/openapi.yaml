@@ -19,6 +19,7 @@ tags:
   - name: project-members
   - name: project-kickoffs
   - name: milestones
+  - name: weekly-summaries
   - name: tasks
   - name: goals
   - name: leave
@@ -561,6 +562,107 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
 
+  /api/v1/weekly-summaries:
+    get:
+      operationId: listWeeklySummaries
+      tags: [weekly-summaries]
+      summary: List weekly summaries
+      description: >
+        Filter by projectId to see a single project's weekly summary log
+        (the usual case). Results are returned most-recent-week first.
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A page of weekly summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySummaryList"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    post:
+      operationId: createWeeklySummary
+      tags: [weekly-summaries]
+      summary: Create a weekly summary entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeeklySummaryCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
+  /api/v1/weekly-summaries/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdParam"
+    get:
+      operationId: getWeeklySummary
+      tags: [weekly-summaries]
+      summary: Get a weekly summary entry by id
+      responses:
+        "200":
+          description: The weekly summary entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySummary"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    patch:
+      operationId: updateWeeklySummary
+      tags: [weekly-summaries]
+      summary: Update a weekly summary entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeeklySummaryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklySummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+    delete:
+      operationId: deleteWeeklySummary
+      tags: [weekly-summaries]
+      summary: Delete a weekly summary entry
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
   /api/v1/tasks:
     get:
       operationId: listTasks
@@ -789,8 +891,17 @@ paths:
         - name: status
           in: query
           required: false
+          description: >
+            Repeat this parameter to filter by multiple statuses at once
+            (status=pending&status=approved), e.g.
+            ?status=pending&status=approved. A leave request matches if its
+            status is any of the given values.
+          style: form
+          explode: true
           schema:
-            $ref: "#/components/schemas/LeaveStatus"
+            type: array
+            items:
+              $ref: "#/components/schemas/LeaveStatus"
         - name: personId
           in: query
           required: false
@@ -1143,6 +1254,15 @@ components:
           type: number
           format: double
           nullable: true
+        workloadPct:
+          type: number
+          format: double
+          readOnly: true
+          description: >
+            Sum of allocationPct across the person's current project
+            memberships (joined, not yet left) on projects that are not
+            completed or cancelled. Can exceed 100 when over-allocated.
+            Computed server-side; returned by list and get.
         createdAt:
           type: string
           format: date-time
@@ -1437,7 +1557,19 @@ components:
     # ---- Project Members ----
     ProjectRole:
       type: string
-      enum: [lead, maintainer, contributor, reviewer, stakeholder]
+      enum:
+        [
+          lead,
+          maintainer,
+          contributor,
+          reviewer,
+          stakeholder,
+          project_manager,
+          cie,
+          backend_engineer,
+          frontend_engineer,
+          devops_engineer,
+        ]
 
     ProjectMember:
       type: object
@@ -1806,6 +1938,64 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Milestone"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    # ---- Weekly summaries ----
+    WeeklySummary:
+      type: object
+      required: [id, projectId, weekOf, summary, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        weekOf:
+          type: string
+          format: date
+        summary:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WeeklySummaryCreate:
+      type: object
+      required: [projectId, weekOf, summary]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        weekOf:
+          type: string
+          format: date
+        summary:
+          type: string
+          minLength: 1
+
+    WeeklySummaryUpdate:
+      type: object
+      properties:
+        weekOf:
+          type: string
+          format: date
+        summary:
+          type: string
+          minLength: 1
+
+    WeeklySummaryList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeeklySummary"
         pagination:
           $ref: "#/components/schemas/Pagination"
 

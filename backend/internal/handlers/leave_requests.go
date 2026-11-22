@@ -19,8 +19,13 @@ func (h *Handler) ListLeaveRequests(c *gin.Context) {
 	pageSize := clamp(parseIntDefault(c.Query("pageSize"), 25), 1, 100)
 
 	q := h.db.Model(&models.LeaveRequest{})
-	if s := c.Query("status"); s != "" {
-		q = q.Where("status = ?", s)
+	// Repeatable ?status=pending&status=approved — a leave request matches
+	// if its status is any of the given values. QueryArray returns an empty
+	// slice (not an error) when the key is absent, so this is a no-op filter
+	// by default, same as the old single-value check. Mirrors the type
+	// filter in contributions.go.
+	if statuses := c.QueryArray("status"); len(statuses) > 0 {
+		q = q.Where("status IN ?", statuses)
 	}
 	if p := c.Query("personId"); p != "" {
 		q = q.Where("person_id = ?", p)

@@ -46,7 +46,12 @@ CREATE TYPE team_role       AS ENUM ('lead', 'member');
 CREATE TYPE project_status   AS ENUM ('planning', 'active', 'on_hold', 'completed', 'cancelled');
 CREATE TYPE project_priority AS ENUM ('low', 'medium', 'high', 'critical');
 CREATE TYPE project_health   AS ENUM ('on_track', 'at_risk', 'off_track');
-CREATE TYPE project_role     AS ENUM ('lead', 'maintainer', 'contributor', 'reviewer', 'stakeholder');
+CREATE TYPE project_role     AS ENUM (
+    'lead', 'maintainer', 'contributor', 'reviewer', 'stakeholder',
+    -- Added 2026-08-09 per user request: role titles matching how this org
+    -- actually staffs a project team.
+    'project_manager', 'cie', 'backend_engineer', 'frontend_engineer', 'devops_engineer'
+);
 CREATE TYPE milestone_status AS ENUM ('pending', 'in_progress', 'completed', 'missed');
 CREATE TYPE sprint_status    AS ENUM ('planned', 'active', 'completed', 'cancelled');
 
@@ -280,6 +285,18 @@ CREATE TABLE milestones (
     completed_at DATE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Added 2026-08-09 per user request: "add a section for weekly summary...
+-- summary of tasks progress." A dated log (not a single overwritten box) so
+-- past weeks stay visible as history, same one-to-many shape as milestones.
+CREATE TABLE project_weekly_summaries (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    week_of    DATE NOT NULL,
+    summary    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE sprints (

@@ -101,6 +101,19 @@ func (h *Handler) attachAssignees(tasks []models.Task) error {
 	return nil
 }
 
+// attachAssigneesOne is attachAssignees for a single task. It exists because
+// the obvious h.attachAssignees([]models.Task{t}) fills in a COPY of t (the
+// slice literal copies the struct), silently leaving t.AssigneeIDs empty —
+// which made GET/PATCH /tasks/{id} always return assigneeIds: [].
+func (h *Handler) attachAssigneesOne(t *models.Task) error {
+	ts := []models.Task{*t}
+	if err := h.attachAssignees(ts); err != nil {
+		return err
+	}
+	t.AssigneeIDs = ts[0].AssigneeIDs
+	return nil
+}
+
 // replaceAssignees deletes every existing task_assignees row for taskID and
 // inserts one row per (deduplicated) id in assigneeIDs, then leaves the
 // task's in-memory AssigneeIDs set to match. A nil/empty assigneeIDs just
@@ -181,7 +194,7 @@ func (h *Handler) GetTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task", Details: strptr(err.Error())})
 		return
 	}
-	if err := h.attachAssignees([]models.Task{t}); err != nil {
+	if err := h.attachAssigneesOne(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task assignees", Details: strptr(err.Error())})
 		return
 	}
@@ -237,7 +250,7 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task assignees", Details: strptr(err.Error())})
 			return
 		}
-	} else if err := h.attachAssignees([]models.Task{t}); err != nil {
+	} else if err := h.attachAssigneesOne(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task assignees", Details: strptr(err.Error())})
 		return
 	}

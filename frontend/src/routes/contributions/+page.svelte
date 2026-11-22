@@ -278,7 +278,9 @@
 				</thead>
 				<tbody class="divide-y divide-slate-100">
 					{#each contributions as contribution (contribution.id)}
-						<tr class="hover:bg-slate-50">
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<tr class="cursor-pointer hover:bg-slate-50" onclick={() => openEdit(contribution)}>
 							<td class="px-4 py-3 font-medium">{personName(contribution.personId)}</td>
 							<td class="px-4 py-3">
 								<Badge tone={typeTone(contribution.type)}>{contribution.type.replace('_', ' ')}</Badge>
@@ -290,6 +292,7 @@
 										target="_blank"
 										rel="noopener noreferrer"
 										class="text-slate-700 underline decoration-slate-300 hover:decoration-slate-500"
+										onclick={(e) => e.stopPropagation()}
 									>
 										{contribution.title ?? contribution.url}
 									</a>
@@ -301,7 +304,7 @@
 								{contribution.projectId ? (projectKeys[contribution.projectId] ?? '—') : '—'}
 							</td>
 							<td class="px-4 py-3 text-slate-600">{contribution.occurredAt.slice(0, 10)}</td>
-							<td class="px-4 py-3 text-right whitespace-nowrap">
+							<td class="px-4 py-3 text-right whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
 								<button
 									type="button"
 									class="btn-ghost px-2 py-1"

@@ -3,6 +3,7 @@
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import PersonSelect from '$lib/components/PersonSelect.svelte';
+	import { PROJECT_ROLE_OPTIONS, projectRoleLabel } from '$lib/projectRoles';
 
 	type Project = components['schemas']['Project'];
 	type ProjectPriority = components['schemas']['ProjectPriority'];
@@ -58,8 +59,6 @@
 
 	type DraftMember = { personId: string; name: string; role: ProjectRole; allocationPct: number };
 	let draftTeam = $state<DraftMember[]>([]);
-
-	const roleOptions: ProjectRole[] = ['lead', 'maintainer', 'contributor', 'reviewer', 'stakeholder'];
 
 	const stagedIds = $derived(new Set(draftTeam.map((m) => m.personId)));
 
@@ -348,7 +347,9 @@
 								<li class="flex items-center justify-between px-3 py-2 text-sm">
 									<span class="text-slate-800">
 										{m.name}
-										<span class="ml-1.5 text-xs text-slate-500">{m.role} · {m.allocationPct}%</span>
+										<span class="ml-1.5 text-xs text-slate-500"
+											>{projectRoleLabel[m.role]} · {m.allocationPct}%</span
+										>
 									</span>
 									<button
 										type="button"
@@ -366,8 +367,8 @@
 						<label class="block text-sm">
 							<span class="mb-1 block font-medium text-slate-700">Role for selected</span>
 							<select class="input" bind:value={role}>
-								{#each roleOptions as opt (opt)}
-									<option value={opt}>{opt}</option>
+								{#each PROJECT_ROLE_OPTIONS as opt (opt)}
+									<option value={opt}>{projectRoleLabel[opt]}</option>
 								{/each}
 							</select>
 						</label>
@@ -544,7 +545,7 @@
 						{:else}
 							<ul class="mt-1 space-y-1 text-sm text-slate-700">
 								{#each draftTeam as m (m.personId)}
-									<li>{m.name} — {m.role}, {m.allocationPct}%</li>
+									<li>{m.name} — {projectRoleLabel[m.role]}, {m.allocationPct}%</li>
 								{/each}
 							</ul>
 						{/if}

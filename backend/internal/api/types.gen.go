@@ -70,6 +70,12 @@ const (
 	ProjectRoleContributor ProjectRole = "contributor"
 	ProjectRoleReviewer    ProjectRole = "reviewer"
 	ProjectRoleStakeholder ProjectRole = "stakeholder"
+	// Added 2026-08-09: org-specific project team role titles.
+	ProjectRoleProjectManager   ProjectRole = "project_manager"
+	ProjectRoleCie              ProjectRole = "cie"
+	ProjectRoleBackendEngineer  ProjectRole = "backend_engineer"
+	ProjectRoleFrontendEngineer ProjectRole = "frontend_engineer"
+	ProjectRoleDevopsEngineer   ProjectRole = "devops_engineer"
 )
 
 // Defines values for MilestoneStatus.
@@ -233,6 +239,7 @@ type Person struct {
 	Title               *string             `json:"title,omitempty"`
 	UpdatedAt           time.Time           `json:"updatedAt"`
 	WeeklyCapacityHours *float64            `json:"weeklyCapacityHours,omitempty"`
+	WorkloadPct         *float64            `json:"workloadPct,omitempty"`
 }
 
 // PersonCreate defines model for PersonCreate.
@@ -514,6 +521,35 @@ type MilestoneUpdate struct {
 type MilestoneList struct {
 	Data       []Milestone `json:"data"`
 	Pagination Pagination  `json:"pagination"`
+}
+
+// WeeklySummary defines model for WeeklySummary.
+type WeeklySummary struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+	Summary   string             `json:"summary"`
+	UpdatedAt time.Time          `json:"updatedAt"`
+	WeekOf    openapi_types.Date `json:"weekOf"`
+}
+
+// WeeklySummaryCreate defines model for WeeklySummaryCreate.
+type WeeklySummaryCreate struct {
+	ProjectId openapi_types.UUID `json:"projectId"`
+	Summary   string             `json:"summary"`
+	WeekOf    openapi_types.Date `json:"weekOf"`
+}
+
+// WeeklySummaryUpdate defines model for WeeklySummaryUpdate.
+type WeeklySummaryUpdate struct {
+	Summary *string             `json:"summary,omitempty"`
+	WeekOf  *openapi_types.Date `json:"weekOf,omitempty"`
+}
+
+// WeeklySummaryList defines model for WeeklySummaryList.
+type WeeklySummaryList struct {
+	Data       []WeeklySummary `json:"data"`
+	Pagination Pagination      `json:"pagination"`
 }
 
 // Task defines model for Task.

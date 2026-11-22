@@ -225,6 +225,48 @@ export interface paths {
         patch: operations["updateMilestone"];
         trace?: never;
     };
+    "/api/v1/weekly-summaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List weekly summaries
+         * @description Filter by projectId to see a single project's weekly summary log (the usual case). Results are returned most-recent-week first.
+         */
+        get: operations["listWeeklySummaries"];
+        put?: never;
+        /** Create a weekly summary entry */
+        post: operations["createWeeklySummary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/weekly-summaries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get a weekly summary entry by id */
+        get: operations["getWeeklySummary"];
+        put?: never;
+        post?: never;
+        /** Delete a weekly summary entry */
+        delete: operations["deleteWeeklySummary"];
+        options?: never;
+        head?: never;
+        /** Update a weekly summary entry */
+        patch: operations["updateWeeklySummary"];
+        trace?: never;
+    };
     "/api/v1/tasks": {
         parameters: {
             query?: never;
@@ -433,6 +475,11 @@ export interface components {
             hireDate?: string | null;
             /** Format: double */
             weeklyCapacityHours?: number | null;
+            /**
+             * Format: double
+             * @description Sum of allocationPct across the person's current project memberships (joined, not yet left) on projects that are not completed or cancelled. Can exceed 100 when over-allocated. Computed server-side; returned by list and get.
+             */
+            readonly workloadPct?: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -566,7 +613,7 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
         };
         /** @enum {string} */
-        ProjectRole: "lead" | "maintainer" | "contributor" | "reviewer" | "stakeholder";
+        ProjectRole: "lead" | "maintainer" | "contributor" | "reviewer" | "stakeholder" | "project_manager" | "cie" | "backend_engineer" | "frontend_engineer" | "devops_engineer";
         ProjectMember: {
             /** Format: uuid */
             id: string;
@@ -746,6 +793,35 @@ export interface components {
         };
         MilestoneList: {
             data: components["schemas"]["Milestone"][];
+            pagination: components["schemas"]["Pagination"];
+        };
+        WeeklySummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** Format: date */
+            weekOf: string;
+            summary: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        WeeklySummaryCreate: {
+            /** Format: uuid */
+            projectId: string;
+            /** Format: date */
+            weekOf: string;
+            summary: string;
+        };
+        WeeklySummaryUpdate: {
+            /** Format: date */
+            weekOf?: string;
+            summary?: string;
+        };
+        WeeklySummaryList: {
+            data: components["schemas"]["WeeklySummary"][];
             pagination: components["schemas"]["Pagination"];
         };
         /** @enum {string} */
@@ -1654,6 +1730,132 @@ export interface operations {
             default: components["responses"]["DefaultError"];
         };
     };
+    listWeeklySummaries: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+                projectId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of weekly summaries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklySummaryList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    createWeeklySummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeeklySummaryCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklySummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getWeeklySummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The weekly summary entry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklySummary"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    deleteWeeklySummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    updateWeeklySummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeeklySummaryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklySummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
     listTasks: {
         parameters: {
             query?: {
@@ -1915,7 +2117,8 @@ export interface operations {
             query?: {
                 page?: components["parameters"]["PageParam"];
                 pageSize?: components["parameters"]["PageSizeParam"];
-                status?: components["schemas"]["LeaveStatus"];
+                /** @description Repeat this parameter to filter by multiple statuses at once (status=pending&status=approved), e.g. ?status=pending&status=approved. A leave request matches if its status is any of the given values. */
+                status?: components["schemas"]["LeaveStatus"][];
                 personId?: string;
             };
             header?: never;

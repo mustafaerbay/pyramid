@@ -146,6 +146,14 @@
 		}
 	}
 
+	// Workload = sum of allocation % on current, open projects (server-side).
+	// Bands: idle/light < 70, healthy 70–100, over-allocated > 100.
+	function workloadBand(pct: number): { bar: string; text: string; label: string } {
+		if (pct > 100) return { bar: 'bg-red-500', text: 'text-red-700', label: 'Over-allocated' };
+		if (pct >= 70) return { bar: 'bg-emerald-500', text: 'text-slate-700', label: 'Healthy load' };
+		return { bar: 'bg-slate-400', text: 'text-slate-500', label: 'Has capacity' };
+	}
+
 	function prevPage() {
 		if (currentPage > 1) {
 			currentPage -= 1;
@@ -234,12 +242,15 @@
 						<th class="px-4 py-3 font-medium">Seniority</th>
 						<th class="px-4 py-3 font-medium">Employment</th>
 						<th class="px-4 py-3 font-medium">Status</th>
+						<th class="px-4 py-3 font-medium">Workload</th>
 						<th class="px-4 py-3 font-medium"><span class="sr-only">Actions</span></th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-100">
 					{#each filtered as person (person.id)}
-						<tr class="hover:bg-slate-50">
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<tr class="cursor-pointer hover:bg-slate-50" onclick={() => openEdit(person)}>
 							<td class="px-4 py-3 font-medium">{fullName(person)}</td>
 							<td class="px-4 py-3 text-slate-600">{person.email}</td>
 							<td class="px-4 py-3 text-slate-600">{person.title ?? '—'}</td>
@@ -248,7 +259,37 @@
 							<td class="px-4 py-3">
 								<Badge tone={statusTone(person.status)}>{person.status.replace('_', ' ')}</Badge>
 							</td>
-							<td class="px-4 py-3 text-right whitespace-nowrap">
+							<td class="px-4 py-3">
+								{#if person.workloadPct != null}
+									{@const pct = person.workloadPct}
+									{@const band = workloadBand(pct)}
+									<div class="flex items-center gap-2" title="{band.label}: {Math.round(pct)}% allocated">
+										<div
+											class="h-2 w-24 overflow-hidden rounded-full bg-slate-100"
+											role="meter"
+											aria-label="Workload"
+											aria-valuemin={0}
+											aria-valuemax={100}
+											aria-valuenow={Math.round(pct)}
+											aria-valuetext="{Math.round(pct)}% allocated, {band.label.toLowerCase()}"
+										>
+											<div
+												class="h-full rounded-full {band.bar}"
+												style="width: {Math.min(pct, 100)}%"
+											></div>
+										</div>
+										<span class="w-10 text-right text-xs tabular-nums font-medium {band.text}">
+											{Math.round(pct)}%
+										</span>
+									</div>
+								{:else}
+									<span class="text-slate-400">—</span>
+								{/if}
+							</td>
+							<td
+								class="px-4 py-3 text-right whitespace-nowrap"
+								onclick={(e) => e.stopPropagation()}
+							>
 								<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(person)}>
 									Edit
 								</button>

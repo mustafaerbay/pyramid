@@ -3,8 +3,11 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -27,10 +30,21 @@ import (
 // syntax — SQLite only accepts literals, NULL, CURRENT_* keywords, or a
 // fully parenthesized `(expr)` in a DEFAULT clause). See idDefaultDDL below
 // for the SQLite-native stand-in this test schema uses instead.
+// testDBSeq keeps database names unique even if a test calls newTestRouter
+// more than once or tests run with -count > 1.
+var testDBSeq atomic.Int64
+
 func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+	// Each test gets its own named in-memory database. A bare
+	// "file::memory:?cache=shared" is ONE database shared by every
+	// connection in the process, so the second test's CREATE TABLE failed
+	// with "table people already exists". The name is unique per test and
+	// the DB is closed (and so discarded) when the test finishes.
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared",
+		url.PathEscape(fmt.Sprintf("%s-%d", t.Name(), testDBSeq.Add(1))))
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
@@ -45,6 +59,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 		t.Fatalf("get sql.DB: %v", err)
 	}
 	sqlDB.SetMaxOpenConns(1)
+	t.Cleanup(func() { _ = sqlDB.Close() })
 
 	if err := db.Exec(testSchema).Error; err != nil {
 		t.Fatalf("create test schema: %v", err)
@@ -109,6 +124,21 @@ CREATE TABLE projects (
 	lead_id TEXT,
 	start_date TEXT,
 	target_date TEXT,
+	sponsor TEXT,
+	project_director TEXT,
+	report_period TEXT,
+	hq_pm TEXT,
+	turkey_pm TEXT,
+	chinese_interface TEXT,
+	hq_interface TEXT,
+	turkey_qa TEXT,
+	account_name TEXT,
+	hq_se TEXT,
+	turkey_se TEXT,
+	release_version TEXT,
+	project_code TEXT,
+	team_size_actual INTEGER,
+	team_size_planned INTEGER,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

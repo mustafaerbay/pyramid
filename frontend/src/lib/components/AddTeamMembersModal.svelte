@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
+	import { PROJECT_ROLE_OPTIONS, projectRoleLabel } from '$lib/projectRoles';
 
 	type Person = components['schemas']['Person'];
 	type ProjectRole = components['schemas']['ProjectRole'];
@@ -38,8 +39,6 @@
 
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
-
-	const roleOptions: ProjectRole[] = ['lead', 'maintainer', 'contributor', 'reviewer', 'stakeholder'];
 
 	const candidates = $derived(people.filter((p) => !existingPersonIds.includes(p.id)));
 
@@ -208,8 +207,8 @@
 					<label class="block text-sm">
 						<span class="mb-1 block font-medium text-slate-700">Role for selected</span>
 						<select class="input" bind:value={role}>
-							{#each roleOptions as opt (opt)}
-								<option value={opt}>{opt}</option>
+							{#each PROJECT_ROLE_OPTIONS as opt (opt)}
+								<option value={opt}>{projectRoleLabel[opt]}</option>
 							{/each}
 						</select>
 					</label>

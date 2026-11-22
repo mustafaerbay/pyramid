@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
+	import { PROJECT_ROLE_OPTIONS, projectRoleLabel } from '$lib/projectRoles';
 
 	type Person = components['schemas']['Person'];
 	type SeniorityLevel = components['schemas']['SeniorityLevel'];
@@ -62,6 +63,17 @@
 		'intern'
 	];
 	const statusOptions: PersonStatus[] = ['active', 'on_leave', 'offboarding', 'inactive'];
+
+	// Job title is a free-text column (not tied to the ProjectRole enum at the
+	// DB level, since a Person doesn't have to be on any project), but the
+	// user asked for the same 10 title strings used for Project Role here too
+	// so the two lists read consistently. Reuses projectRoles.ts's labels
+	// rather than the raw enum keys, since this field stores display strings.
+	const titleOptions = PROJECT_ROLE_OPTIONS.map((opt) => projectRoleLabel[opt]);
+	// If an existing person's title isn't one of the 10 (legacy free-text
+	// data), keep it selectable so editing doesn't silently clobber it.
+	// svelte-ignore state_referenced_locally
+	const hasLegacyTitle = title !== '' && !titleOptions.includes(title);
 
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
@@ -180,7 +192,15 @@
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Title</span>
-					<input class="input" bind:value={title} placeholder="e.g. Backend Engineer" />
+					<select class="input" bind:value={title}>
+						<option value="">—</option>
+						{#each titleOptions as opt (opt)}
+							<option value={opt}>{opt}</option>
+						{/each}
+						{#if hasLegacyTitle}
+							<option value={title}>{title}</option>
+						{/if}
+					</select>
 				</label>
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Phone</span>

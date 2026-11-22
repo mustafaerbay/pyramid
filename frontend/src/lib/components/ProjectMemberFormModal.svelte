@@ -2,6 +2,7 @@
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import PersonSelect from '$lib/components/PersonSelect.svelte';
+	import { PROJECT_ROLE_OPTIONS, projectRoleLabel } from '$lib/projectRoles';
 
 	type ProjectMember = components['schemas']['ProjectMember'];
 	type ProjectRole = components['schemas']['ProjectRole'];
@@ -44,8 +45,6 @@
 	// it happens rather than after.
 	let otherAllocationPct = $state<number | null>(null);
 	let otherProjectCount = $state(0);
-
-	const roleOptions: ProjectRole[] = ['lead', 'maintainer', 'contributor', 'reviewer', 'stakeholder'];
 
 	async function checkOtherAllocations(id: string) {
 		otherAllocationPct = null;
@@ -183,8 +182,8 @@
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Role</span>
 					<select class="input" bind:value={role}>
-						{#each roleOptions as opt (opt)}
-							<option value={opt}>{opt}</option>
+						{#each PROJECT_ROLE_OPTIONS as opt (opt)}
+							<option value={opt}>{projectRoleLabel[opt]}</option>
 						{/each}
 					</select>
 				</label>

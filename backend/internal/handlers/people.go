@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/mustafaerbay/pyramid/backend/internal/api"
 	"github.com/mustafaerbay/pyramid/backend/internal/models"
 	"gorm.io/gorm"
@@ -41,9 +42,21 @@ func (h *Handler) ListPeople(c *gin.Context) {
 		return
 	}
 
+	ids := make([]uuid.UUID, len(people))
+	for i := range people {
+		ids[i] = people[i].ID
+	}
+	workloads, err := h.workloadByPerson(ids)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to compute workload", Details: strptr(err.Error())})
+		return
+	}
+
 	data := make([]api.Person, len(people))
 	for i := range people {
 		data[i] = people[i].ToAPI()
+		w := workloads[people[i].ID]
+		data[i].WorkloadPct = &w
 	}
 
 	c.JSON(http.StatusOK, api.PersonList{
@@ -83,7 +96,46 @@ func (h *Handler) GetPerson(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load person", Details: strptr(err.Error())})
 		return
 	}
-	c.JSON(http.StatusOK, p.ToAPI())
+	workloads, err := h.workloadByPerson([]uuid.UUID{p.ID})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to compute workload", Details: strptr(err.Error())})
+		return
+	}
+	out := p.ToAPI()
+	w := workloads[p.ID]
+	out.WorkloadPct = &w
+	c.JSON(http.StatusOK, out)
+}
+
+// workloadByPerson sums allocation_pct over each person's current project
+// memberships (joined on or before today, not yet left) on projects that are
+// still open (not completed or cancelled). People with no such membership are
+// absent from the map, i.e. read as 0. One query for the whole page.
+func (h *Handler) workloadByPerson(ids []uuid.UUID) (map[uuid.UUID]float64, error) {
+	out := make(map[uuid.UUID]float64, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	var rows []struct {
+		PersonID uuid.UUID
+		Total    float64
+	}
+	err := h.db.Table("project_members AS pm").
+		Select("pm.person_id, COALESCE(SUM(pm.allocation_pct), 0) AS total").
+		Joins("JOIN projects p ON p.id = pm.project_id").
+		Where("pm.person_id IN ?", ids).
+		Where("pm.joined_at <= CURRENT_DATE").
+		Where("pm.left_at IS NULL OR pm.left_at >= CURRENT_DATE").
+		Where("p.status NOT IN ?", []string{"completed", "cancelled"}).
+		Group("pm.person_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		out[r.PersonID] = r.Total
+	}
+	return out, nil
 }
 
 // UpdatePerson implements PATCH /api/v1/people/{id}.

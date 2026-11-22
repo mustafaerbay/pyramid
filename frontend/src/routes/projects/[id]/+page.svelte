@@ -11,11 +11,13 @@
 	import KickoffFormModal from '$lib/components/KickoffFormModal.svelte';
 	import MilestoneFormModal from '$lib/components/MilestoneFormModal.svelte';
 	import MilestoneTimeline from '$lib/components/MilestoneTimeline.svelte';
+	import WeeklySummaryFormModal from '$lib/components/WeeklySummaryFormModal.svelte';
 	import TaskFormModal from '$lib/components/TaskFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
 	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
+	import { projectRoleLabel, projectRoleTone } from '$lib/projectRoles';
 	import { daysUntil } from '$lib/dateMath';
 
 	type Project = components['schemas']['Project'];
@@ -23,6 +25,7 @@
 	type Person = components['schemas']['Person'];
 	type Contribution = components['schemas']['Contribution'];
 	type Milestone = components['schemas']['Milestone'];
+	type WeeklySummary = components['schemas']['WeeklySummary'];
 	type ProjectKickoff = components['schemas']['ProjectKickoff'];
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
@@ -81,6 +84,17 @@
 	let removingMilestone = $state<Milestone | null>(null);
 	let removingMilestoneBusy = $state(false);
 	let removingMilestoneError = $state<string | null>(null);
+
+	let weeklySummaries = $state<WeeklySummary[]>([]);
+	let loadingWeeklySummaries = $state(true);
+	let weeklySummariesError = $state<string | null>(null);
+
+	let weeklySummaryModalMode = $state<'create' | 'edit' | null>(null);
+	let editingWeeklySummary = $state<WeeklySummary | null>(null);
+
+	let removingWeeklySummary = $state<WeeklySummary | null>(null);
+	let removingWeeklySummaryBusy = $state(false);
+	let removingWeeklySummaryError = $state<string | null>(null);
 
 	let tasks = $state<Task[]>([]);
 	let loadingTasks = $state(true);
@@ -202,6 +216,20 @@
 			milestones = data.data;
 		}
 		loadingMilestones = false;
+	}
+
+	async function loadWeeklySummaries() {
+		loadingWeeklySummaries = true;
+		weeklySummariesError = null;
+		const { data, error: err } = await api.GET('/api/v1/weekly-summaries', {
+			params: { query: { projectId, pageSize: 100 } }
+		});
+		if (err) {
+			weeklySummariesError = err.message ?? 'Failed to load weekly summaries';
+		} else if (data) {
+			weeklySummaries = data.data;
+		}
+		loadingWeeklySummaries = false;
 	}
 
 	async function loadTasks() {
@@ -668,6 +696,56 @@
 		loadTasks();
 	}
 
+	function openAddWeeklySummary() {
+		editingWeeklySummary = null;
+		weeklySummaryModalMode = 'create';
+	}
+
+	function openEditWeeklySummary(w: WeeklySummary) {
+		editingWeeklySummary = w;
+		weeklySummaryModalMode = 'edit';
+	}
+
+	function closeWeeklySummaryModal() {
+		weeklySummaryModalMode = null;
+		editingWeeklySummary = null;
+	}
+
+	function handleWeeklySummarySaved(saved: WeeklySummary) {
+		const wasEdit = editingWeeklySummary !== null;
+		closeWeeklySummaryModal();
+		flash('success', wasEdit ? 'Updated weekly summary.' : 'Added weekly summary.');
+		loadWeeklySummaries();
+	}
+
+	function askRemoveWeeklySummary(w: WeeklySummary) {
+		// Same split as askRemoveMilestone — close the edit modal first so the
+		// confirm dialog isn't stacked behind it.
+		closeWeeklySummaryModal();
+		removingWeeklySummaryError = null;
+		removingWeeklySummary = w;
+	}
+
+	async function confirmRemoveWeeklySummary() {
+		if (!removingWeeklySummary) return;
+		const target = removingWeeklySummary;
+		removingWeeklySummaryBusy = true;
+		removingWeeklySummaryError = null;
+
+		const { error: err } = await api.DELETE('/api/v1/weekly-summaries/{id}', {
+			params: { path: { id: target.id } }
+		});
+
+		removingWeeklySummaryBusy = false;
+		if (err) {
+			removingWeeklySummaryError = err.message ?? 'Failed to delete weekly summary.';
+			return;
+		}
+		removingWeeklySummary = null;
+		flash('success', 'Deleted weekly summary.');
+		loadWeeklySummaries();
+	}
+
 	function statusTone(status: Project['status']): BadgeTone {
 		switch (status) {
 			case 'active':
@@ -683,21 +761,6 @@
 		}
 	}
 
-	function roleTone(role: ProjectMember['role']): BadgeTone {
-		switch (role) {
-			case 'lead':
-				return 'dark';
-			case 'maintainer':
-				return 'violet';
-			case 'contributor':
-				return 'neutral';
-			case 'reviewer':
-				return 'info';
-			case 'stakeholder':
-				return 'warning';
-		}
-	}
-
 	onMount(() => {
 		loadProject();
 		loadMembers();
@@ -705,6 +768,7 @@
 		loadActivity();
 		loadKickoff();
 		loadMilestones();
+		loadWeeklySummaries();
 		loadTasks();
 	});
 </script>
@@ -847,7 +911,12 @@
 						</thead>
 						<tbody class="divide-y divide-slate-100">
 							{#each sortedMembers as member (member.id)}
-								<tr class="hover:bg-slate-50 {member.leftAt ? 'opacity-60' : ''}">
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
+								<tr
+									class="cursor-pointer hover:bg-slate-50 {member.leftAt ? 'opacity-60' : ''}"
+									onclick={() => openEditMember(member)}
+								>
 									<td class="px-4 py-3 font-medium">
 										{personLabel(member.personId)}
 										{#if member.leftAt}
@@ -857,11 +926,14 @@
 										{/if}
 									</td>
 									<td class="px-4 py-3">
-										<Badge tone={roleTone(member.role)}>{member.role}</Badge>
+										<Badge tone={projectRoleTone[member.role]}>{projectRoleLabel[member.role]}</Badge>
 									</td>
 									<td class="px-4 py-3 text-slate-600">{member.allocationPct}%</td>
 									<td class="px-4 py-3 text-slate-600">{member.joinedAt}</td>
-									<td class="px-4 py-3 text-right whitespace-nowrap">
+									<td
+										class="px-4 py-3 text-right whitespace-nowrap"
+										onclick={(e) => e.stopPropagation()}
+									>
 										<button
 											type="button"
 											class="btn-ghost px-2 py-1"
@@ -1161,6 +1233,16 @@
 								<p class="px-4 py-3 text-sm text-slate-400">No tasks match the current filters.</p>
 							{:else}
 								<table class="w-full text-left text-sm">
+									<thead class="border-b border-slate-200 text-xs text-slate-500">
+										<tr>
+											<th class="px-4 py-2 font-medium">Task</th>
+											<th class="px-4 py-2 font-medium">Assignees</th>
+											<th class="px-4 py-2 font-medium">Priority</th>
+											<th class="px-4 py-2 font-medium">Status</th>
+											<th class="px-4 py-2 font-medium">Due</th>
+											<th class="px-4 py-2 font-medium"><span class="sr-only">Actions</span></th>
+										</tr>
+									</thead>
 									<tbody class="divide-y divide-slate-100">
 										{#each group.tasks as task (task.id)}
 											<tr class="hover:bg-slate-50">
@@ -1224,6 +1306,48 @@
 						</div>
 					{/each}
 				</div>
+			{/if}
+		</section>
+
+		<section class="space-y-3">
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div>
+					<h2 class="text-lg font-semibold tracking-tight">Weekly summary</h2>
+					<p class="mt-0.5 text-sm text-slate-500">
+						{weeklySummaries.length}
+						{weeklySummaries.length === 1 ? 'entry' : 'entries'}
+					</p>
+				</div>
+				<button type="button" class="btn-primary" onclick={openAddWeeklySummary}>
+					+ Add weekly summary
+				</button>
+			</div>
+
+			{#if loadingWeeklySummaries}
+				<p class="text-slate-500">Loading…</p>
+			{:else if weeklySummariesError}
+				<div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+					<p class="text-sm">{weeklySummariesError}</p>
+				</div>
+			{:else if weeklySummaries.length === 0}
+				<div class="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-500">
+					No weekly summaries yet. Click "Add weekly summary" to log this week's task progress.
+				</div>
+			{:else}
+				<ul class="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
+					{#each weeklySummaries as entry (entry.id)}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+						<li
+							class="cursor-pointer px-4 py-3 hover:bg-slate-50"
+							onclick={() => openEditWeeklySummary(entry)}
+						>
+							<p class="text-sm font-medium text-slate-800">Week of {entry.weekOf}</p>
+							<p class="mt-1 whitespace-pre-wrap text-sm text-slate-600">{entry.summary}</p>
+						</li>
+					{/each}
+				</ul>
 			{/if}
 		</section>
 
@@ -1339,6 +1463,16 @@
 	/>
 {/if}
 
+{#if weeklySummaryModalMode}
+	<WeeklySummaryFormModal
+		{projectId}
+		entry={editingWeeklySummary}
+		onClose={closeWeeklySummaryModal}
+		onSaved={handleWeeklySummarySaved}
+		onDelete={editingWeeklySummary ? () => askRemoveWeeklySummary(editingWeeklySummary!) : undefined}
+	/>
+{/if}
+
 <ConfirmDialog
 	open={removingMember !== null}
 	title="Remove from project"
@@ -1376,6 +1510,17 @@
 	error={removingMilestoneError}
 	onConfirm={confirmRemoveMilestone}
 	onCancel={() => (removingMilestone = null)}
+/>
+
+<ConfirmDialog
+	open={removingWeeklySummary !== null}
+	title="Delete weekly summary"
+	message={removingWeeklySummary ? `Delete the entry for week of ${removingWeeklySummary.weekOf}? This can't be undone.` : ''}
+	confirmLabel={removingWeeklySummaryBusy ? 'Deleting…' : 'Delete'}
+	danger
+	error={removingWeeklySummaryError}
+	onConfirm={confirmRemoveWeeklySummary}
+	onCancel={() => (removingWeeklySummary = null)}
 />
 
 <ConfirmDialog
