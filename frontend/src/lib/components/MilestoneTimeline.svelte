@@ -295,12 +295,74 @@
 			return r !== null && r.startDay > rangeEndDay;
 		}).length
 	);
+
+	function dateRange(m: TimelineMilestone): string {
+		if (m.startDate && m.dueDate && m.startDate !== m.dueDate) return `${m.startDate} → ${m.dueDate}`;
+		return m.dueDate ?? m.startDate ?? 'No date';
+	}
+
+	const byDate = (a: TimelineMilestone, b: TimelineMilestone) =>
+		(a.dueDate ?? a.startDate ?? '9999').localeCompare(b.dueDate ?? b.startDate ?? '9999');
+
+	const phoneGroups = $derived(
+		versions.length === 0
+			? [{ key: 'all', label: '', status: null, date: null, items: [...milestones].sort(byDate) }]
+			: groupMilestonesByVersion(versions, milestones)
+					.filter((g) => g.milestones.length > 0)
+					.map((g) => ({
+						key: g.version?.id ?? 'none',
+						label: g.version?.name ?? 'No version',
+						status: g.version?.status ?? null,
+						date: g.version ? versionLineDate(g.version) : null,
+						items: [...g.milestones].sort(byDate)
+					}))
+	);
 </script>
 
 <div class="space-y-3">
 	{#if milestones.length === 0}
 		<p class="text-sm text-slate-400">No milestones yet.</p>
 	{:else}
+		<!-- Phones: the Gantt view can't fit 375px, so show a plain list
+		     (grouped by version when the project has versions). -->
+		<div class="space-y-4 md:hidden">
+			{#each phoneGroups as group (group.key)}
+				<div>
+					{#if group.label}
+						<p class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold {group.status === 'cancelled'
+							? 'text-slate-400 line-through'
+							: 'text-slate-700'}">
+							<span class="h-1.5 w-1.5 rounded-full {versionDotClass(group.status)}"></span>
+							{group.label}
+							{#if group.date}<span class="font-normal text-slate-500">· {group.date}</span>{/if}
+						</p>
+					{/if}
+					<ul class="space-y-2">
+						{#each group.items as milestone (milestone.id)}
+							<li>
+								<button
+									type="button"
+									class="flex min-h-11 w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm {statusChipClass(
+										milestone.status
+									)}"
+									onclick={() => onSelect?.(milestone)}
+								>
+									<span class="h-2 w-2 shrink-0 rounded-full {statusDotClass(milestone.status)}"></span>
+									<span class="min-w-0 flex-1">
+										<span class="block truncate font-medium text-slate-800">{milestone.name}</span>
+										<span class="block text-xs text-slate-500">
+											{dateRange(milestone)} · {milestone.status.replace('_', ' ')}
+										</span>
+									</span>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/each}
+		</div>
+
+		<div class="hidden space-y-3 md:block">
 		<div class="w-full">
 			<div class="relative h-6 border-b border-slate-200 text-xs">
 				{#each months as m (m.key)}
@@ -402,5 +464,6 @@
 				</div>
 			</div>
 		{/if}
+		</div>
 	{/if}
 </div>

@@ -101,12 +101,12 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+	class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 sm:p-4"
 	role="presentation"
 	onclick={onClose}
 >
 	<div
-		class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6 shadow-xl"
+		class="h-dvh max-h-dvh w-full max-w-lg overflow-y-auto bg-white p-4 sm:p-6 shadow-xl sm:h-auto sm:max-h-[90vh] sm:rounded-lg"
 		role="dialog"
 		tabindex="-1"
 		aria-modal="true"

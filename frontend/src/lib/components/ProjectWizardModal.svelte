@@ -242,12 +242,12 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+	class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 sm:p-4"
 	role="presentation"
 	onclick={() => !creating && onClose()}
 >
 	<div
-		class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+		class="flex h-dvh max-h-dvh w-full max-w-2xl flex-col overflow-hidden bg-white shadow-xl sm:h-auto sm:max-h-[90vh] sm:rounded-lg"
 		role="dialog"
 		tabindex="-1"
 		aria-modal="true"

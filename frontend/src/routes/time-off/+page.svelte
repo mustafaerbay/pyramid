@@ -259,7 +259,50 @@
 			No leave requests yet. Click "New request" to submit one.
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+		<ul class="m-list">
+			{#each requests as request (request.id)}
+				<li class="m-card">
+					<div class="flex items-start justify-between gap-2">
+						<p class="font-medium text-slate-900">{personName(request.personId)}</p>
+						<Badge tone={statusTone(request.status)}>{request.status}</Badge>
+					</div>
+					<div class="m-meta">
+						<span class="capitalize">{request.type}</span>
+						<span>{request.startDate} → {request.endDate}</span>
+					</div>
+					{#if request.status === 'pending'}
+						<div class="m-actions">
+							<button
+								type="button"
+								class="btn-secondary text-emerald-700 hover:bg-emerald-50"
+								onclick={() => setStatus(request, 'approved')}
+							>
+								Approve
+							</button>
+							<button
+								type="button"
+								class="btn-secondary text-red-600 hover:bg-red-50"
+								onclick={() => setStatus(request, 'rejected')}
+							>
+								Reject
+							</button>
+						</div>
+					{/if}
+					<div class="m-actions {request.status === 'pending' ? 'mt-2 border-t-0 pt-0' : ''}">
+						<button type="button" class="btn-secondary" onclick={() => openEdit(request)}>Edit</button>
+						<button
+							type="button"
+							class="btn-secondary text-red-600 hover:bg-red-50"
+							onclick={() => askDelete(request)}
+						>
+							Delete
+						</button>
+					</div>
+				</li>
+			{/each}
+		</ul>
+
+		<div class="table-wrap">
 			<table class="w-full text-left text-sm">
 				<thead class="border-b border-slate-200 bg-slate-50 text-slate-600">
 					<tr>

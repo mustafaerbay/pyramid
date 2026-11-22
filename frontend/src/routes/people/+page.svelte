@@ -232,7 +232,56 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+		<ul class="m-list">
+			{#each filtered as person (person.id)}
+				<li class="m-card">
+					<button type="button" class="block w-full text-left" onclick={() => openEdit(person)}>
+						<div class="flex items-start justify-between gap-2">
+							<div class="min-w-0">
+								<p class="truncate font-medium text-slate-900">{fullName(person)}</p>
+								<p class="truncate text-slate-500">{person.title ?? '—'}</p>
+							</div>
+							<Badge tone={statusTone(person.status)}>{person.status.replace('_', ' ')}</Badge>
+						</div>
+						<p class="mt-1 truncate text-slate-600">{person.email}</p>
+						<div class="m-meta">
+							{#if person.seniority}<span>{person.seniority}</span>{/if}
+							<span>{person.employmentType.replace('_', ' ')}</span>
+						</div>
+						{#if person.workloadPct != null}
+							{@const pct = person.workloadPct}
+							{@const band = workloadBand(pct)}
+							<div class="mt-2 flex items-center gap-2">
+								<div
+									class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"
+									role="meter"
+									aria-label="Workload"
+									aria-valuemin={0}
+									aria-valuemax={100}
+									aria-valuenow={Math.round(pct)}
+									aria-valuetext="{Math.round(pct)}% allocated, {band.label.toLowerCase()}"
+								>
+									<div class="h-full rounded-full {band.bar}" style="width: {Math.min(pct, 100)}%"></div>
+								</div>
+								<span class="text-xs font-medium tabular-nums {band.text}">{Math.round(pct)}% · {band.label}</span>
+							</div>
+						{/if}
+					</button>
+					<div class="m-actions">
+						<button type="button" class="btn-secondary" onclick={() => openEdit(person)}>Edit</button>
+						<button
+							type="button"
+							class="btn-secondary text-red-600 hover:bg-red-50"
+							onclick={() => askDelete(person)}
+						>
+							Delete
+						</button>
+					</div>
+				</li>
+			{/each}
+		</ul>
+
+		<div class="table-wrap">
 			<table class="w-full text-left text-sm">
 				<thead class="border-b border-slate-200 bg-slate-50 text-slate-600">
 					<tr>

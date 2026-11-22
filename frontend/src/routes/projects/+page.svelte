@@ -252,7 +252,41 @@
 			{/if}
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+		<ul class="m-list">
+			{#each filtered as project (project.id)}
+				<li class="m-card">
+					<a href="/projects/{project.id}" class="block">
+						<div class="flex items-start justify-between gap-2">
+							<div class="min-w-0">
+								<p class="font-mono text-xs font-medium text-slate-500">{project.key}</p>
+								<p class="font-medium text-slate-900">{project.name}</p>
+							</div>
+							<Badge tone={statusTone(project.status)}>{project.status.replace('_', ' ')}</Badge>
+						</div>
+						<div class="m-meta">
+							<span>Lead: {project.leadId ? (peopleNames[project.leadId] ?? '—') : '—'}</span>
+							<span class="capitalize">{project.priority}</span>
+							<span class="inline-flex items-center gap-1.5">
+								<span class="h-2 w-2 rounded-full {healthDotClass[project.health]}"></span>
+								{project.health.replace('_', ' ')}
+							</span>
+						</div>
+					</a>
+					<div class="m-actions">
+						<button type="button" class="btn-secondary" onclick={() => openEdit(project)}>Edit</button>
+						<button
+							type="button"
+							class="btn-secondary text-red-600 hover:bg-red-50"
+							onclick={() => askDelete(project)}
+						>
+							Delete
+						</button>
+					</div>
+				</li>
+			{/each}
+		</ul>
+
+		<div class="table-wrap">
 			<table class="w-full text-left text-sm">
 				<thead class="border-b border-slate-200 bg-slate-50 text-slate-600">
 					<tr>

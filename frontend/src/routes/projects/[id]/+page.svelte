@@ -911,7 +911,7 @@
 						{/if}
 					</dl>
 				</div>
-				<div class="flex gap-2">
+				<div class="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
 					<button type="button" class="btn-secondary" onclick={() => (showLogContribution = true)}>
 						Log contribution
 					</button>
@@ -977,7 +977,33 @@
 					No one is assigned to this project yet. Click "Add person" to build the team.
 				</div>
 			{:else}
-				<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+				<ul class="m-list">
+					{#each sortedMembers as member (member.id)}
+						<li class="m-card {member.leftAt ? 'opacity-60' : ''}">
+							<div class="flex items-start justify-between gap-2">
+								<p class="font-medium text-slate-900">{personLabel(member.personId)}</p>
+								<Badge tone={projectRoleTone[member.role]}>{projectRoleLabel[member.role]}</Badge>
+							</div>
+							<div class="m-meta">
+								<span>{member.allocationPct}% allocation</span>
+								<span>Joined {member.joinedAt}</span>
+								{#if member.leftAt}<span>Left {member.leftAt}</span>{/if}
+							</div>
+							<div class="m-actions">
+								<button type="button" class="btn-secondary" onclick={() => openEditMember(member)}>Edit</button>
+								<button
+									type="button"
+									class="btn-secondary text-red-600 hover:bg-red-50"
+									onclick={() => askRemove(member)}
+								>
+									Remove
+								</button>
+							</div>
+						</li>
+					{/each}
+				</ul>
+
+				<div class="table-wrap">
 					<table class="w-full text-left text-sm">
 						<thead class="border-b border-slate-200 bg-slate-50 text-slate-600">
 							<tr>
@@ -1341,7 +1367,52 @@
 							{#if group.tasks.length === 0}
 								<p class="px-4 py-3 text-sm text-slate-400">No tasks match the current filters.</p>
 							{:else}
-								<table class="w-full text-left text-sm">
+								<ul class="divide-y divide-slate-100 md:hidden">
+									{#each group.tasks as task (task.id)}
+										<li class="space-y-2 px-4 py-3 text-sm">
+											<button
+												type="button"
+												class="block w-full text-left"
+												onclick={() => openEditTask(task)}
+											>
+												<span class="font-medium text-slate-800">{task.title}</span>
+												<span class="mt-0.5 block text-xs text-slate-500">
+													{assigneesLabel(task.assigneeIds)}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
+												</span>
+											</button>
+											<div class="flex items-center gap-2">
+												<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
+												<select
+													class="ml-auto min-h-10 rounded-md border-0 px-3 text-sm font-medium {badgeToneClass[
+														taskStatusTone(task.status)
+													]}"
+													aria-label="Status of {task.title}"
+													value={task.status}
+													onchange={(e) => quickUpdateStatus(task, e.currentTarget.value as TaskStatus)}
+												>
+													<option value="backlog">backlog</option>
+													<option value="todo">todo</option>
+													<option value="in_progress">in progress</option>
+													<option value="in_review">in review</option>
+													<option value="blocked">blocked</option>
+													<option value="done">done</option>
+													<option value="cancelled">cancelled</option>
+												</select>
+											</div>
+											<div class="flex gap-2">
+												<button type="button" class="btn-secondary flex-1" onclick={() => openEditTask(task)}>Edit</button>
+												<button
+													type="button"
+													class="btn-secondary flex-1 text-red-600 hover:bg-red-50"
+													onclick={() => askRemoveTask(task)}
+												>
+													Delete
+												</button>
+											</div>
+										</li>
+									{/each}
+								</ul>
+								<table class="hidden w-full text-left text-sm md:table">
 									<thead class="border-b border-slate-200 text-xs text-slate-500">
 										<tr>
 											<th class="px-4 py-2 font-medium">Task</th>

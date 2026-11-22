@@ -216,7 +216,7 @@
 			<div class="space-y-4">
 				{#each groups as group (group.projectId)}
 					<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-						<div class="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+						<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-slate-200 bg-slate-50 px-4 py-2.5">
 							<a
 								href="/projects/{group.projectId}"
 								class="text-sm font-semibold text-slate-800 hover:underline"
@@ -229,7 +229,41 @@
 								{group.tasks.length === 1 ? 'task' : 'tasks'}
 							</span>
 						</div>
-						<table class="w-full text-left text-sm">
+						<ul class="divide-y divide-slate-100 md:hidden">
+							{#each group.tasks as task (task.id)}
+								<li class="space-y-2 px-4 py-3 text-sm">
+									<div>
+										<a href="/projects/{group.projectId}" class="font-medium text-slate-800 hover:underline">
+											{task.title}
+										</a>
+										{#if task.milestoneId && milestones[task.milestoneId]}
+											<p class="text-xs text-slate-500">{milestones[task.milestoneId].name}</p>
+										{/if}
+									</div>
+									<div class="flex items-center gap-2">
+										<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
+										{#if task.dueDate}<span class="text-xs text-slate-500">Due {task.dueDate}</span>{/if}
+										<select
+											class="ml-auto min-h-10 rounded-md border-0 px-3 text-sm font-medium {badgeToneClass[
+												taskStatusTone(task.status)
+											]}"
+											aria-label="Status of {task.title}"
+											value={task.status}
+											onchange={(e) => quickUpdateStatus(task, e.currentTarget.value as TaskStatus)}
+										>
+											<option value="backlog">backlog</option>
+											<option value="todo">todo</option>
+											<option value="in_progress">in progress</option>
+											<option value="in_review">in review</option>
+											<option value="blocked">blocked</option>
+											<option value="done">done</option>
+											<option value="cancelled">cancelled</option>
+										</select>
+									</div>
+								</li>
+							{/each}
+						</ul>
+						<table class="hidden w-full text-left text-sm md:table">
 							<thead class="border-b border-slate-200 text-xs text-slate-500">
 								<tr>
 									<th class="px-4 py-2 font-medium">Task</th>

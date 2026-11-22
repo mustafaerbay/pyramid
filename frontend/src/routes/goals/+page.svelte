@@ -231,7 +231,7 @@
 		<div class="space-y-3">
 			{#each filtered as goal (goal.id)}
 				<div class="rounded-lg border border-slate-200 bg-white p-4">
-					<div class="flex items-start justify-between gap-3">
+					<div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 						<div>
 							<div class="flex items-center gap-2">
 								<h3 class="font-medium text-slate-900">{goal.title}</h3>
@@ -248,7 +248,7 @@
 								{/if}
 							</p>
 						</div>
-						<div class="flex shrink-0 gap-1">
+						<div class="flex shrink-0 gap-1 max-sm:order-last max-sm:gap-2 max-sm:border-t max-sm:border-slate-100 max-sm:pt-3 max-sm:[&>*]:flex-1">
 							<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(goal)}>
 								Edit
 							</button>

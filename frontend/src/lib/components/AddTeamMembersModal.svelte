@@ -162,12 +162,12 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+	class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 sm:p-4"
 	role="presentation"
 	onclick={onClose}
 >
 	<div
-		class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+		class="flex h-dvh max-h-dvh w-full max-w-2xl flex-col overflow-hidden bg-white shadow-xl sm:h-auto sm:max-h-[90vh] sm:rounded-lg"
 		role="dialog"
 		tabindex="-1"
 		aria-modal="true"
@@ -251,7 +251,7 @@
 									/>
 								</th>
 								<th class="px-2 py-2 font-medium">Person</th>
-								<th class="px-2 py-2 font-medium">Title</th>
+								<th class="hidden px-2 py-2 font-medium sm:table-cell">Title</th>
 								<th class="px-2 py-2 font-medium">Elsewhere</th>
 							</tr>
 						</thead>
@@ -275,9 +275,10 @@
 									</td>
 									<td class="px-2 py-2 font-medium text-slate-800">
 										{fullName(person)}
-										<span class="block text-xs font-normal text-slate-400">{person.email}</span>
+										{#if person.title}<span class="block text-xs font-normal text-slate-500 sm:hidden">{person.title}</span>{/if}
+										<span class="block text-xs font-normal break-all text-slate-400">{person.email}</span>
 									</td>
-									<td class="px-2 py-2 text-slate-600">{person.title ?? '—'}</td>
+									<td class="hidden px-2 py-2 text-slate-600 sm:table-cell">{person.title ?? '—'}</td>
 									<td class="px-2 py-2">
 										{#if otherCount > 0}
 											<span class="text-xs {overCapacity ? 'font-medium text-amber-600' : 'text-slate-500'}">

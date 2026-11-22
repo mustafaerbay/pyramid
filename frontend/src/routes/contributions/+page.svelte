@@ -264,7 +264,48 @@
 			No contributions logged yet. Click "Log contribution" to add one.
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+		<ul class="m-list">
+			{#each contributions as contribution (contribution.id)}
+				<li class="m-card">
+					<div class="flex items-start justify-between gap-2">
+						<p class="font-medium text-slate-900">{personName(contribution.personId)}</p>
+						<Badge tone={typeTone(contribution.type)}>{contribution.type.replace('_', ' ')}</Badge>
+					</div>
+					<p class="mt-1 break-words text-slate-700">
+						{#if contribution.url}
+							<a
+								href={contribution.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="underline decoration-slate-300 hover:decoration-slate-500"
+							>
+								{contribution.title ?? contribution.url}
+							</a>
+						{:else}
+							{contribution.title ?? '—'}
+						{/if}
+					</p>
+					<div class="m-meta">
+						<span class="font-mono text-xs">
+							{contribution.projectId ? (projectKeys[contribution.projectId] ?? '—') : '—'}
+						</span>
+						<span>{contribution.occurredAt.slice(0, 10)}</span>
+					</div>
+					<div class="m-actions">
+						<button type="button" class="btn-secondary" onclick={() => openEdit(contribution)}>Edit</button>
+						<button
+							type="button"
+							class="btn-secondary text-red-600 hover:bg-red-50"
+							onclick={() => askDelete(contribution)}
+						>
+							Delete
+						</button>
+					</div>
+				</li>
+			{/each}
+		</ul>
+
+		<div class="table-wrap">
 			<table class="w-full text-left text-sm">
 				<thead class="border-b border-slate-200 bg-slate-50 text-slate-600">
 					<tr>
