@@ -92,11 +92,17 @@ func (h *Handler) attachAssignees(tasks []models.Task) error {
 	}
 
 	byTask := make(map[uuid.UUID][]uuid.UUID, len(tasks))
+	manDays := make(map[uuid.UUID]map[uuid.UUID]float64, len(tasks))
 	for _, l := range links {
 		byTask[l.TaskID] = append(byTask[l.TaskID], l.PersonID)
+		if manDays[l.TaskID] == nil {
+			manDays[l.TaskID] = map[uuid.UUID]float64{}
+		}
+		manDays[l.TaskID][l.PersonID] = l.ManDays
 	}
 	for i := range tasks {
 		tasks[i].AssigneeIDs = byTask[tasks[i].ID]
+		tasks[i].ManDays = manDays[tasks[i].ID]
 	}
 	return nil
 }
@@ -111,6 +117,7 @@ func (h *Handler) attachAssigneesOne(t *models.Task) error {
 		return err
 	}
 	t.AssigneeIDs = ts[0].AssigneeIDs
+	t.ManDays = ts[0].ManDays
 	return nil
 }
 
@@ -119,18 +126,28 @@ func (h *Handler) attachAssigneesOne(t *models.Task) error {
 // task's in-memory AssigneeIDs set to match. A nil/empty assigneeIDs just
 // clears the task's assignees.
 func (h *Handler) replaceAssignees(t *models.Task, assigneeIDs []uuid.UUID) error {
+	assignments := make([]api.TaskAssignment, len(assigneeIDs))
+	for i, id := range assigneeIDs {
+		assignments[i] = api.TaskAssignment{PersonId: id}
+	}
+	return h.replaceAssignments(t, assignments)
+}
+
+// replaceAssignments is replaceAssignees with each person's man-days. A
+// person listed twice keeps the first entry.
+func (h *Handler) replaceAssignments(t *models.Task, assignments []api.TaskAssignment) error {
 	if err := h.db.Where("task_id = ?", t.ID).Delete(&models.TaskAssignee{}).Error; err != nil {
 		return err
 	}
 
-	seen := make(map[uuid.UUID]bool, len(assigneeIDs))
-	links := make([]models.TaskAssignee, 0, len(assigneeIDs))
-	for _, id := range assigneeIDs {
-		if seen[id] {
+	seen := make(map[uuid.UUID]bool, len(assignments))
+	links := make([]models.TaskAssignee, 0, len(assignments))
+	for _, a := range assignments {
+		if seen[a.PersonId] {
 			continue
 		}
-		seen[id] = true
-		links = append(links, models.TaskAssignee{TaskID: t.ID, PersonID: id})
+		seen[a.PersonId] = true
+		links = append(links, models.TaskAssignee{TaskID: t.ID, PersonID: a.PersonId, ManDays: a.ManDays})
 	}
 
 	if len(links) > 0 {
@@ -140,8 +157,10 @@ func (h *Handler) replaceAssignees(t *models.Task, assigneeIDs []uuid.UUID) erro
 	}
 
 	t.AssigneeIDs = make([]uuid.UUID, len(links))
+	t.ManDays = make(map[uuid.UUID]float64, len(links))
 	for i, l := range links {
 		t.AssigneeIDs[i] = l.PersonID
+		t.ManDays[l.PersonID] = l.ManDays
 	}
 	return nil
 }
@@ -155,6 +174,16 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	}
 
 	t := models.NewTaskFromCreate(in)
+	if err := t.ValidateDates(); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	if in.Assignments != nil {
+		if err := models.ValidateAssignments(*in.Assignments); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 
 	// Per-project sequential number (PYR-42 style), assigned here since it
 	// needs a DB read the model constructor shouldn't own.
@@ -173,7 +202,12 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	if in.AssigneeIds != nil {
+	if in.Assignments != nil {
+		if err := h.replaceAssignments(&t, *in.Assignments); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to assign task", Details: strptr(err.Error())})
+			return
+		}
+	} else if in.AssigneeIds != nil {
 		if err := h.replaceAssignees(&t, *in.AssigneeIds); err != nil {
 			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to assign task", Details: strptr(err.Error())})
 			return
@@ -235,6 +269,16 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	clearMilestone := isExplicitNull(raw, "milestoneId")
 
 	t.ApplyUpdate(in, clearMilestone)
+	if err := t.ValidateDates(); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	if in.Assignments != nil {
+		if err := models.ValidateAssignments(*in.Assignments); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 	if err := h.db.Save(&t).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task", Details: strptr(err.Error())})
 		return
@@ -245,7 +289,12 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	// assignees untouched" — a *[]uuid.UUID pointer already tells those two
 	// cases apart cleanly (an empty JSON array unmarshals to a non-nil,
 	// zero-length slice), so this doesn't need the raw-body trick above.
-	if in.AssigneeIds != nil {
+	if in.Assignments != nil {
+		if err := h.replaceAssignments(&t, *in.Assignments); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task assignees", Details: strptr(err.Error())})
+			return
+		}
+	} else if in.AssigneeIds != nil {
 		if err := h.replaceAssignees(&t, *in.AssigneeIds); err != nil {
 			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task assignees", Details: strptr(err.Error())})
 			return

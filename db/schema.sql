@@ -115,6 +115,8 @@ CREATE TABLE people (
     hire_date         DATE,
     termination_date  DATE,
     weekly_capacity_hours NUMERIC(5,2) DEFAULT 40,               -- for allocation math
+    monthly_capacity_man_days NUMERIC(5,2) NOT NULL DEFAULT 20   -- man-days a month (planning)
+        CHECK (monthly_capacity_man_days >= 0 AND monthly_capacity_man_days <= 31),
     created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -344,12 +346,14 @@ CREATE TABLE tasks (
     reporter_id   UUID REFERENCES people(id) ON DELETE SET NULL,
     story_points  NUMERIC(5,2),
     estimate_hours NUMERIC(6,2),
+    start_date    DATE,                                    -- planned start; man-days spread start..due
     due_date      DATE,
     started_at    TIMESTAMPTZ,
     completed_at  TIMESTAMPTZ,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (project_id, number)
+    UNIQUE (project_id, number),
+    CONSTRAINT tasks_start_before_due CHECK (start_date IS NULL OR due_date IS NULL OR start_date <= due_date)
 );
 
 -- A task can have multiple people assigned to it (replaces the earlier
@@ -357,6 +361,7 @@ CREATE TABLE tasks (
 CREATE TABLE task_assignees (
     task_id   UUID NOT NULL REFERENCES tasks(id)  ON DELETE CASCADE,
     person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    man_days  NUMERIC(6,2) NOT NULL DEFAULT 0 CHECK (man_days >= 0 AND man_days <= 999),  -- this person's share
     PRIMARY KEY (task_id, person_id)
 );
 

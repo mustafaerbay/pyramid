@@ -3,9 +3,11 @@ package handlers
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mustafaerbay/pyramid/backend/internal/api"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // The hand-authored test schema (testutil_test.go) declares no foreign-key
@@ -266,5 +268,118 @@ func TestTasks_Delete(t *testing.T) {
 	status = doJSON(t, r, http.MethodGet, "/api/v1/tasks/"+created.Id.String(), nil, nil)
 	if status != http.StatusNotFound {
 		t.Fatalf("get-after-delete status = %d, want %d", status, http.StatusNotFound)
+	}
+}
+
+func mdDate(s string) *openapi_types.Date {
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		panic(err)
+	}
+	return &openapi_types.Date{Time: t}
+}
+
+func manDaysOf(task api.Task) map[uuid.UUID]float64 {
+	out := map[uuid.UUID]float64{}
+	for _, a := range task.Assignments {
+		out[a.PersonId] = a.ManDays
+	}
+	return out
+}
+
+func TestTasks_Create_WithAssignmentsAndStartDate(t *testing.T) {
+	r, _ := newTestRouter(t)
+	alice, bob := uuid.New(), uuid.New()
+
+	var created api.Task
+	status := doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: uuid.New(), Title: "Requirement",
+		StartDate: mdDate("2026-10-26"), DueDate: mdDate("2026-11-06"),
+		Assignments: &[]api.TaskAssignment{{PersonId: alice, ManDays: 30}, {PersonId: bob, ManDays: 10}},
+	}, &created)
+	if status != http.StatusCreated {
+		t.Fatalf("create status = %d, want 201", status)
+	}
+	if created.ManDays != 40 {
+		t.Errorf("ManDays = %v, want 40", created.ManDays)
+	}
+	if m := manDaysOf(created); m[alice] != 30 || m[bob] != 10 {
+		t.Errorf("assignments = %v, want alice 30, bob 10", m)
+	}
+	if len(created.AssigneeIds) != 2 {
+		t.Errorf("AssigneeIds = %v, want both people", created.AssigneeIds)
+	}
+	if created.StartDate == nil || created.StartDate.Format("2006-01-02") != "2026-10-26" {
+		t.Errorf("StartDate = %v, want 2026-10-26", created.StartDate)
+	}
+
+	var fetched api.Task
+	doJSON(t, r, http.MethodGet, "/api/v1/tasks/"+created.Id.String(), nil, &fetched)
+	if fetched.ManDays != 40 || manDaysOf(fetched)[alice] != 30 {
+		t.Errorf("GET lost man-days: total %v, assignments %v", fetched.ManDays, manDaysOf(fetched))
+	}
+
+	var list api.TaskList
+	doJSON(t, r, http.MethodGet, "/api/v1/tasks?projectId="+created.ProjectId.String(), nil, &list)
+	if len(list.Data) != 1 || list.Data[0].ManDays != 40 {
+		t.Errorf("list man-days = %+v, want one task with 40", list.Data)
+	}
+}
+
+func TestTasks_Update_AssignmentsReplaceSetAndWinOverAssigneeIds(t *testing.T) {
+	r, _ := newTestRouter(t)
+	alice, bob, carol := uuid.New(), uuid.New(), uuid.New()
+	var created api.Task
+	doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: uuid.New(), Title: "T",
+		Assignments: &[]api.TaskAssignment{{PersonId: alice, ManDays: 5}},
+	}, &created)
+
+	var updated api.Task
+	status := doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+created.Id.String(), api.TaskUpdate{
+		AssigneeIds: &[]uuid.UUID{carol},
+		Assignments: &[]api.TaskAssignment{{PersonId: bob, ManDays: 2.5}},
+	}, &updated)
+	if status != http.StatusOK {
+		t.Fatalf("update status = %d, want 200", status)
+	}
+	if m := manDaysOf(updated); len(m) != 1 || m[bob] != 2.5 {
+		t.Errorf("assignments = %v, want only bob 2.5", m)
+	}
+	if updated.ManDays != 2.5 {
+		t.Errorf("ManDays = %v, want 2.5", updated.ManDays)
+	}
+}
+
+func TestTasks_AssigneeIdsAloneMeansZeroManDays(t *testing.T) {
+	r, _ := newTestRouter(t)
+	alice := uuid.New()
+	var created api.Task
+	doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: uuid.New(), Title: "T", AssigneeIds: &[]uuid.UUID{alice},
+	}, &created)
+	if m := manDaysOf(created); len(m) != 1 || m[alice] != 0 || created.ManDays != 0 {
+		t.Errorf("assignments = %v total %v, want alice with 0", m, created.ManDays)
+	}
+}
+
+func TestTasks_RejectsBadManDaysAndDates(t *testing.T) {
+	r, _ := newTestRouter(t)
+	alice := uuid.New()
+	cases := map[string]api.TaskCreate{
+		"negative man-days": {ProjectId: uuid.New(), Title: "T", Assignments: &[]api.TaskAssignment{{PersonId: alice, ManDays: -1}}},
+		"too many man-days": {ProjectId: uuid.New(), Title: "T", Assignments: &[]api.TaskAssignment{{PersonId: alice, ManDays: 1000}}},
+		"start after due":   {ProjectId: uuid.New(), Title: "T", StartDate: mdDate("2026-11-10"), DueDate: mdDate("2026-11-01")},
+	}
+	for name, body := range cases {
+		if status := doJSON(t, r, http.MethodPost, "/api/v1/tasks", body, nil); status != http.StatusBadRequest {
+			t.Errorf("%s: status = %d, want 400", name, status)
+		}
+	}
+
+	var created api.Task
+	doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{ProjectId: uuid.New(), Title: "T", DueDate: mdDate("2026-11-01")}, &created)
+	if status := doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+created.Id.String(), api.TaskUpdate{StartDate: mdDate("2026-11-05")}, nil); status != http.StatusBadRequest {
+		t.Errorf("patch start after existing due: status = %d, want 400", status)
 	}
 }

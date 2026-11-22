@@ -41,6 +41,7 @@
 	let location = $state(initial?.location ?? '');
 	let timezone = $state(initial?.timezone ?? '');
 	let hireDate = $state(initial?.hireDate ?? '');
+	let capacity = $state<number>(initial?.monthlyCapacityManDays ?? 20);
 
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
@@ -83,6 +84,10 @@
 			formError = 'First name, last name, and email are required.';
 			return;
 		}
+		if (!(Number(capacity) >= 0 && Number(capacity) <= 31)) {
+			formError = 'Monthly capacity must be between 0 and 31 man-days.';
+			return;
+		}
 
 		saving = true;
 		try {
@@ -100,7 +105,8 @@
 						status,
 						location: location || undefined,
 						timezone: timezone || undefined,
-						hireDate: hireDate || undefined
+						hireDate: hireDate || undefined,
+						monthlyCapacityManDays: Number(capacity) || 0
 					}
 				});
 				if (error) {
@@ -120,7 +126,8 @@
 						employmentType,
 						location: location || undefined,
 						timezone: timezone || undefined,
-						hireDate: hireDate || undefined
+						hireDate: hireDate || undefined,
+						monthlyCapacityManDays: Number(capacity) || 0
 					}
 				});
 				if (error) {
@@ -253,6 +260,20 @@
 			<label class="block text-sm">
 				<span class="mb-1 block font-medium text-slate-700">Hire date</span>
 				<input type="date" class="input" bind:value={hireDate} />
+			</label>
+
+			<label class="block text-sm">
+				<span class="mb-1 block font-medium text-slate-700">Monthly capacity (man-days)</span>
+				<input
+					type="number"
+					class="input"
+					min="0"
+					max="31"
+					step="0.5"
+					inputmode="decimal"
+					bind:value={capacity}
+				/>
+				<span class="mt-1 block text-xs text-slate-500">How many man-days this person can work in a month.</span>
 			</label>
 
 			<div class="flex justify-end gap-2 pt-2">

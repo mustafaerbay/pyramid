@@ -109,6 +109,7 @@ CREATE TABLE people (
 	hire_date TEXT,
 	termination_date TEXT,
 	weekly_capacity_hours REAL,
+	monthly_capacity_man_days REAL NOT NULL DEFAULT 20,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -189,7 +190,8 @@ CREATE TABLE tasks (
 	description TEXT,
 	status TEXT NOT NULL DEFAULT 'backlog',
 	priority TEXT NOT NULL DEFAULT 'medium',
-	due_date TEXT,
+	start_date DATE,
+	due_date DATE,
 	completed_at DATETIME,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -198,6 +200,7 @@ CREATE TABLE tasks (
 CREATE TABLE task_assignees (
 	task_id TEXT NOT NULL,
 	person_id TEXT NOT NULL,
+	man_days REAL NOT NULL DEFAULT 0,
 	PRIMARY KEY (task_id, person_id)
 );
 

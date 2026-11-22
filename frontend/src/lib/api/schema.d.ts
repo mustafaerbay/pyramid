@@ -360,6 +360,23 @@ export interface paths {
         patch: operations["updateTask"];
         trace?: never;
     };
+    "/api/v1/capacity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Monthly man-day capacity and planned load */
+        get: operations["getCapacity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/goals": {
         parameters: {
             query?: never;
@@ -528,7 +545,17 @@ export interface components {
             weeklyCapacityHours?: number | null;
             /**
              * Format: double
-             * @description Sum of allocationPct across the person's current project memberships (joined, not yet left) on projects that are not completed or cancelled. Can exceed 100 when over-allocated. Computed server-side; returned by list and get.
+             * @description Man-days this person can work in a month (default 20).
+             */
+            monthlyCapacityManDays?: number;
+            /**
+             * Format: double
+             * @description Man-days planned for this person in the current calendar month — each task assignment's man-days spread over the task's working days (see GET /api/v1/capacity). Computed server-side.
+             */
+            readonly monthManDays?: number;
+            /**
+             * Format: double
+             * @description monthManDays ÷ monthlyCapacityManDays × 100 for the current month. Can exceed 100 when over-planned. Computed server-side; returned by list and get.
              */
             readonly workloadPct?: number;
             /** Format: date-time */
@@ -553,6 +580,8 @@ export interface components {
             timezone?: string;
             /** Format: date */
             hireDate?: string;
+            /** Format: double */
+            monthlyCapacityManDays?: number;
         };
         PersonUpdate: {
             firstName?: string;
@@ -572,6 +601,8 @@ export interface components {
             timezone?: string;
             /** Format: date */
             hireDate?: string;
+            /** Format: double */
+            monthlyCapacityManDays?: number;
         };
         PersonList: {
             data: components["schemas"]["Person"][];
@@ -947,6 +978,18 @@ export interface components {
             priority: components["schemas"]["TaskPriority"];
             /** @description People assigned to this task. Empty array means unassigned. */
             assigneeIds: string[];
+            /** @description Each assignee's share of the task's man-days. */
+            assignments: components["schemas"]["TaskAssignment"][];
+            /**
+             * Format: double
+             * @description Total man-days (sum of assignments). Computed server-side.
+             */
+            manDays: number;
+            /**
+             * Format: date
+             * @description Planned start; man-days are spread over the working days from startDate to dueDate.
+             */
+            startDate?: string | null;
             /** Format: date */
             dueDate?: string | null;
             /** Format: date-time */
@@ -967,6 +1010,10 @@ export interface components {
             priority?: components["schemas"]["TaskPriority"];
             /** @description People to assign at creation. Defaults to none if omitted. */
             assigneeIds?: string[];
+            /** @description Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent. */
+            assignments?: components["schemas"]["TaskAssignment"][];
+            /** Format: date */
+            startDate?: string;
             /** Format: date */
             dueDate?: string;
         };
@@ -979,8 +1026,53 @@ export interface components {
             priority?: components["schemas"]["TaskPriority"];
             /** @description Replaces the full assignee set when present — send every assignee the task should have, or an empty array to unassign everyone. Omit the field entirely to leave assignees unchanged. */
             assigneeIds?: string[];
+            /** @description Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent. */
+            assignments?: components["schemas"]["TaskAssignment"][];
+            /** Format: date */
+            startDate?: string;
             /** Format: date */
             dueDate?: string;
+        };
+        TaskAssignment: {
+            /** Format: uuid */
+            personId: string;
+            /** Format: double */
+            manDays: number;
+        };
+        CapacityReport: {
+            /**
+             * @description YYYY-MM
+             * @example 2026-11
+             */
+            month: string;
+            /** @description Mon–Fri days in the month. */
+            workingDays: number;
+            /**
+             * Format: double
+             * @description Sum of monthlyCapacityManDays over active people.
+             */
+            capacityManDays: number;
+            /**
+             * Format: double
+             * @description Man-days of non-cancelled tasks (on non-cancelled projects) falling in this month.
+             */
+            plannedManDays: number;
+            people: components["schemas"]["PersonCapacity"][];
+            projects: components["schemas"]["ProjectLoad"][];
+        };
+        PersonCapacity: {
+            /** Format: uuid */
+            personId: string;
+            /** Format: double */
+            capacityManDays: number;
+            /** Format: double */
+            plannedManDays: number;
+        };
+        ProjectLoad: {
+            /** Format: uuid */
+            projectId: string;
+            /** Format: double */
+            plannedManDays: number;
         };
         TaskList: {
             data: components["schemas"]["Task"][];
@@ -2231,6 +2323,31 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+            default: components["responses"]["DefaultError"];
+        };
+    };
+    getCapacity: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM; defaults to the current month. */
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Capacity vs planned man-days for the month */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapacityReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             default: components["responses"]["DefaultError"];
         };
     };

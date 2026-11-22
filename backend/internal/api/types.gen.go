@@ -465,6 +465,25 @@ func (e VersionStatus) Valid() bool {
 	}
 }
 
+// CapacityReport defines model for CapacityReport.
+type CapacityReport struct {
+	// CapacityManDays Sum of monthlyCapacityManDays over active people.
+	CapacityManDays float64 `json:"capacityManDays"`
+
+	// Month YYYY-MM
+	//
+	// Example: 2026-11
+	Month  string           `json:"month"`
+	People []PersonCapacity `json:"people"`
+
+	// PlannedManDays Man-days of non-cancelled tasks (on non-cancelled projects) falling in this month.
+	PlannedManDays float64       `json:"plannedManDays"`
+	Projects       []ProjectLoad `json:"projects"`
+
+	// WorkingDays Mon–Fri days in the month.
+	WorkingDays int `json:"workingDays"`
+}
+
 // Contribution defines model for Contribution.
 type Contribution struct {
 	CreatedAt  time.Time           `json:"createdAt"`
@@ -698,43 +717,57 @@ type Pagination struct {
 
 // Person defines model for Person.
 type Person struct {
-	AvatarUrl           *string             `json:"avatarUrl"`
-	CreatedAt           time.Time           `json:"createdAt"`
-	DepartmentId        *openapi_types.UUID `json:"departmentId"`
-	Email               openapi_types.Email `json:"email"`
-	EmploymentType      EmploymentType      `json:"employmentType"`
-	FirstName           string              `json:"firstName"`
-	HireDate            *openapi_types.Date `json:"hireDate"`
-	Id                  openapi_types.UUID  `json:"id"`
-	LastName            string              `json:"lastName"`
-	Location            *string             `json:"location"`
-	ManagerId           *openapi_types.UUID `json:"managerId"`
-	Phone               *string             `json:"phone"`
-	Seniority           *SeniorityLevel     `json:"seniority"`
-	Status              PersonStatus        `json:"status"`
-	Timezone            *string             `json:"timezone"`
-	Title               *string             `json:"title"`
-	UpdatedAt           time.Time           `json:"updatedAt"`
-	WeeklyCapacityHours *float64            `json:"weeklyCapacityHours"`
+	AvatarUrl      *string             `json:"avatarUrl"`
+	CreatedAt      time.Time           `json:"createdAt"`
+	DepartmentId   *openapi_types.UUID `json:"departmentId"`
+	Email          openapi_types.Email `json:"email"`
+	EmploymentType EmploymentType      `json:"employmentType"`
+	FirstName      string              `json:"firstName"`
+	HireDate       *openapi_types.Date `json:"hireDate"`
+	Id             openapi_types.UUID  `json:"id"`
+	LastName       string              `json:"lastName"`
+	Location       *string             `json:"location"`
+	ManagerId      *openapi_types.UUID `json:"managerId"`
 
-	// WorkloadPct Sum of allocationPct across the person's current project memberships (joined, not yet left) on projects that are not completed or cancelled. Can exceed 100 when over-allocated. Computed server-side; returned by list and get.
+	// MonthManDays Man-days planned for this person in the current calendar month — each task assignment's man-days spread over the task's working days (see GET /api/v1/capacity). Computed server-side.
+	MonthManDays *float64 `json:"monthManDays,omitempty"`
+
+	// MonthlyCapacityManDays Man-days this person can work in a month (default 20).
+	MonthlyCapacityManDays *float64        `json:"monthlyCapacityManDays,omitempty"`
+	Phone                  *string         `json:"phone"`
+	Seniority              *SeniorityLevel `json:"seniority"`
+	Status                 PersonStatus    `json:"status"`
+	Timezone               *string         `json:"timezone"`
+	Title                  *string         `json:"title"`
+	UpdatedAt              time.Time       `json:"updatedAt"`
+	WeeklyCapacityHours    *float64        `json:"weeklyCapacityHours"`
+
+	// WorkloadPct monthManDays ÷ monthlyCapacityManDays × 100 for the current month. Can exceed 100 when over-planned. Computed server-side; returned by list and get.
 	WorkloadPct *float64 `json:"workloadPct,omitempty"`
+}
+
+// PersonCapacity defines model for PersonCapacity.
+type PersonCapacity struct {
+	CapacityManDays float64            `json:"capacityManDays"`
+	PersonId        openapi_types.UUID `json:"personId"`
+	PlannedManDays  float64            `json:"plannedManDays"`
 }
 
 // PersonCreate defines model for PersonCreate.
 type PersonCreate struct {
-	DepartmentId   *openapi_types.UUID `json:"departmentId,omitempty"`
-	Email          openapi_types.Email `json:"email"`
-	EmploymentType *EmploymentType     `json:"employmentType,omitempty"`
-	FirstName      string              `json:"firstName"`
-	HireDate       *openapi_types.Date `json:"hireDate,omitempty"`
-	LastName       string              `json:"lastName"`
-	Location       *string             `json:"location,omitempty"`
-	ManagerId      *openapi_types.UUID `json:"managerId,omitempty"`
-	Phone          *string             `json:"phone,omitempty"`
-	Seniority      *SeniorityLevel     `json:"seniority,omitempty"`
-	Timezone       *string             `json:"timezone,omitempty"`
-	Title          *string             `json:"title,omitempty"`
+	DepartmentId           *openapi_types.UUID `json:"departmentId,omitempty"`
+	Email                  openapi_types.Email `json:"email"`
+	EmploymentType         *EmploymentType     `json:"employmentType,omitempty"`
+	FirstName              string              `json:"firstName"`
+	HireDate               *openapi_types.Date `json:"hireDate,omitempty"`
+	LastName               string              `json:"lastName"`
+	Location               *string             `json:"location,omitempty"`
+	ManagerId              *openapi_types.UUID `json:"managerId,omitempty"`
+	MonthlyCapacityManDays *float64            `json:"monthlyCapacityManDays,omitempty"`
+	Phone                  *string             `json:"phone,omitempty"`
+	Seniority              *SeniorityLevel     `json:"seniority,omitempty"`
+	Timezone               *string             `json:"timezone,omitempty"`
+	Title                  *string             `json:"title,omitempty"`
 }
 
 // PersonList defines model for PersonList.
@@ -748,19 +781,20 @@ type PersonStatus string
 
 // PersonUpdate defines model for PersonUpdate.
 type PersonUpdate struct {
-	DepartmentId   *openapi_types.UUID  `json:"departmentId,omitempty"`
-	Email          *openapi_types.Email `json:"email,omitempty"`
-	EmploymentType *EmploymentType      `json:"employmentType,omitempty"`
-	FirstName      *string              `json:"firstName,omitempty"`
-	HireDate       *openapi_types.Date  `json:"hireDate,omitempty"`
-	LastName       *string              `json:"lastName,omitempty"`
-	Location       *string              `json:"location,omitempty"`
-	ManagerId      *openapi_types.UUID  `json:"managerId,omitempty"`
-	Phone          *string              `json:"phone,omitempty"`
-	Seniority      *SeniorityLevel      `json:"seniority,omitempty"`
-	Status         *PersonStatus        `json:"status,omitempty"`
-	Timezone       *string              `json:"timezone,omitempty"`
-	Title          *string              `json:"title,omitempty"`
+	DepartmentId           *openapi_types.UUID  `json:"departmentId,omitempty"`
+	Email                  *openapi_types.Email `json:"email,omitempty"`
+	EmploymentType         *EmploymentType      `json:"employmentType,omitempty"`
+	FirstName              *string              `json:"firstName,omitempty"`
+	HireDate               *openapi_types.Date  `json:"hireDate,omitempty"`
+	LastName               *string              `json:"lastName,omitempty"`
+	Location               *string              `json:"location,omitempty"`
+	ManagerId              *openapi_types.UUID  `json:"managerId,omitempty"`
+	MonthlyCapacityManDays *float64             `json:"monthlyCapacityManDays,omitempty"`
+	Phone                  *string              `json:"phone,omitempty"`
+	Seniority              *SeniorityLevel      `json:"seniority,omitempty"`
+	Status                 *PersonStatus        `json:"status,omitempty"`
+	Timezone               *string              `json:"timezone,omitempty"`
+	Title                  *string              `json:"title,omitempty"`
 }
 
 // Project defines model for Project.
@@ -882,6 +916,12 @@ type ProjectList struct {
 	Pagination Pagination `json:"pagination"`
 }
 
+// ProjectLoad defines model for ProjectLoad.
+type ProjectLoad struct {
+	PlannedManDays float64            `json:"plannedManDays"`
+	ProjectId      openapi_types.UUID `json:"projectId"`
+}
+
 // ProjectMember defines model for ProjectMember.
 type ProjectMember struct {
 	AllocationPct float64             `json:"allocationPct"`
@@ -959,33 +999,52 @@ type SeniorityLevel string
 type Task struct {
 	// AssigneeIds People assigned to this task. Empty array means unassigned.
 	AssigneeIds []openapi_types.UUID `json:"assigneeIds"`
-	CompletedAt *time.Time           `json:"completedAt"`
-	CreatedAt   time.Time            `json:"createdAt"`
-	Description *string              `json:"description"`
-	DueDate     *openapi_types.Date  `json:"dueDate"`
-	Id          openapi_types.UUID   `json:"id"`
-	MilestoneId *openapi_types.UUID  `json:"milestoneId"`
+
+	// Assignments Each assignee's share of the task's man-days.
+	Assignments []TaskAssignment    `json:"assignments"`
+	CompletedAt *time.Time          `json:"completedAt"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	Description *string             `json:"description"`
+	DueDate     *openapi_types.Date `json:"dueDate"`
+	Id          openapi_types.UUID  `json:"id"`
+
+	// ManDays Total man-days (sum of assignments). Computed server-side.
+	ManDays     float64             `json:"manDays"`
+	MilestoneId *openapi_types.UUID `json:"milestoneId"`
 
 	// Number Per-project sequential number, e.g. 42 for "PYR-42".
 	Number    int                `json:"number"`
 	Priority  TaskPriority       `json:"priority"`
 	ProjectId openapi_types.UUID `json:"projectId"`
-	Status    TaskStatus         `json:"status"`
-	Title     string             `json:"title"`
-	UpdatedAt time.Time          `json:"updatedAt"`
+
+	// StartDate Planned start; man-days are spread over the working days from startDate to dueDate.
+	StartDate *openapi_types.Date `json:"startDate"`
+	Status    TaskStatus          `json:"status"`
+	Title     string              `json:"title"`
+	UpdatedAt time.Time           `json:"updatedAt"`
+}
+
+// TaskAssignment defines model for TaskAssignment.
+type TaskAssignment struct {
+	ManDays  float64            `json:"manDays"`
+	PersonId openapi_types.UUID `json:"personId"`
 }
 
 // TaskCreate defines model for TaskCreate.
 type TaskCreate struct {
 	// AssigneeIds People to assign at creation. Defaults to none if omitted.
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
-	Description *string               `json:"description,omitempty"`
-	DueDate     *openapi_types.Date   `json:"dueDate,omitempty"`
-	MilestoneId *openapi_types.UUID   `json:"milestoneId,omitempty"`
-	Priority    *TaskPriority         `json:"priority,omitempty"`
-	ProjectId   openapi_types.UUID    `json:"projectId"`
-	Status      *TaskStatus           `json:"status,omitempty"`
-	Title       string                `json:"title"`
+
+	// Assignments Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent.
+	Assignments *[]TaskAssignment   `json:"assignments,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
+	Priority    *TaskPriority       `json:"priority,omitempty"`
+	ProjectId   openapi_types.UUID  `json:"projectId"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+	Status      *TaskStatus         `json:"status,omitempty"`
+	Title       string              `json:"title"`
 }
 
 // TaskList defines model for TaskList.
@@ -1004,12 +1063,16 @@ type TaskStatus string
 type TaskUpdate struct {
 	// AssigneeIds Replaces the full assignee set when present — send every assignee the task should have, or an empty array to unassign everyone. Omit the field entirely to leave assignees unchanged.
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
-	Description *string               `json:"description,omitempty"`
-	DueDate     *openapi_types.Date   `json:"dueDate,omitempty"`
-	MilestoneId *openapi_types.UUID   `json:"milestoneId"`
-	Priority    *TaskPriority         `json:"priority,omitempty"`
-	Status      *TaskStatus           `json:"status,omitempty"`
-	Title       *string               `json:"title,omitempty"`
+
+	// Assignments Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent.
+	Assignments *[]TaskAssignment   `json:"assignments,omitempty"`
+	Description *string             `json:"description,omitempty"`
+	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
+	MilestoneId *openapi_types.UUID `json:"milestoneId"`
+	Priority    *TaskPriority       `json:"priority,omitempty"`
+	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
+	Status      *TaskStatus         `json:"status,omitempty"`
+	Title       *string             `json:"title,omitempty"`
 }
 
 // Version defines model for Version.
@@ -1097,6 +1160,12 @@ type DefaultError = Error
 
 // NotFound defines model for NotFound.
 type NotFound = Error
+
+// GetCapacityParams defines parameters for GetCapacity.
+type GetCapacityParams struct {
+	// Month YYYY-MM; defaults to the current month.
+	Month *string `form:"month,omitempty" json:"month,omitempty"`
+}
 
 // ListContributionsParams defines parameters for ListContributions.
 type ListContributionsParams struct {

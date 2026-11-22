@@ -6,9 +6,11 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import type { BadgeTone } from '$lib/badgeTones';
+	import { formatManDays, loadBand, monthKey, monthLabel, shiftMonth } from '$lib/capacity';
 
 	type Person = components['schemas']['Person'];
 	type PersonStatus = components['schemas']['PersonStatus'];
+	type CapacityReport = components['schemas']['CapacityReport'];
 
 	const pageSize = 50;
 
@@ -146,12 +148,31 @@
 		}
 	}
 
-	// Workload = sum of allocation % on current, open projects (server-side).
-	// Bands: idle/light < 70, healthy 70–100, over-allocated > 100.
-	function workloadBand(pct: number): { bar: string; text: string; label: string } {
-		if (pct > 100) return { bar: 'bg-red-500', text: 'text-red-700', label: 'Over-allocated' };
-		if (pct >= 70) return { bar: 'bg-emerald-500', text: 'text-slate-700', label: 'Healthy load' };
-		return { bar: 'bg-slate-400', text: 'text-slate-500', label: 'Has capacity' };
+	// Workload = man-days planned for the selected month ÷ the person's
+	// monthly capacity (GET /api/v1/capacity spreads each task over its
+	// working days). Inactive people aren't in the report: their capacity
+	// comes from the person and only the current month's figure is known.
+	const thisMonth = monthKey(new Date());
+	let month = $state(thisMonth);
+	let report = $state<CapacityReport | null>(null);
+
+	async function loadCapacity() {
+		const { data } = await api.GET('/api/v1/capacity', { params: { query: { month } } });
+		report = data ?? null;
+	}
+
+	function changeMonth(delta: number) {
+		month = shiftMonth(month, delta);
+		loadCapacity();
+	}
+
+	const byPerson = $derived(new Map((report?.people ?? []).map((p) => [p.personId, p])));
+
+	function workloadOf(person: Person): { planned: number; capacity: number; pct: number } {
+		const r = byPerson.get(person.id);
+		const capacity = r?.capacityManDays ?? person.monthlyCapacityManDays ?? 20;
+		const planned = r?.plannedManDays ?? (month === thisMonth ? (person.monthManDays ?? 0) : 0);
+		return { planned, capacity, pct: capacity > 0 ? (planned / capacity) * 100 : 0 };
 	}
 
 	function prevPage() {
@@ -168,7 +189,10 @@
 		}
 	}
 
-	onMount(load);
+	onMount(() => {
+		load();
+		loadCapacity();
+	});
 </script>
 
 <section class="space-y-4">
@@ -211,7 +235,22 @@
 			<option value="offboarding">Offboarding</option>
 			<option value="inactive">Inactive</option>
 		</select>
+		<div class="flex items-center gap-1 sm:ml-auto" role="group" aria-label="Workload month">
+			<button type="button" class="btn-ghost px-2" aria-label="Previous month" onclick={() => changeMonth(-1)}>‹</button>
+			<span class="min-w-32 text-center text-sm font-medium text-slate-700">{monthLabel(month)}</span>
+			<button type="button" class="btn-ghost px-2" aria-label="Next month" onclick={() => changeMonth(1)}>›</button>
+		</div>
 	</div>
+
+	{#if report}
+		<p class="text-sm text-slate-600">
+			Team load in {monthLabel(month)}:
+			<span class="font-semibold text-slate-900 tabular-nums">{formatManDays(report.plannedManDays)}</span>
+			of
+			<span class="font-semibold text-slate-900 tabular-nums">{formatManDays(report.capacityManDays)}</span>
+			man-days planned ({report.workingDays} working days).
+		</p>
+	{/if}
 
 	{#if loading}
 		<p class="text-slate-500">Loading…</p>
@@ -234,6 +273,8 @@
 	{:else}
 		<ul class="m-list">
 			{#each filtered as person (person.id)}
+				{@const w = workloadOf(person)}
+				{@const band = loadBand(w.pct)}
 				<li class="m-card">
 					<button type="button" class="block w-full text-left" onclick={() => openEdit(person)}>
 						<div class="flex items-start justify-between gap-2">
@@ -248,24 +289,22 @@
 							{#if person.seniority}<span>{person.seniority}</span>{/if}
 							<span>{person.employmentType.replace('_', ' ')}</span>
 						</div>
-						{#if person.workloadPct != null}
-							{@const pct = person.workloadPct}
-							{@const band = workloadBand(pct)}
-							<div class="mt-2 flex items-center gap-2">
-								<div
-									class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"
-									role="meter"
-									aria-label="Workload"
-									aria-valuemin={0}
-									aria-valuemax={100}
-									aria-valuenow={Math.round(pct)}
-									aria-valuetext="{Math.round(pct)}% allocated, {band.label.toLowerCase()}"
-								>
-									<div class="h-full rounded-full {band.bar}" style="width: {Math.min(pct, 100)}%"></div>
-								</div>
-								<span class="text-xs font-medium tabular-nums {band.text}">{Math.round(pct)}% · {band.label}</span>
+						<div class="mt-2 flex items-center gap-2">
+							<div
+								class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"
+								role="meter"
+								aria-label="Workload"
+								aria-valuemin={0}
+								aria-valuemax={100}
+								aria-valuenow={Math.round(w.pct)}
+								aria-valuetext="{formatManDays(w.planned)} of {formatManDays(w.capacity)} man-days, {band.label.toLowerCase()}"
+							>
+								<div class="h-full rounded-full {band.bar}" style="width: {Math.min(w.pct, 100)}%"></div>
 							</div>
-						{/if}
+							<span class="text-xs font-medium tabular-nums {band.text}">
+								{formatManDays(w.planned)} / {formatManDays(w.capacity)} md
+							</span>
+						</div>
 					</button>
 					<div class="m-actions">
 						<button type="button" class="btn-secondary" onclick={() => openEdit(person)}>Edit</button>
@@ -291,12 +330,14 @@
 						<th class="px-4 py-3 font-medium">Seniority</th>
 						<th class="px-4 py-3 font-medium">Employment</th>
 						<th class="px-4 py-3 font-medium">Status</th>
-						<th class="px-4 py-3 font-medium">Workload</th>
+						<th class="px-4 py-3 font-medium">Workload ({monthLabel(month)})</th>
 						<th class="px-4 py-3 font-medium"><span class="sr-only">Actions</span></th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-slate-100">
 					{#each filtered as person (person.id)}
+				{@const w = workloadOf(person)}
+				{@const band = loadBand(w.pct)}
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<tr class="cursor-pointer hover:bg-slate-50" onclick={() => openEdit(person)}>
@@ -309,31 +350,25 @@
 								<Badge tone={statusTone(person.status)}>{person.status.replace('_', ' ')}</Badge>
 							</td>
 							<td class="px-4 py-3">
-								{#if person.workloadPct != null}
-									{@const pct = person.workloadPct}
-									{@const band = workloadBand(pct)}
-									<div class="flex items-center gap-2" title="{band.label}: {Math.round(pct)}% allocated">
-										<div
-											class="h-2 w-24 overflow-hidden rounded-full bg-slate-100"
-											role="meter"
-											aria-label="Workload"
-											aria-valuemin={0}
-											aria-valuemax={100}
-											aria-valuenow={Math.round(pct)}
-											aria-valuetext="{Math.round(pct)}% allocated, {band.label.toLowerCase()}"
-										>
-											<div
-												class="h-full rounded-full {band.bar}"
-												style="width: {Math.min(pct, 100)}%"
-											></div>
-										</div>
-										<span class="w-10 text-right text-xs tabular-nums font-medium {band.text}">
-											{Math.round(pct)}%
-										</span>
+								<div
+									class="flex items-center gap-2"
+									title="{band.label}: {formatManDays(w.planned)} of {formatManDays(w.capacity)} man-days ({Math.round(w.pct)}%)"
+								>
+									<div
+										class="h-2 w-24 overflow-hidden rounded-full bg-slate-100"
+										role="meter"
+										aria-label="Workload"
+										aria-valuemin={0}
+										aria-valuemax={100}
+										aria-valuenow={Math.round(w.pct)}
+										aria-valuetext="{formatManDays(w.planned)} of {formatManDays(w.capacity)} man-days, {band.label.toLowerCase()}"
+									>
+										<div class="h-full rounded-full {band.bar}" style="width: {Math.min(w.pct, 100)}%"></div>
 									</div>
-								{:else}
-									<span class="text-slate-400">—</span>
-								{/if}
+									<span class="text-xs whitespace-nowrap tabular-nums font-medium {band.text}">
+										{formatManDays(w.planned)} / {formatManDays(w.capacity)} md
+									</span>
+								</div>
 							</td>
 							<td
 								class="px-4 py-3 text-right whitespace-nowrap"

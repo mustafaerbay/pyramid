@@ -903,6 +903,31 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
 
+  /api/v1/capacity:
+    get:
+      operationId: getCapacity
+      tags: [capacity]
+      summary: Monthly man-day capacity and planned load
+      parameters:
+        - name: month
+          in: query
+          required: false
+          description: YYYY-MM; defaults to the current month.
+          schema:
+            type: string
+            pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$"
+      responses:
+        "200":
+          description: Capacity vs planned man-days for the month
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapacityReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        default:
+          $ref: "#/components/responses/DefaultError"
+
   /api/v1/goals:
     get:
       operationId: listGoals
@@ -1374,15 +1399,26 @@ components:
           type: number
           format: double
           nullable: true
+        monthlyCapacityManDays:
+          type: number
+          format: double
+          description: Man-days this person can work in a month (default 20).
+        monthManDays:
+          type: number
+          format: double
+          readOnly: true
+          description: >
+            Man-days planned for this person in the current calendar month —
+            each task assignment's man-days spread over the task's working
+            days (see GET /api/v1/capacity). Computed server-side.
         workloadPct:
           type: number
           format: double
           readOnly: true
           description: >
-            Sum of allocationPct across the person's current project
-            memberships (joined, not yet left) on projects that are not
-            completed or cancelled. Can exceed 100 when over-allocated.
-            Computed server-side; returned by list and get.
+            monthManDays ÷ monthlyCapacityManDays × 100 for the current month.
+            Can exceed 100 when over-planned. Computed server-side; returned
+            by list and get.
         createdAt:
           type: string
           format: date-time
@@ -1424,6 +1460,11 @@ components:
         hireDate:
           type: string
           format: date
+        monthlyCapacityManDays:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 31
 
     PersonUpdate:
       type: object
@@ -1458,6 +1499,11 @@ components:
         hireDate:
           type: string
           format: date
+        monthlyCapacityManDays:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 31
 
     PersonList:
       type: object
@@ -2221,7 +2267,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, number, title, status, priority, assigneeIds, createdAt, updatedAt]
+      required: [id, projectId, number, title, status, priority, assigneeIds, assignments, manDays, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -2251,6 +2297,20 @@ components:
           items:
             type: string
             format: uuid
+        assignments:
+          type: array
+          description: Each assignee's share of the task's man-days.
+          items:
+            $ref: "#/components/schemas/TaskAssignment"
+        manDays:
+          type: number
+          format: double
+          description: Total man-days (sum of assignments). Computed server-side.
+        startDate:
+          type: string
+          format: date
+          nullable: true
+          description: Planned start; man-days are spread over the working days from startDate to dueDate.
         dueDate:
           type: string
           format: date
@@ -2291,6 +2351,16 @@ components:
           items:
             type: string
             format: uuid
+        assignments:
+          type: array
+          description: >
+            Replaces the full assignee set with these people and man-days.
+            Takes precedence over assigneeIds when both are sent.
+          items:
+            $ref: "#/components/schemas/TaskAssignment"
+        startDate:
+          type: string
+          format: date
         dueDate:
           type: string
           format: date
@@ -2319,9 +2389,85 @@ components:
           items:
             type: string
             format: uuid
+        assignments:
+          type: array
+          description: >
+            Replaces the full assignee set with these people and man-days.
+            Takes precedence over assigneeIds when both are sent.
+          items:
+            $ref: "#/components/schemas/TaskAssignment"
+        startDate:
+          type: string
+          format: date
         dueDate:
           type: string
           format: date
+
+    TaskAssignment:
+      type: object
+      required: [personId, manDays]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        manDays:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 999
+
+    CapacityReport:
+      type: object
+      required: [month, workingDays, capacityManDays, plannedManDays, people, projects]
+      properties:
+        month:
+          type: string
+          description: YYYY-MM
+          example: "2026-11"
+        workingDays:
+          type: integer
+          description: Mon–Fri days in the month.
+        capacityManDays:
+          type: number
+          format: double
+          description: Sum of monthlyCapacityManDays over active people.
+        plannedManDays:
+          type: number
+          format: double
+          description: Man-days of non-cancelled tasks (on non-cancelled projects) falling in this month.
+        people:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonCapacity"
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectLoad"
+
+    PersonCapacity:
+      type: object
+      required: [personId, capacityManDays, plannedManDays]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        capacityManDays:
+          type: number
+          format: double
+        plannedManDays:
+          type: number
+          format: double
+
+    ProjectLoad:
+      type: object
+      required: [projectId, plannedManDays]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        plannedManDays:
+          type: number
+          format: double
 
     TaskList:
       type: object

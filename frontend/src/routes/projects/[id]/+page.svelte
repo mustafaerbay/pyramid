@@ -18,6 +18,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
+	import { formatManDays } from '$lib/capacity';
 	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
 	import { projectRoleLabel, projectRoleTone } from '$lib/projectRoles';
 	import { daysUntil } from '$lib/dateMath';
@@ -321,6 +322,19 @@
 	// Progress counts (done/total) always reflect ALL of that milestone's
 	// tasks, not just the ones matching the current filters, so the filter
 	// can't make progress look better or worse than it really is.
+	// Man-days: cancelled tasks don't count as work; done ones count as done.
+	function manDaySums(list: Task[]): { manDays: number; doneManDays: number } {
+		let manDays = 0;
+		let doneManDays = 0;
+		for (const t of list) {
+			if (t.status === 'cancelled') continue;
+			manDays += t.manDays;
+			if (t.status === 'done') doneManDays += t.manDays;
+		}
+		return { manDays, doneManDays };
+	}
+	const projectManDays = $derived(manDaySums(tasks));
+
 	const taskGroups = $derived(
 		(() => {
 			const matchesFilters = (t: Task) => {
@@ -341,6 +355,8 @@
 				name: string;
 				totalCount: number;
 				doneCount: number;
+				manDays: number;
+				doneManDays: number;
 				tasks: Task[];
 			};
 			const groups: Group[] = [];
@@ -354,6 +370,7 @@
 					name: m.name,
 					totalCount: all.length,
 					doneCount: all.filter((t) => t.status === 'done').length,
+					...manDaySums(all),
 					tasks: all.filter(matchesFilters)
 				});
 			}
@@ -366,6 +383,7 @@
 					name: 'No milestone',
 					totalCount: unassignedToMilestone.length,
 					doneCount: unassignedToMilestone.filter((t) => t.status === 'done').length,
+					...manDaySums(unassignedToMilestone),
 					tasks: unassignedToMilestone.filter(matchesFilters)
 				});
 			}
@@ -928,7 +946,7 @@
 				</div>
 			</div>
 
-			<dl class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
+			<dl class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3 lg:grid-cols-6">
 				<MetricCard label="Team members" value={existingPersonIds.length} />
 				<MetricCard label="Contributions" value={loadingActivity ? '—' : (contributionsTotal ?? 0)} />
 				<MetricCard
@@ -940,6 +958,8 @@
 					value={daysToTarget !== null ? Math.abs(daysToTarget) : '—'}
 					danger={daysToTarget !== null && daysToTarget < 0}
 				/>
+				<MetricCard label="Total work" value="{formatManDays(projectManDays.manDays)} md" />
+				<MetricCard label="Done work" value="{formatManDays(projectManDays.doneManDays)} md" />
 			</dl>
 
 			{#if projectInfoRows.length > 0}
@@ -1354,6 +1374,9 @@
 									<h3 class="text-sm font-semibold text-slate-800">{group.name}</h3>
 									<span class="text-xs text-slate-500">
 										{group.doneCount}/{group.totalCount} done
+										{#if group.manDays > 0}
+											· {formatManDays(group.doneManDays)}/{formatManDays(group.manDays)} md
+										{/if}
 									</span>
 								</div>
 								<button
@@ -1377,7 +1400,7 @@
 											>
 												<span class="font-medium text-slate-800">{task.title}</span>
 												<span class="mt-0.5 block text-xs text-slate-500">
-													{assigneesLabel(task.assigneeIds)}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
+													{assigneesLabel(task.assigneeIds)}{task.manDays > 0 ? ` · ${formatManDays(task.manDays)} md` : ''}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
 												</span>
 											</button>
 											<div class="flex items-center gap-2">
@@ -1417,6 +1440,7 @@
 										<tr>
 											<th class="px-4 py-2 font-medium">Task</th>
 											<th class="px-4 py-2 font-medium">Assignees</th>
+											<th class="px-4 py-2 text-right font-medium">Man-days</th>
 											<th class="px-4 py-2 font-medium">Priority</th>
 											<th class="px-4 py-2 font-medium">Status</th>
 											<th class="px-4 py-2 font-medium">Due</th>
@@ -1437,6 +1461,12 @@
 												</td>
 												<td class="px-4 py-2.5 text-slate-600" title={assigneesLabel(task.assigneeIds)}>
 													<span class="line-clamp-1">{assigneesLabel(task.assigneeIds)}</span>
+												</td>
+												<td
+													class="px-4 py-2.5 text-right text-slate-600 tabular-nums"
+													title={task.assignments.map((a) => `${personLabel(a.personId)}: ${formatManDays(a.manDays)}`).join(', ')}
+												>
+													{task.manDays > 0 ? formatManDays(task.manDays) : '—'}
 												</td>
 												<td class="px-4 py-2.5">
 													<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>

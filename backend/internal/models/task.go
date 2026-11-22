@@ -1,6 +1,8 @@
 package models
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,6 +27,7 @@ type Task struct {
 	Description *string          `gorm:"type:text"`
 	Status      api.TaskStatus   `gorm:"type:task_status;not null;default:backlog"`
 	Priority    api.TaskPriority `gorm:"type:task_priority;not null;default:medium"`
+	StartDate   *time.Time       `gorm:"type:date"`
 	DueDate     *time.Time       `gorm:"type:date"`
 	CompletedAt *time.Time
 	CreatedAt   time.Time
@@ -36,6 +39,9 @@ type Task struct {
 	// separate task_assignees query (or a fresh write) before calling ToAPI.
 	// Zero value is a nil slice; ToAPI normalizes that to `[]`, never `null`.
 	AssigneeIDs []uuid.UUID `gorm:"-"`
+	// ManDays is each assignee's share of the task's man-days, keyed by
+	// person; loaded/written together with AssigneeIDs. Missing key = 0.
+	ManDays map[uuid.UUID]float64 `gorm:"-"`
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -47,6 +53,7 @@ func (Task) TableName() string { return "tasks" }
 type TaskAssignee struct {
 	TaskID   uuid.UUID `gorm:"type:uuid;primaryKey"`
 	PersonID uuid.UUID `gorm:"type:uuid;primaryKey"`
+	ManDays  float64   `gorm:"type:numeric(6,2);not null;default:0"`
 }
 
 func (TaskAssignee) TableName() string { return "task_assignees" }
@@ -55,8 +62,13 @@ func (TaskAssignee) TableName() string { return "task_assignees" }
 // caller must have already populated t.AssigneeIDs (see the field comment).
 func (t Task) ToAPI() api.Task {
 	assigneeIDs := make([]openapi_types.UUID, len(t.AssigneeIDs))
+	assignments := make([]api.TaskAssignment, len(t.AssigneeIDs))
+	total := 0.0
 	for i, id := range t.AssigneeIDs {
 		assigneeIDs[i] = id
+		md := t.ManDays[id]
+		assignments[i] = api.TaskAssignment{PersonId: id, ManDays: md}
+		total += md
 	}
 	out := api.Task{
 		Id:          t.ID,
@@ -67,9 +79,14 @@ func (t Task) ToAPI() api.Task {
 		Status:      t.Status,
 		Priority:    t.Priority,
 		AssigneeIds: assigneeIDs,
+		Assignments: assignments,
+		ManDays:     total,
 		MilestoneId: t.MilestoneID,
 		CreatedAt:   t.CreatedAt,
 		UpdatedAt:   t.UpdatedAt,
+	}
+	if t.StartDate != nil {
+		out.StartDate = &openapi_types.Date{Time: *t.StartDate}
 	}
 	if t.DueDate != nil {
 		out.DueDate = &openapi_types.Date{Time: *t.DueDate}
@@ -103,6 +120,10 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 	}
 	if in.Priority != nil {
 		t.Priority = *in.Priority
+	}
+	if in.StartDate != nil {
+		d := in.StartDate.Time
+		t.StartDate = &d
 	}
 	if in.DueDate != nil {
 		d := in.DueDate.Time
@@ -143,6 +164,10 @@ func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 	if in.Priority != nil {
 		t.Priority = *in.Priority
 	}
+	if in.StartDate != nil {
+		d := in.StartDate.Time
+		t.StartDate = &d
+	}
 	if in.DueDate != nil {
 		d := in.DueDate.Time
 		t.DueDate = &d
@@ -159,4 +184,28 @@ func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 			t.CompletedAt = &now
 		}
 	}
+}
+
+// ValidateDates reports whether the planned start is after the due date.
+func (t Task) ValidateDates() error {
+	if t.StartDate != nil && t.DueDate != nil && t.StartDate.After(*t.DueDate) {
+		return errStartAfterDue
+	}
+	return nil
+}
+
+var errStartAfterDue = errors.New("startDate must be on or before dueDate")
+
+// MaxAssignmentManDays is the upper bound for one assignee's man-days on a
+// task (matches the task_assignees.man_days CHECK constraint).
+const MaxAssignmentManDays = 999
+
+// ValidateAssignments checks every share is within [0, MaxAssignmentManDays].
+func ValidateAssignments(in []api.TaskAssignment) error {
+	for _, a := range in {
+		if a.ManDays < 0 || a.ManDays > MaxAssignmentManDays {
+			return fmt.Errorf("manDays must be between 0 and %d", MaxAssignmentManDays)
+		}
+	}
+	return nil
 }

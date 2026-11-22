@@ -9,6 +9,7 @@
 	import StackedBar from '$lib/components/StackedBar.svelte';
 	import TrendChart from '$lib/components/TrendChart.svelte';
 	import ProjectCard from '$lib/components/ProjectCard.svelte';
+	import CapacityCard from '$lib/components/CapacityCard.svelte';
 	import { DAY_MS, toUtc, todayUtc } from '$lib/dateMath';
 
 	type Person = components['schemas']['Person'];
@@ -352,6 +353,8 @@
 			<p class="text-sm">{loadError}</p>
 		</div>
 	{:else}
+		<CapacityCard {projects} />
+
 		<div>
 			<div class="mb-3 flex items-baseline justify-between">
 				<h2 class="text-lg font-semibold tracking-tight">Projects</h2>

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,8 +31,12 @@ type Person struct {
 	HireDate            *time.Time          `gorm:"type:date"`
 	TerminationDate     *time.Time          `gorm:"type:date"`
 	WeeklyCapacityHours *float64            `gorm:"type:numeric(5,2);default:40"`
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	// MonthlyCapacityManDays is how many man-days the person can work in a
+	// month (planning). A pointer so an explicit 0 is written, not swapped
+	// for the column default by GORM.
+	MonthlyCapacityManDays *float64 `gorm:"type:numeric(5,2);not null;default:20"`
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -40,23 +45,24 @@ func (Person) TableName() string { return "people" }
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Person) ToAPI() api.Person {
 	out := api.Person{
-		Id:                  p.ID,
-		FirstName:           p.FirstName,
-		LastName:            p.LastName,
-		Email:               openapi_types.Email(p.Email),
-		EmploymentType:      p.EmploymentType,
-		Status:              p.Status,
-		Phone:               p.Phone,
-		AvatarUrl:           p.AvatarURL,
-		Title:               p.Title,
-		Seniority:           p.Seniority,
-		DepartmentId:        p.DepartmentID,
-		ManagerId:           p.ManagerID,
-		Location:            p.Location,
-		Timezone:            p.Timezone,
-		WeeklyCapacityHours: p.WeeklyCapacityHours,
-		CreatedAt:           p.CreatedAt,
-		UpdatedAt:           p.UpdatedAt,
+		Id:                     p.ID,
+		FirstName:              p.FirstName,
+		LastName:               p.LastName,
+		Email:                  openapi_types.Email(p.Email),
+		EmploymentType:         p.EmploymentType,
+		Status:                 p.Status,
+		Phone:                  p.Phone,
+		AvatarUrl:              p.AvatarURL,
+		Title:                  p.Title,
+		Seniority:              p.Seniority,
+		DepartmentId:           p.DepartmentID,
+		ManagerId:              p.ManagerID,
+		Location:               p.Location,
+		Timezone:               p.Timezone,
+		WeeklyCapacityHours:    p.WeeklyCapacityHours,
+		CreatedAt:              p.CreatedAt,
+		MonthlyCapacityManDays: p.MonthlyCapacityManDays,
+		UpdatedAt:              p.UpdatedAt,
 	}
 	if p.HireDate != nil {
 		out.HireDate = &openapi_types.Date{Time: *p.HireDate}
@@ -67,19 +73,24 @@ func (p Person) ToAPI() api.Person {
 // NewPersonFromCreate builds a new Person from a create request, applying the
 // same defaults the database would use.
 func NewPersonFromCreate(in api.PersonCreate) Person {
+	capacity := DefaultMonthlyCapacityManDays
+	if in.MonthlyCapacityManDays != nil {
+		capacity = *in.MonthlyCapacityManDays
+	}
 	p := Person{
-		FirstName:      in.FirstName,
-		LastName:       in.LastName,
-		Email:          string(in.Email),
-		Phone:          in.Phone,
-		Title:          in.Title,
-		Location:       in.Location,
-		Timezone:       in.Timezone,
-		DepartmentID:   in.DepartmentId,
-		ManagerID:      in.ManagerId,
-		Seniority:      in.Seniority,
-		EmploymentType: api.EmploymentTypeFullTime,
-		Status:         api.PersonStatusActive,
+		MonthlyCapacityManDays: &capacity,
+		FirstName:              in.FirstName,
+		LastName:               in.LastName,
+		Email:                  string(in.Email),
+		Phone:                  in.Phone,
+		Title:                  in.Title,
+		Location:               in.Location,
+		Timezone:               in.Timezone,
+		DepartmentID:           in.DepartmentId,
+		ManagerID:              in.ManagerId,
+		Seniority:              in.Seniority,
+		EmploymentType:         api.EmploymentTypeFullTime,
+		Status:                 api.PersonStatusActive,
 	}
 	if in.EmploymentType != nil {
 		p.EmploymentType = *in.EmploymentType
@@ -93,6 +104,10 @@ func NewPersonFromCreate(in api.PersonCreate) Person {
 
 // ApplyUpdate mutates the model in place with the non-nil fields of a patch.
 func (p *Person) ApplyUpdate(in api.PersonUpdate) {
+	if in.MonthlyCapacityManDays != nil {
+		v := *in.MonthlyCapacityManDays
+		p.MonthlyCapacityManDays = &v
+	}
 	if in.FirstName != nil {
 		p.FirstName = *in.FirstName
 	}
@@ -133,4 +148,23 @@ func (p *Person) ApplyUpdate(in api.PersonUpdate) {
 		t := in.HireDate.Time
 		p.HireDate = &t
 	}
+}
+
+// DefaultMonthlyCapacityManDays is a new person's monthly capacity.
+const DefaultMonthlyCapacityManDays = 20.0
+
+// Capacity returns the monthly capacity, falling back to the default.
+func (p Person) Capacity() float64 {
+	if p.MonthlyCapacityManDays == nil {
+		return DefaultMonthlyCapacityManDays
+	}
+	return *p.MonthlyCapacityManDays
+}
+
+// ValidateCapacity checks a monthly capacity is within [0, 31] man-days.
+func ValidateCapacity(v *float64) error {
+	if v != nil && (*v < 0 || *v > 31) {
+		return errors.New("monthlyCapacityManDays must be between 0 and 31")
+	}
+	return nil
 }
