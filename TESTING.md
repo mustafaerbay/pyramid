@@ -68,21 +68,14 @@ Run them (on a machine with normal network access):
 
 ```bash
 cd backend
-go mod tidy   # first time only — see the go.sum note below
 go test ./internal/handlers/... -v -cover
 ```
 
-### The `go.sum` / `go mod tidy` caveat
+### `go.sum`
 
-`gorm.io/driver/sqlite` was added to `backend/go.mod` as a new
-(test-only) dependency, but this repo's `go.sum` could not be regenerated in
-the authoring sandbox (same network restriction as above — `go mod download`
-needs to actually reach the module proxy to write checksum entries). **Run
-`go mod tidy` once** after pulling this change, from a machine with normal
-network access, and commit the resulting `go.sum` changes. `go build ./...`
-and `go test ./...` will fail with a checksum/missing-go.sum error until
-that's done. CI (see below) does this automatically as part of `go mod
-download`, so a fresh CI run should go green without any local action.
+`backend/go.sum` is committed (including the test-only
+`gorm.io/driver/sqlite`), so `go build ./...` and `go test ./...` work on a
+fresh checkout without running `go mod tidy` first.
 
 ### Running everything
 
@@ -125,10 +118,8 @@ npm run test:watch    # vitest --watch, for local development
 Runs on every push and PR to `main`, two independent jobs:
 
 - **backend** — `go mod download`, `gofmt -l` check, `go vet ./...`,
-  `go build ./...`, `go test ./... -cover`. The `go mod download` step is
-  what regenerates `go.sum` on a fresh checkout if it's stale or (per the
-  caveat above) missing entries for the new SQLite driver — CI has normal
-  network access, so this isn't blocked the way the authoring sandbox was.
+  `go build ./...`, `go test ./... -cover`. `go.sum` is committed, so
+  `go mod download` only fetches modules.
 - **frontend** — `npm ci`, `npm run check` (svelte-check), `npm run test`
   (vitest), `npm run build`.
 

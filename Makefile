@@ -1,7 +1,7 @@
 # Pyramid — top-level developer tasks.
 # openapi/openapi.yaml is the single source of truth for types on both sides.
 
-OAPI_CODEGEN := go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+OAPI_CODEGEN := go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.9.0
 SPEC := openapi/openapi.yaml
 COMPOSE := docker compose
 

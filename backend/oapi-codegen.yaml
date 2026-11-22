@@ -7,3 +7,9 @@ generate:
   models: true
 output-options:
   skip-prune: true
+compatibility:
+  # Always name enum constants <Type><Value> (ProjectHealthOnTrack), never a
+  # bare <Value> (OnTrack). Without this oapi-codegen only prefixes values
+  # that collide across enums, so adding one enum value elsewhere could
+  # rename constants the models/handlers depend on.
+  always-prefix-enum-values: true
