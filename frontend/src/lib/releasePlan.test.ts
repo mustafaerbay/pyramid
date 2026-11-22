@@ -4,6 +4,7 @@ import {
 	isAfterRelease,
 	isOverdue,
 	isVersionActive,
+	releasePlanGroups,
 	sortVersions,
 	taskProgress,
 	versionLineDate,
@@ -119,5 +120,18 @@ describe('taskProgress', () => {
 	});
 	it('is 0/0 for no milestones', () => {
 		expect(taskProgress([], tasks)).toEqual({ done: 0, total: 0 });
+	});
+});
+
+describe('releasePlanGroups', () => {
+	const m = (id: string, versionId: string | null) => ({ id, versionId });
+
+	it('shows nothing for a project without versions, so the Releases section does not repeat the milestone list', () => {
+		expect(releasePlanGroups([], [m('a', null), m('b', null)])).toEqual([]);
+	});
+
+	it('includes the "No version" group once the project has a version', () => {
+		const groups = releasePlanGroups([v('v1', 'planned')], [m('a', 'v1'), m('b', null)]);
+		expect(groups.map((g) => g.version?.name ?? null)).toEqual(['v1', null]);
 	});
 });

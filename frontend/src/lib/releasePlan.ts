@@ -98,3 +98,15 @@ export function taskProgress(
 	}
 	return { done, total };
 }
+
+/**
+ * Groups for the Releases section. A project without versions shows only the
+ * empty state there — its milestones are already listed in the Milestones
+ * section, so an all-"No version" card would just repeat them.
+ */
+export function releasePlanGroups<V extends VersionLike, M extends MilestoneLike>(
+	versions: V[],
+	milestones: M[]
+): VersionGroup<V, M>[] {
+	return versions.length === 0 ? [] : groupMilestonesByVersion(versions, milestones);
+}

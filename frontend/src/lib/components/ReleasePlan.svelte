@@ -3,9 +3,9 @@
 	import Badge from '$lib/components/Badge.svelte';
 	import type { BadgeTone } from '$lib/badgeTones';
 	import {
-		groupMilestonesByVersion,
 		isAfterRelease,
 		isOverdue,
+		releasePlanGroups,
 		taskProgress
 	} from '$lib/releasePlan';
 
@@ -31,7 +31,7 @@
 
 	const today = new Date().toISOString().slice(0, 10);
 
-	const groups = $derived(groupMilestonesByVersion(versions, milestones));
+	const groups = $derived(releasePlanGroups(versions, milestones));
 
 	function versionTone(status: VersionStatus): BadgeTone {
 		switch (status) {
@@ -73,12 +73,9 @@
 	}
 </script>
 
-{#if versions.length === 0 && milestones.length === 0}
+{#if groups.length === 0}
 	<p class="text-sm text-slate-400">No versions yet. Add one to plan releases.</p>
 {:else}
-	{#if versions.length === 0}
-		<p class="mb-3 text-sm text-slate-400">No versions yet. Add one to plan releases.</p>
-	{/if}
 	<div class="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
 		{#each groups as group (group.version?.id ?? '__none__')}
 			{@const v = group.version}
