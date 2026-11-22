@@ -1006,9 +1006,12 @@ type Task struct {
 	CreatedAt   time.Time           `json:"createdAt"`
 	Description *string             `json:"description"`
 	DueDate     *openapi_types.Date `json:"dueDate"`
-	Id          openapi_types.UUID  `json:"id"`
 
-	// ManDays Total man-days (sum of assignments). Computed server-side.
+	// EstimateManDays The task's man-day size as entered on the task itself, before (or without) splitting it across assignees.
+	EstimateManDays *float64           `json:"estimateManDays"`
+	Id              openapi_types.UUID `json:"id"`
+
+	// ManDays Total man-days: the sum of assignments when they carry any man-days, otherwise estimateManDays (0 when neither). Computed server-side.
 	ManDays     float64             `json:"manDays"`
 	MilestoneId *openapi_types.UUID `json:"milestoneId"`
 
@@ -1036,15 +1039,16 @@ type TaskCreate struct {
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
 
 	// Assignments Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent.
-	Assignments *[]TaskAssignment   `json:"assignments,omitempty"`
-	Description *string             `json:"description,omitempty"`
-	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
-	MilestoneId *openapi_types.UUID `json:"milestoneId,omitempty"`
-	Priority    *TaskPriority       `json:"priority,omitempty"`
-	ProjectId   openapi_types.UUID  `json:"projectId"`
-	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
-	Status      *TaskStatus         `json:"status,omitempty"`
-	Title       string              `json:"title"`
+	Assignments     *[]TaskAssignment   `json:"assignments,omitempty"`
+	Description     *string             `json:"description,omitempty"`
+	DueDate         *openapi_types.Date `json:"dueDate,omitempty"`
+	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
+	MilestoneId     *openapi_types.UUID `json:"milestoneId,omitempty"`
+	Priority        *TaskPriority       `json:"priority,omitempty"`
+	ProjectId       openapi_types.UUID  `json:"projectId"`
+	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
+	Status          *TaskStatus         `json:"status,omitempty"`
+	Title           string              `json:"title"`
 }
 
 // TaskList defines model for TaskList.
@@ -1065,14 +1069,15 @@ type TaskUpdate struct {
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
 
 	// Assignments Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent.
-	Assignments *[]TaskAssignment   `json:"assignments,omitempty"`
-	Description *string             `json:"description,omitempty"`
-	DueDate     *openapi_types.Date `json:"dueDate,omitempty"`
-	MilestoneId *openapi_types.UUID `json:"milestoneId"`
-	Priority    *TaskPriority       `json:"priority,omitempty"`
-	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
-	Status      *TaskStatus         `json:"status,omitempty"`
-	Title       *string             `json:"title,omitempty"`
+	Assignments     *[]TaskAssignment   `json:"assignments,omitempty"`
+	Description     *string             `json:"description,omitempty"`
+	DueDate         *openapi_types.Date `json:"dueDate,omitempty"`
+	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
+	MilestoneId     *openapi_types.UUID `json:"milestoneId"`
+	Priority        *TaskPriority       `json:"priority,omitempty"`
+	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
+	Status          *TaskStatus         `json:"status,omitempty"`
+	Title           *string             `json:"title,omitempty"`
 }
 
 // Version defines model for Version.

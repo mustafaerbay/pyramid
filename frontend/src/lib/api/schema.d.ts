@@ -982,7 +982,12 @@ export interface components {
             assignments: components["schemas"]["TaskAssignment"][];
             /**
              * Format: double
-             * @description Total man-days (sum of assignments). Computed server-side.
+             * @description The task's man-day size as entered on the task itself, before (or without) splitting it across assignees.
+             */
+            estimateManDays?: number | null;
+            /**
+             * Format: double
+             * @description Total man-days: the sum of assignments when they carry any man-days, otherwise estimateManDays (0 when neither). Computed server-side.
              */
             manDays: number;
             /**
@@ -1012,6 +1017,8 @@ export interface components {
             assigneeIds?: string[];
             /** @description Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent. */
             assignments?: components["schemas"]["TaskAssignment"][];
+            /** Format: double */
+            estimateManDays?: number;
             /** Format: date */
             startDate?: string;
             /** Format: date */
@@ -1028,6 +1035,8 @@ export interface components {
             assigneeIds?: string[];
             /** @description Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent. */
             assignments?: components["schemas"]["TaskAssignment"][];
+            /** Format: double */
+            estimateManDays?: number;
             /** Format: date */
             startDate?: string;
             /** Format: date */

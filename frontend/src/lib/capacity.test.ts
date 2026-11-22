@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatManDays, loadBand, monthKey, monthLabel, shiftMonth } from './capacity';
+import { formatManDays, loadBand, monthKey, monthLabel, shiftMonth, splitEvenly } from './capacity';
 
 describe('monthKey', () => {
 	it('formats a date as YYYY-MM', () => {
@@ -38,5 +38,19 @@ describe('loadBand', () => {
 		expect(loadBand(100).label).toBe('Fully planned');
 		expect(loadBand(70).label).toBe('Fully planned');
 		expect(loadBand(69).label).toBe('Has capacity');
+	});
+});
+
+
+describe('splitEvenly', () => {
+	it('splits a total across people in half-day steps that add back up', () => {
+		expect(splitEvenly(40, 2)).toEqual([20, 20]);
+		expect(splitEvenly(40, 3)).toEqual([13.5, 13.5, 13]);
+		expect(splitEvenly(1, 3)).toEqual([0.5, 0.5, 0]);
+		expect(splitEvenly(7, 1)).toEqual([7]);
+	});
+	it('returns nothing for no people and zeros for no total', () => {
+		expect(splitEvenly(10, 0)).toEqual([]);
+		expect(splitEvenly(0, 2)).toEqual([0, 0]);
 	});
 });

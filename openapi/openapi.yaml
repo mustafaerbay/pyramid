@@ -2302,10 +2302,18 @@ components:
           description: Each assignee's share of the task's man-days.
           items:
             $ref: "#/components/schemas/TaskAssignment"
+        estimateManDays:
+          type: number
+          format: double
+          nullable: true
+          description: The task's man-day size as entered on the task itself, before (or without) splitting it across assignees.
         manDays:
           type: number
           format: double
-          description: Total man-days (sum of assignments). Computed server-side.
+          description: >
+            Total man-days: the sum of assignments when they carry any
+            man-days, otherwise estimateManDays (0 when neither). Computed
+            server-side.
         startDate:
           type: string
           format: date
@@ -2358,6 +2366,11 @@ components:
             Takes precedence over assigneeIds when both are sent.
           items:
             $ref: "#/components/schemas/TaskAssignment"
+        estimateManDays:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 9999
         startDate:
           type: string
           format: date
@@ -2396,6 +2409,11 @@ components:
             Takes precedence over assigneeIds when both are sent.
           items:
             $ref: "#/components/schemas/TaskAssignment"
+        estimateManDays:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 9999
         startDate:
           type: string
           format: date

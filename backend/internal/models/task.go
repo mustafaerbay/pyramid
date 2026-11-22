@@ -28,10 +28,13 @@ type Task struct {
 	Status      api.TaskStatus   `gorm:"type:task_status;not null;default:backlog"`
 	Priority    api.TaskPriority `gorm:"type:task_priority;not null;default:medium"`
 	StartDate   *time.Time       `gorm:"type:date"`
-	DueDate     *time.Time       `gorm:"type:date"`
-	CompletedAt *time.Time
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	// EstimateManDays is the task's size as entered on the task itself;
+	// used as the total until assignments carry man-days.
+	EstimateManDays *float64   `gorm:"type:numeric(7,2)"`
+	DueDate         *time.Time `gorm:"type:date"`
+	CompletedAt     *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 
 	// AssigneeIDs holds the task's assignees (see the task_assignees join
 	// table). It's not a column on this table — `gorm:"-"` keeps GORM from
@@ -71,19 +74,23 @@ func (t Task) ToAPI() api.Task {
 		total += md
 	}
 	out := api.Task{
-		Id:          t.ID,
-		ProjectId:   t.ProjectID,
-		Number:      t.Number,
-		Title:       t.Title,
-		Description: t.Description,
-		Status:      t.Status,
-		Priority:    t.Priority,
-		AssigneeIds: assigneeIDs,
-		Assignments: assignments,
-		ManDays:     total,
-		MilestoneId: t.MilestoneID,
-		CreatedAt:   t.CreatedAt,
-		UpdatedAt:   t.UpdatedAt,
+		Id:              t.ID,
+		ProjectId:       t.ProjectID,
+		Number:          t.Number,
+		Title:           t.Title,
+		Description:     t.Description,
+		Status:          t.Status,
+		Priority:        t.Priority,
+		AssigneeIds:     assigneeIDs,
+		Assignments:     assignments,
+		ManDays:         total,
+		EstimateManDays: t.EstimateManDays,
+		MilestoneId:     t.MilestoneID,
+		CreatedAt:       t.CreatedAt,
+		UpdatedAt:       t.UpdatedAt,
+	}
+	if total == 0 && t.EstimateManDays != nil {
+		out.ManDays = *t.EstimateManDays
 	}
 	if t.StartDate != nil {
 		out.StartDate = &openapi_types.Date{Time: *t.StartDate}
@@ -124,6 +131,10 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 	if in.StartDate != nil {
 		d := in.StartDate.Time
 		t.StartDate = &d
+	}
+	if in.EstimateManDays != nil {
+		v := *in.EstimateManDays
+		t.EstimateManDays = &v
 	}
 	if in.DueDate != nil {
 		d := in.DueDate.Time
@@ -168,6 +179,10 @@ func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 		d := in.StartDate.Time
 		t.StartDate = &d
 	}
+	if in.EstimateManDays != nil {
+		v := *in.EstimateManDays
+		t.EstimateManDays = &v
+	}
 	if in.DueDate != nil {
 		d := in.DueDate.Time
 		t.DueDate = &d
@@ -186,13 +201,20 @@ func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 	}
 }
 
-// ValidateDates reports whether the planned start is after the due date.
+// ValidateDates reports whether the planned start is after the due date,
+// or the task-level estimate is out of range.
 func (t Task) ValidateDates() error {
 	if t.StartDate != nil && t.DueDate != nil && t.StartDate.After(*t.DueDate) {
 		return errStartAfterDue
 	}
+	if t.EstimateManDays != nil && (*t.EstimateManDays < 0 || *t.EstimateManDays > MaxEstimateManDays) {
+		return fmt.Errorf("estimateManDays must be between 0 and %d", MaxEstimateManDays)
+	}
 	return nil
 }
+
+// MaxEstimateManDays bounds a task's own man-day estimate.
+const MaxEstimateManDays = 9999
 
 var errStartAfterDue = errors.New("startDate must be on or before dueDate")
 

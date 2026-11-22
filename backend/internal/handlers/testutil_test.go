@@ -191,6 +191,7 @@ CREATE TABLE tasks (
 	status TEXT NOT NULL DEFAULT 'backlog',
 	priority TEXT NOT NULL DEFAULT 'medium',
 	start_date DATE,
+	estimate_man_days REAL,
 	due_date DATE,
 	completed_at DATETIME,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

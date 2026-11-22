@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
+	import { formatManDays, splitEvenly } from '$lib/capacity';
 
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
@@ -59,9 +60,32 @@
 		// svelte-ignore state_referenced_locally
 		Object.fromEntries((initial?.assignments ?? []).map((a) => [a.personId, a.manDays]))
 	);
-	const totalManDays = $derived(
-		assigneeIds.reduce((sum, id) => sum + (Number(manDays[id]) || 0), 0)
+	// The task's size in man-days, always editable. Changing it re-splits it
+	// evenly across the ticked people; changing one person's share makes the
+	// total the sum of the shares.
+	let total = $state<number | null>(
+		// svelte-ignore state_referenced_locally
+		initial && initial.manDays > 0 ? initial.manDays : null
 	);
+	const sharesSum = $derived(assigneeIds.reduce((sum, id) => sum + (Number(manDays[id]) || 0), 0));
+
+	function spreadTotal() {
+		const parts = splitEvenly(Number(total) || 0, assigneeIds.length);
+		const next = { ...manDays };
+		assigneeIds.forEach((id, i) => (next[id] = parts[i]));
+		manDays = next;
+	}
+
+	function setTotal(value: string) {
+		total = value === '' ? null : Number(value);
+		spreadTotal();
+	}
+
+	function setShare(id: string, value: string) {
+		manDays = { ...manDays, [id]: value === '' ? 0 : Number(value) };
+		if (!assigneeIds.includes(id) && Number(value) > 0) assigneeIds = [...assigneeIds, id];
+		total = assigneeIds.reduce((sum, pid) => sum + (Number(manDays[pid]) || 0), 0);
+	}
 
 	let saving = $state(false);
 	let formError = $state<string | null>(null);
@@ -81,6 +105,7 @@
 		assigneeIds = assigneeIds.includes(id)
 			? assigneeIds.filter((x) => x !== id)
 			: [...assigneeIds, id];
+		if (Number(total) > 0) spreadTotal();
 	}
 
 	async function handleSubmit(e: SubmitEvent) {
@@ -99,6 +124,11 @@
 			personId,
 			manDays: Number(manDays[personId]) || 0
 		}));
+		const estimateManDays = total == null ? undefined : Number(total) || 0;
+		if (estimateManDays !== undefined && (estimateManDays < 0 || estimateManDays > 9999)) {
+			formError = 'Man-days must be between 0 and 9999.';
+			return;
+		}
 		if (assignments.some((a) => a.manDays < 0 || a.manDays > 999)) {
 			formError = 'Man-days must be between 0 and 999.';
 			return;
@@ -119,6 +149,7 @@
 						// (even as []) is how the backend knows to update it, vs.
 						// omitting the field entirely to leave it untouched.
 						assignments,
+						estimateManDays,
 						status,
 						priority,
 						startDate: startDate || undefined,
@@ -138,6 +169,7 @@
 						title,
 						description: description || undefined,
 						assignments,
+						estimateManDays,
 						status,
 						priority,
 						startDate: startDate || undefined,
@@ -210,11 +242,38 @@
 			</label>
 
 			<div class="block text-sm">
+				<label class="mb-3 block">
+					<span class="mb-1 block font-medium text-slate-700">Man-days (task size)</span>
+					<div class="flex items-center gap-2">
+						<input
+							type="number"
+							class="input w-32 tabular-nums"
+							min="0"
+							max="9999"
+							step="0.5"
+							inputmode="decimal"
+							placeholder="e.g. 40"
+							value={total ?? ''}
+							oninput={(e) => setTotal(e.currentTarget.value)}
+						/>
+						<span class="text-xs text-slate-500">
+							{#if assigneeIds.length > 1}
+								split across {assigneeIds.length} people below
+							{:else if assigneeIds.length === 1}
+								all for the person below
+							{:else}
+								tick people below to split it
+							{/if}
+						</span>
+					</div>
+				</label>
 				<span class="mb-1 flex items-baseline justify-between font-medium text-slate-700">
 					<span>Assignees{assigneeIds.length > 0 ? ` (${assigneeIds.length})` : ''}</span>
-					<span class="text-xs font-normal text-slate-500">
-						Total: <span class="font-semibold text-slate-800 tabular-nums">{totalManDays}</span> man-days
-					</span>
+					{#if assigneeIds.length > 0 && total != null && Math.abs(sharesSum - Number(total)) > 0.001}
+						<span class="text-xs font-normal text-amber-700">
+							Shares add up to {formatManDays(sharesSum)} md
+						</span>
+					{/if}
 				</span>
 				<div class="max-h-56 space-y-1 overflow-y-auto rounded-md border border-slate-300 px-3 py-2">
 					{#if assigneeOptions.length === 0}
@@ -230,20 +289,21 @@
 									/>
 									<span class="truncate">{person.name}</span>
 								</label>
-								{#if assigneeIds.includes(person.id)}
-									<input
-										type="number"
-										class="input w-20 text-right tabular-nums"
-										min="0"
-										max="999"
-										step="0.5"
-										inputmode="decimal"
-										aria-label="Man-days for {person.name}"
-										bind:value={manDays[person.id]}
-										placeholder="0"
-									/>
-									<span class="w-6 text-xs text-slate-500">md</span>
-								{/if}
+								<input
+									type="number"
+									class="input w-20 text-right tabular-nums {assigneeIds.includes(person.id)
+										? ''
+										: 'bg-slate-50 text-slate-400'}"
+									min="0"
+									max="999"
+									step="0.5"
+									inputmode="decimal"
+									aria-label="Man-days for {person.name}"
+									value={assigneeIds.includes(person.id) ? (manDays[person.id] ?? 0) : ''}
+									oninput={(e) => setShare(person.id, e.currentTarget.value)}
+									placeholder="0"
+								/>
+								<span class="w-6 text-xs text-slate-500">md</span>
 							</div>
 						{/each}
 					{/if}

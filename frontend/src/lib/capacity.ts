@@ -27,3 +27,16 @@ export function loadBand(pct: number): { bar: string; text: string; label: strin
 	if (pct >= 70) return { bar: 'bg-emerald-500', text: 'text-slate-700', label: 'Fully planned' };
 	return { bar: 'bg-slate-400', text: 'text-slate-500', label: 'Has capacity' };
 }
+
+/**
+ * Splits `total` man-days across `count` people in half-day steps: everyone
+ * gets the same base share and the leftover half-days go to the first ones,
+ * so the parts always add back up to the total.
+ */
+export function splitEvenly(total: number, count: number): number[] {
+	if (count <= 0) return [];
+	const halves = Math.round(Math.max(total, 0) * 2);
+	const base = Math.floor(halves / count);
+	const extra = halves % count;
+	return Array.from({ length: count }, (_, i) => (base + (i < extra ? 1 : 0)) / 2);
+}

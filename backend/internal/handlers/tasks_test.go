@@ -383,3 +383,33 @@ func TestTasks_RejectsBadManDaysAndDates(t *testing.T) {
 		t.Errorf("patch start after existing due: status = %d, want 400", status)
 	}
 }
+
+func TestTasks_EstimateManDays_UsedUntilAssignmentsCarryManDays(t *testing.T) {
+	r, _ := newTestRouter(t)
+	alice, bob := uuid.New(), uuid.New()
+	est := 40.0
+
+	var created api.Task
+	status := doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: uuid.New(), Title: "Unassigned requirement", EstimateManDays: &est,
+	}, &created)
+	if status != http.StatusCreated {
+		t.Fatalf("create status = %d", status)
+	}
+	if created.EstimateManDays == nil || *created.EstimateManDays != 40 || created.ManDays != 40 {
+		t.Errorf("estimate %v, manDays %v; want 40 and 40 (no assignments yet)", created.EstimateManDays, created.ManDays)
+	}
+
+	var split api.Task
+	doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+created.Id.String(), api.TaskUpdate{
+		Assignments: &[]api.TaskAssignment{{PersonId: alice, ManDays: 30}, {PersonId: bob, ManDays: 15}},
+	}, &split)
+	if split.ManDays != 45 {
+		t.Errorf("manDays = %v, want 45 (assignments win once they carry man-days)", split.ManDays)
+	}
+
+	bad := -1.0
+	if status := doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+created.Id.String(), api.TaskUpdate{EstimateManDays: &bad}, nil); status != http.StatusBadRequest {
+		t.Errorf("negative estimate: status = %d, want 400", status)
+	}
+}
