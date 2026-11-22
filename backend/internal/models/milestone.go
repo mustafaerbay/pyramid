@@ -19,8 +19,10 @@ type Milestone struct {
 	StartDate   *time.Time          `gorm:"type:date"`
 	DueDate     *time.Time          `gorm:"type:date"`
 	CompletedAt *time.Time          `gorm:"type:date"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	// VersionID is the release this milestone is planned into (optional).
+	VersionID *uuid.UUID `gorm:"type:uuid;index"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -34,6 +36,7 @@ func (m Milestone) ToAPI() api.Milestone {
 		Name:        m.Name,
 		Description: m.Description,
 		Status:      m.Status,
+		VersionId:   m.VersionID,
 		CreatedAt:   m.CreatedAt,
 		UpdatedAt:   m.UpdatedAt,
 	}
@@ -59,6 +62,7 @@ func NewMilestoneFromCreate(in api.MilestoneCreate) Milestone {
 		Name:        in.Name,
 		Description: in.Description,
 		Status:      api.MilestoneStatusPending,
+		VersionID:   in.VersionId,
 	}
 	if in.StartDate != nil {
 		t := in.StartDate.Time
@@ -75,7 +79,16 @@ func NewMilestoneFromCreate(in api.MilestoneCreate) Milestone {
 // Note: projectId is deliberately not editable here — moving a milestone to
 // a different project isn't supported, same rationale as ProjectMember not
 // allowing personId/projectId changes after creation.
-func (m *Milestone) ApplyUpdate(in api.MilestoneUpdate) {
+//
+// clearVersion unassigns the milestone from its version; the handler sets
+// it when the request body carries an explicit `"versionId": null`, which a
+// *uuid.UUID field can't tell apart from an omitted key (same as Task).
+func (m *Milestone) ApplyUpdate(in api.MilestoneUpdate, clearVersion bool) {
+	if clearVersion {
+		m.VersionID = nil
+	} else if in.VersionId != nil {
+		m.VersionID = in.VersionId
+	}
 	if in.Name != nil {
 		m.Name = *in.Name
 	}

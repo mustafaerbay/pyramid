@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/mustafaerbay/pyramid/backend/internal/api"
 	"github.com/mustafaerbay/pyramid/backend/internal/models"
 	"gorm.io/gorm"
@@ -68,6 +70,10 @@ func (h *Handler) CreateMilestone(c *gin.Context) {
 		return
 	}
 
+	if in.VersionId != nil && !h.versionInProject(c, *in.VersionId, in.ProjectId) {
+		return
+	}
+
 	m := models.NewMilestoneFromCreate(in)
 	if err := h.db.Create(&m).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to create milestone", Details: strptr(err.Error())})
@@ -102,18 +108,46 @@ func (h *Handler) UpdateMilestone(c *gin.Context) {
 		return
 	}
 
-	var in api.MilestoneUpdate
-	if err := c.ShouldBindJSON(&in); err != nil {
+	body, err := c.GetRawData()
+	if err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "invalid request body", Details: strptr(err.Error())})
 		return
 	}
+	var in api.MilestoneUpdate
+	if err := json.Unmarshal(body, &in); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: "invalid request body", Details: strptr(err.Error())})
+		return
+	}
+	// Explicit `"versionId": null` unassigns; an omitted key leaves it be
+	// (see UpdateTask for why this needs the raw body).
+	var raw map[string]json.RawMessage
+	_ = json.Unmarshal(body, &raw)
+	clearVersion := isExplicitNull(raw, "versionId")
+	if !clearVersion && in.VersionId != nil && !h.versionInProject(c, *in.VersionId, m.ProjectID) {
+		return
+	}
 
-	m.ApplyUpdate(in)
+	m.ApplyUpdate(in, clearVersion)
 	if err := h.db.Save(&m).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update milestone", Details: strptr(err.Error())})
 		return
 	}
 	c.JSON(http.StatusOK, m.ToAPI())
+}
+
+// versionInProject checks that versionID is a version of projectID. When it
+// isn't (or doesn't exist) it writes a 400 and returns false.
+func (h *Handler) versionInProject(c *gin.Context, versionID, projectID uuid.UUID) bool {
+	var n int64
+	if err := h.db.Model(&models.Version{}).Where("id = ? AND project_id = ?", versionID, projectID).Count(&n).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to check version", Details: strptr(err.Error())})
+		return false
+	}
+	if n == 0 {
+		c.JSON(http.StatusBadRequest, api.Error{Message: "version does not belong to this project"})
+		return false
+	}
+	return true
 }
 
 // DeleteMilestone implements DELETE /api/v1/milestones/{id}.

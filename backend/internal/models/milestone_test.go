@@ -25,7 +25,7 @@ func TestMilestone_ApplyUpdate_CompletingStampsCompletedAtAutomatically(t *testi
 
 	completed := api.MilestoneStatusCompleted
 	before := time.Now().UTC()
-	m.ApplyUpdate(api.MilestoneUpdate{Status: &completed})
+	m.ApplyUpdate(api.MilestoneUpdate{Status: &completed}, false)
 	after := time.Now().UTC()
 
 	if m.Status != api.MilestoneStatusCompleted {
@@ -44,7 +44,7 @@ func TestMilestone_ApplyUpdate_CompletingDoesNotOverwriteExistingCompletedAt(t *
 	m := Milestone{Status: api.MilestoneStatusInProgress, CompletedAt: &original}
 
 	completed := api.MilestoneStatusCompleted
-	m.ApplyUpdate(api.MilestoneUpdate{Status: &completed})
+	m.ApplyUpdate(api.MilestoneUpdate{Status: &completed}, false)
 
 	if !m.CompletedAt.Equal(original) {
 		t.Errorf("CompletedAt = %v, want unchanged %v (already set, shouldn't be re-stamped)", m.CompletedAt, original)
@@ -56,7 +56,7 @@ func TestMilestone_ApplyUpdate_ExplicitCompletedAtIsRespected(t *testing.T) {
 
 	completed := api.MilestoneStatusCompleted
 	explicit := openapi_types.Date{Time: time.Date(2025, 12, 25, 0, 0, 0, 0, time.UTC)}
-	m.ApplyUpdate(api.MilestoneUpdate{Status: &completed, CompletedAt: &explicit})
+	m.ApplyUpdate(api.MilestoneUpdate{Status: &completed, CompletedAt: &explicit}, false)
 
 	if m.CompletedAt == nil || !m.CompletedAt.Equal(explicit.Time) {
 		t.Errorf("CompletedAt = %v, want the explicitly supplied %v, not auto-stamped today", m.CompletedAt, explicit.Time)
@@ -67,7 +67,7 @@ func TestMilestone_ApplyUpdate_NonCompletingStatusChangeLeavesCompletedAtAlone(t
 	m := Milestone{Status: api.MilestoneStatusPending}
 
 	inProgress := api.MilestoneStatusInProgress
-	m.ApplyUpdate(api.MilestoneUpdate{Status: &inProgress})
+	m.ApplyUpdate(api.MilestoneUpdate{Status: &inProgress}, false)
 
 	if m.CompletedAt != nil {
 		t.Errorf("CompletedAt = %v, want nil — moving to in_progress shouldn't stamp completion", m.CompletedAt)
@@ -84,7 +84,7 @@ func TestMilestone_ApplyUpdate_NameDescriptionAndDatesAreEditable(t *testing.T) 
 
 	m.ApplyUpdate(api.MilestoneUpdate{
 		Name: &newName, Description: &newDesc, StartDate: &start, DueDate: &due,
-	})
+	}, false)
 
 	if m.Name != newName {
 		t.Errorf("Name = %q, want %q", m.Name, newName)
@@ -123,5 +123,31 @@ func TestMilestone_ToAPI(t *testing.T) {
 	}
 	if out.StartDate != nil {
 		t.Errorf("StartDate = %v, want nil (not set on this milestone)", out.StartDate)
+	}
+}
+
+func TestMilestone_VersionId_CreateUpdateClear(t *testing.T) {
+	v1, v2 := uuid.New(), uuid.New()
+	m := NewMilestoneFromCreate(api.MilestoneCreate{ProjectId: uuid.New(), Name: "M1", VersionId: &v1})
+	if m.VersionID == nil || *m.VersionID != v1 {
+		t.Fatalf("create VersionID = %v, want %v", m.VersionID, v1)
+	}
+	if out := m.ToAPI(); out.VersionId == nil || *out.VersionId != v1 {
+		t.Errorf("ToAPI VersionId = %v, want %v", out.VersionId, v1)
+	}
+
+	m.ApplyUpdate(api.MilestoneUpdate{}, false)
+	if m.VersionID == nil || *m.VersionID != v1 {
+		t.Errorf("absent versionId changed it to %v", m.VersionID)
+	}
+
+	m.ApplyUpdate(api.MilestoneUpdate{VersionId: &v2}, false)
+	if m.VersionID == nil || *m.VersionID != v2 {
+		t.Errorf("set VersionID = %v, want %v", m.VersionID, v2)
+	}
+
+	m.ApplyUpdate(api.MilestoneUpdate{}, true)
+	if m.VersionID != nil {
+		t.Errorf("clear left VersionID = %v, want nil", m.VersionID)
 	}
 }
