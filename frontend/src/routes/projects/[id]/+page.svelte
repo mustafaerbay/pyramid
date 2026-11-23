@@ -24,6 +24,9 @@
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import AreaManager from '$lib/components/AreaManager.svelte';
+	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
+	import { download } from '$lib/csv';
+	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
 	import { areaIdsUnder, areaLabel } from '$lib/areas';
 	import { TYPE_OPTIONS, childType, type WorkItemType } from '$lib/workItems';
 	import { afterIdToPlaceBefore, boardStatuses } from '$lib/board';
@@ -310,6 +313,20 @@
 	}
 	let taskAreaFilter = $state('');
 	let managingAreas = $state(false);
+	let importing = $state(false);
+	const csvLookups = $derived<Lookups>({
+		people: Object.values(people).map((p) => ({ id: p.id, name: `${p.firstName} ${p.lastName}`, email: p.email })),
+		tasks: tasks.map((t) => ({ id: t.id, number: t.number, title: t.title })),
+		milestones: milestones.map((m) => ({ id: m.id, name: m.name })),
+		sprints: sprints.map((s) => ({ id: s.id, name: s.name })),
+		areas
+	});
+	function exportTasks() {
+		download(
+			`${(project?.key ?? 'project').toLowerCase()}-items.csv`,
+			tasksToCsv(tasks.filter(matchesTaskFilters), { ...csvLookups, project: () => project?.name ?? '' })
+		);
+	}
 	const areaFilterIds = $derived(taskAreaFilter ? areaIdsUnder(areas, taskAreaFilter) : null);
 
 	async function loadTasks() {
@@ -1472,6 +1489,10 @@
 				<div>
 					<h2 class="text-lg font-semibold tracking-tight">
 						Tasks <a href="/projects/{projectId}/sprints" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Sprints →</a>
+						<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={exportTasks}>Export CSV</button>
+						{#if can('member')}
+							<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={() => (importing = true)}>Import CSV</button>
+						{/if}
 					</h2>
 					<p class="mt-0.5 text-sm text-slate-500">
 						{tasks.length}
@@ -2110,4 +2131,17 @@
 
 {#if managingAreas}
 	<AreaManager {projectId} {areas} onChange={loadAreas} onClose={() => (managingAreas = false)} />
+{/if}
+
+{#if importing}
+	<ImportCsvModal
+		{projectId}
+		lookups={csvLookups}
+		onClose={() => (importing = false)}
+		onDone={(m) => {
+			importing = false;
+			flash(m.includes('failed') ? 'error' : 'success', m);
+			loadTasks();
+		}}
+	/>
 {/if}

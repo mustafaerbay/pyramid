@@ -9,6 +9,9 @@
 	import ChipSelect from '$lib/components/ChipSelect.svelte';
 	import CountBars from '$lib/components/CountBars.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
+	import BulkBar from '$lib/components/BulkBar.svelte';
+	import { download } from '$lib/csv';
+	import { tasksToCsv } from '$lib/taskCsv';
 
 	type Task = components['schemas']['Task'];
 	type Saved = components['schemas']['SavedQuery'];
@@ -48,6 +51,28 @@
 	let saveName = $state('');
 	let saveShared = $state(false);
 	let banner = $state<string | null>(null);
+	let selected = $state<Set<string>>(new Set());
+	const selectedTasks = $derived(results.filter((t) => selected.has(t.id)));
+	function toggle(id: string) {
+		const next = new Set(selected);
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
+		selected = next;
+	}
+	function exportCsv() {
+		const rows = selectedTasks.length ? selectedTasks : results;
+		download(
+			`pyramid-${(current?.name ?? 'query').replace(/[^\w-]+/g, '-').toLowerCase()}.csv`,
+			tasksToCsv(rows, {
+				people: Object.entries(people).map(([id, name]) => ({ id, name, email: '' })),
+				tasks: results.map((t) => ({ id: t.id, number: t.number, title: t.title })),
+				milestones: [],
+				sprints,
+				areas,
+				project: projectName
+			})
+		);
+	}
 
 	const filters = $derived(
 		cleanFilters({
@@ -115,6 +140,7 @@
 		}
 		error = null;
 		results = data.data;
+		selected = new Set([...selected].filter((id) => data.data.some((t) => t.id === id)));
 		total = data.total;
 		truncated = data.truncated;
 	}
@@ -247,12 +273,30 @@
 	<div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 		<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
 			<div class="flex items-center justify-between border-b border-slate-100 px-4 py-2 text-sm">
-				<span class="font-semibold">{total} {total === 1 ? 'item' : 'items'}{running ? ' · …' : ''}</span>
-				{#if truncated}<span class="text-xs text-amber-700">Showing the first 500</span>{/if}
+				<span class="flex items-center gap-2">
+					{#if can('member') && results.length}
+						<input
+							type="checkbox"
+							aria-label="Select all"
+							checked={selected.size > 0 && selected.size === results.length}
+							onchange={(e) => (selected = e.currentTarget.checked ? new Set(results.map((t) => t.id)) : new Set())}
+						/>
+					{/if}
+					<span class="font-semibold">{total} {total === 1 ? 'item' : 'items'}{running ? ' · …' : ''}</span>
+				</span>
+				<span class="flex items-center gap-2">
+					{#if truncated}<span class="text-xs text-amber-700">Showing the first 500</span>{/if}
+					{#if results.length}
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={exportCsv}>Export CSV{selected.size ? ` (${selected.size})` : ''}</button>
+					{/if}
+				</span>
 			</div>
 			<ul class="max-h-[32rem] divide-y divide-slate-100 overflow-y-auto text-sm">
 				{#each results as t (t.id)}
-					<li class="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2">
+					<li class="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2 {selected.has(t.id) ? 'bg-indigo-50' : ''}">
+						{#if can('member')}
+							<input type="checkbox" aria-label="Select {t.title}" checked={selected.has(t.id)} onchange={() => toggle(t.id)} />
+						{/if}
 						<TypeBadge type={t.type} />
 						<a href="/projects/{t.projectId}?task={t.id}" class="min-w-0 flex-1 truncate font-medium text-slate-800 hover:underline">{t.title}</a>
 						<span class="w-full pl-12 text-xs text-slate-500">
@@ -266,7 +310,7 @@
 				{/each}
 			</ul>
 		</div>
-		<div class="rounded-lg border border-slate-200 bg-white p-4">
+		<div class="rounded-lg border border-slate-200 bg-white p-4 lg:self-start">
 			<div class="mb-3 flex items-center justify-between gap-2">
 				<h2 class="font-semibold">Chart</h2>
 				<select class="input w-auto" aria-label="Group by" bind:value={groupBy}>
@@ -280,4 +324,16 @@
 			<CountBars data={chart} label="Items by {groupBy}" />
 		</div>
 	</div>
+	{#if selectedTasks.length > 0}
+		<BulkBar
+			tasks={selectedTasks}
+			people={Object.entries(people).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))}
+			onClear={() => (selected = new Set())}
+			onDone={(m) => {
+				banner = m;
+				setTimeout(() => (banner = null), 5000);
+				run(filters);
+			}}
+		/>
+	{/if}
 </section>
