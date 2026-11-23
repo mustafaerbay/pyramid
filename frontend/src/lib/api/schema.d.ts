@@ -441,6 +441,59 @@ export interface paths {
         patch: operations["updateWeeklySummary"];
         trace?: never;
     };
+    "/api/v1/tasks/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A task's comments, oldest first */
+        get: operations["listTaskComments"];
+        put?: never;
+        /** Comment on a task as the signed-in person */
+        post: operations["createTaskComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/task-comments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a comment (its author, managers and admins) */
+        delete: operations["deleteTaskComment"];
+        options?: never;
+        head?: never;
+        /** Edit your own comment */
+        patch: operations["updateTaskComment"];
+        trace?: never;
+    };
+    "/api/v1/tasks/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who changed what on a task, newest first */
+        get: operations["getTaskHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tags": {
         parameters: {
             query?: never;
@@ -1260,6 +1313,54 @@ export interface components {
         AuthMe: {
             user: components["schemas"]["User"];
             person: components["schemas"]["Person"];
+        };
+        TaskComment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            taskId: string;
+            /**
+             * Format: uuid
+             * @description Null when the author's person record is gone.
+             */
+            authorPersonId: string | null;
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        TaskCommentInput: {
+            body: string;
+        };
+        TaskCommentList: {
+            data: components["schemas"]["TaskComment"][];
+        };
+        TaskFieldChange: {
+            /** @description Value before (null when unset). Ids stay ids; the client names them. */
+            from: unknown;
+            /** @description Value after (null when cleared). */
+            to: unknown;
+        };
+        TaskHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            action: "created" | "updated";
+            /**
+             * Format: uuid
+             * @description Who did it; null for changes made without a signed-in account.
+             */
+            actorPersonId: string | null;
+            /** @description Changed fields (title, description, status, priority, milestoneId, parentId, startDate, dueDate, estimateManDays, assignments, tags, blockedByIds), each with its value before and after. Empty for "created". */
+            changes: {
+                [key: string]: components["schemas"]["TaskFieldChange"];
+            };
+            /** Format: date-time */
+            createdAt: string;
+        };
+        TaskHistory: {
+            data: components["schemas"]["TaskHistoryEntry"][];
         };
         TagList: {
             data: string[];
@@ -2705,6 +2806,146 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             default: components["responses"]["DefaultError"];
+        };
+    };
+    listTaskComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCommentList"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTaskComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCommentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskComment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTaskComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTaskComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCommentInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskComment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Not your comment */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getTaskHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskHistory"];
+                };
+            };
         };
     };
     listTags: {

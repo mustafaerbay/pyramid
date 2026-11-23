@@ -408,6 +408,24 @@ func (e SystemRole) Valid() bool {
 	}
 }
 
+// Defines values for TaskHistoryEntryAction.
+const (
+	TaskHistoryEntryActionCreated TaskHistoryEntryAction = "created"
+	TaskHistoryEntryActionUpdated TaskHistoryEntryAction = "updated"
+)
+
+// Valid indicates whether the value is a known member of the TaskHistoryEntryAction enum.
+func (e TaskHistoryEntryAction) Valid() bool {
+	switch e {
+	case TaskHistoryEntryActionCreated:
+		return true
+	case TaskHistoryEntryActionUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TaskPriority.
 const (
 	TaskPriorityHigh   TaskPriority = "high"
@@ -1141,6 +1159,27 @@ type TaskAssignment struct {
 	PersonId      openapi_types.UUID `json:"personId"`
 }
 
+// TaskComment defines model for TaskComment.
+type TaskComment struct {
+	// AuthorPersonId Null when the author's person record is gone.
+	AuthorPersonId *openapi_types.UUID `json:"authorPersonId"`
+	Body           string              `json:"body"`
+	CreatedAt      time.Time           `json:"createdAt"`
+	Id             openapi_types.UUID  `json:"id"`
+	TaskId         openapi_types.UUID  `json:"taskId"`
+	UpdatedAt      time.Time           `json:"updatedAt"`
+}
+
+// TaskCommentInput defines model for TaskCommentInput.
+type TaskCommentInput struct {
+	Body string `json:"body"`
+}
+
+// TaskCommentList defines model for TaskCommentList.
+type TaskCommentList struct {
+	Data []TaskComment `json:"data"`
+}
+
 // TaskCreate defines model for TaskCreate.
 type TaskCreate struct {
 	// AssigneeIds People to assign at creation. Defaults to none if omitted.
@@ -1167,6 +1206,36 @@ type TaskCreate struct {
 	Tags  *[]string `json:"tags,omitempty"`
 	Title string    `json:"title"`
 }
+
+// TaskFieldChange defines model for TaskFieldChange.
+type TaskFieldChange struct {
+	// From Value before (null when unset). Ids stay ids; the client names them.
+	From any `json:"from"`
+
+	// To Value after (null when cleared).
+	To any `json:"to"`
+}
+
+// TaskHistory defines model for TaskHistory.
+type TaskHistory struct {
+	Data []TaskHistoryEntry `json:"data"`
+}
+
+// TaskHistoryEntry defines model for TaskHistoryEntry.
+type TaskHistoryEntry struct {
+	Action TaskHistoryEntryAction `json:"action"`
+
+	// ActorPersonId Who did it; null for changes made without a signed-in account.
+	ActorPersonId *openapi_types.UUID `json:"actorPersonId"`
+
+	// Changes Changed fields (title, description, status, priority, milestoneId, parentId, startDate, dueDate, estimateManDays, assignments, tags, blockedByIds), each with its value before and after. Empty for "created".
+	Changes   map[string]TaskFieldChange `json:"changes"`
+	CreatedAt time.Time                  `json:"createdAt"`
+	Id        openapi_types.UUID         `json:"id"`
+}
+
+// TaskHistoryEntryAction defines model for TaskHistoryEntry.Action.
+type TaskHistoryEntryAction string
 
 // TaskList defines model for TaskList.
 type TaskList struct {
@@ -1498,11 +1567,17 @@ type CreateProjectJSONRequestBody = ProjectCreate
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = ProjectUpdate
 
+// UpdateTaskCommentJSONRequestBody defines body for UpdateTaskComment for application/json ContentType.
+type UpdateTaskCommentJSONRequestBody = TaskCommentInput
+
 // CreateTaskJSONRequestBody defines body for CreateTask for application/json ContentType.
 type CreateTaskJSONRequestBody = TaskCreate
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody = TaskUpdate
+
+// CreateTaskCommentJSONRequestBody defines body for CreateTaskComment for application/json ContentType.
+type CreateTaskCommentJSONRequestBody = TaskCommentInput
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserCreate

@@ -233,6 +233,26 @@ CREATE TABLE task_dependencies (
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE task_comments (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	task_id TEXT NOT NULL,
+	author_id TEXT,
+	parent_id TEXT,
+	body TEXT NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE activity_log (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	actor_id TEXT,
+	action TEXT NOT NULL,
+	entity_type TEXT NOT NULL,
+	entity_id TEXT,
+	changes TEXT,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_labels (
 	task_id TEXT NOT NULL,
 	label_id TEXT NOT NULL,

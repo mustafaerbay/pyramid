@@ -267,6 +267,7 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save dependencies", Details: strptr(err.Error())})
 		return
 	}
+	h.logTask(c, "created", t.ID, nil)
 
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
@@ -316,6 +317,21 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task", Details: strptr(err.Error())})
 		return
 	}
+
+	// What the task looked like before, for its history.
+	if err := h.attachAssigneesOne(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task assignees", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.attachTags(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load tags", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.attachBlockers(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
+		return
+	}
+	before := taskSnapshot(t)
 
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -421,6 +437,9 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
+	}
+	if changes := diffSnapshots(before, taskSnapshot(t)); len(changes) > 0 {
+		h.logTask(c, "updated", t.ID, changes)
 	}
 
 	c.JSON(http.StatusOK, t.ToAPI())

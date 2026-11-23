@@ -947,6 +947,106 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
 
+  /api/v1/tasks/{id}/comments:
+    get:
+      operationId: listTaskComments
+      tags: [tasks]
+      summary: A task's comments, oldest first
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Comments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommentList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createTaskComment
+      tags: [tasks]
+      summary: Comment on a task as the signed-in person
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/task-comments/{id}:
+    patch:
+      operationId: updateTaskComment
+      tags: [tasks]
+      summary: Edit your own comment
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCommentInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: Not your comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTaskComment
+      tags: [tasks]
+      summary: Delete a comment (its author, managers and admins)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tasks/{id}/history:
+    get:
+      operationId: getTaskHistory
+      tags: [tasks]
+      summary: Who changed what on a task, newest first
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: History entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskHistory"
   /api/v1/tags:
     get:
       operationId: listTags
@@ -2778,6 +2878,96 @@ components:
           $ref: "#/components/schemas/User"
         person:
           $ref: "#/components/schemas/Person"
+
+    TaskComment:
+      type: object
+      required: [id, taskId, authorPersonId, body, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        authorPersonId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null when the author's person record is gone.
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskCommentInput:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+
+    TaskCommentList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskComment"
+
+    TaskFieldChange:
+      type: object
+      required: [from, to]
+      properties:
+        from:
+          description: Value before (null when unset). Ids stay ids; the client names them.
+          nullable: true
+        to:
+          description: Value after (null when cleared).
+          nullable: true
+
+    TaskHistoryEntry:
+      type: object
+      required: [id, action, actorPersonId, changes, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [created, updated]
+        actorPersonId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Who did it; null for changes made without a signed-in account.
+        changes:
+          type: object
+          description: >
+            Changed fields (title, description, status, priority, milestoneId,
+            parentId, startDate, dueDate, estimateManDays, assignments, tags,
+            blockedByIds), each with its value before and after. Empty for
+            "created".
+          additionalProperties:
+            $ref: "#/components/schemas/TaskFieldChange"
+        createdAt:
+          type: string
+          format: date-time
+
+    TaskHistory:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskHistoryEntry"
 
     TagList:
       type: object

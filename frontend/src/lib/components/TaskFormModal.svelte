@@ -3,6 +3,7 @@
 	import type { components } from '$lib/api/schema';
 	import { formatManDays, splitEvenly } from '$lib/capacity';
 	import TagInput from './TagInput.svelte';
+	import TaskActivity from './TaskActivity.svelte';
 	import { parentOptions, subtaskSummary } from '$lib/subtasks';
 	import { blockerOptions } from '$lib/dependencies';
 
@@ -488,5 +489,8 @@
 				</div>
 			</div>
 		</form>
+		{#if isEdit && initial}
+			<TaskActivity task={initial} {projectTasks} {milestoneOptions} />
+		{/if}
 	</div>
 </div>
