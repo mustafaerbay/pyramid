@@ -19,6 +19,8 @@
 	import Badge from '$lib/components/Badge.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
 	import TagChips from '$lib/components/TagChips.svelte';
+	import TaskBoard from '$lib/components/TaskBoard.svelte';
+	import { boardStatuses } from '$lib/board';
 	import { hasAllTags, tagColor } from '$lib/tags';
 	import { fitText, formatManDays, shortfalls } from '$lib/capacity';
 	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
@@ -157,6 +159,23 @@
 	let taskAssigneeFilter = $state('');
 	// Tasks must carry every selected tag.
 	let taskTagFilters = $state<string[]>([]);
+	// List (grouped by milestone) or Kanban board; remembered per browser.
+	let taskView = $state<'list' | 'board'>('list');
+	onMount(() => {
+		try {
+			if (localStorage.getItem('pyramid.taskView') === 'board') taskView = 'board';
+		} catch {
+			// storage blocked: stay on the list
+		}
+	});
+	function setTaskView(v: 'list' | 'board') {
+		taskView = v;
+		try {
+			localStorage.setItem('pyramid.taskView', v);
+		} catch {
+			// not remembered, still switches
+		}
+	}
 	function addTagFilter(tag: string) {
 		if (!taskTagFilters.some((t) => t.toLowerCase() === tag.toLowerCase())) taskTagFilters = [...taskTagFilters, tag];
 	}
@@ -349,20 +368,17 @@
 		)
 	);
 
+	function matchesTaskFilters(t: Task): boolean {
+		if (taskStatusFilters.length > 0 && !taskStatusFilters.includes(t.status)) return false;
+		if (taskAssigneeFilter === '__unassigned__' && t.assigneeIds.length > 0) return false;
+		if (taskAssigneeFilter && taskAssigneeFilter !== '__unassigned__' && !t.assigneeIds.includes(taskAssigneeFilter))
+			return false;
+		return hasAllTags(t.tags, taskTagFilters);
+	}
+
 	const taskGroups = $derived(
 		(() => {
-			const matchesFilters = (t: Task) => {
-				if (taskStatusFilters.length > 0 && !taskStatusFilters.includes(t.status)) return false;
-				if (taskAssigneeFilter === '__unassigned__' && t.assigneeIds.length > 0) return false;
-				if (
-					taskAssigneeFilter &&
-					taskAssigneeFilter !== '__unassigned__' &&
-					!t.assigneeIds.includes(taskAssigneeFilter)
-				)
-					return false;
-				if (!hasAllTags(t.tags, taskTagFilters)) return false;
-				return true;
-			};
+			const matchesFilters = matchesTaskFilters;
 
 			type Group = {
 				key: string;
@@ -462,6 +478,23 @@
 		closeTaskModal();
 		flash('success', wasEdit ? `Updated "${saved.title}".` : `Added task "${saved.title}".`);
 		loadTasks();
+	}
+
+	// Board moves update the card at once and put it back if saving fails.
+	async function moveTask(task: Task, status: TaskStatus) {
+		const before = task.status;
+		if (before === status) return;
+		tasks = tasks.map((t) => (t.id === task.id ? { ...t, status } : t));
+		const { data, error: err } = await api.PATCH('/api/v1/tasks/{id}', {
+			params: { path: { id: task.id } },
+			body: { status }
+		});
+		if (err || !data) {
+			tasks = tasks.map((t) => (t.id === task.id ? { ...t, status: before } : t));
+			flash('error', err?.message ?? 'Failed to move task.');
+			return;
+		}
+		tasks = tasks.map((t) => (t.id === data.id ? data : t));
 	}
 
 	async function quickUpdateStatus(task: Task, status: TaskStatus) {
@@ -1337,7 +1370,21 @@
 						{tasks.length === 1 ? 'task' : 'tasks'}
 					</p>
 				</div>
-				<button type="button" class="btn-primary" onclick={() => openAddTask(null)}>+ Add task</button>
+				<div class="flex items-center gap-2">
+					<div class="inline-flex rounded-md bg-slate-100 p-0.5 text-sm" role="group" aria-label="Task view">
+						{#each [['list', 'List'], ['board', 'Board']] as [v, l] (v)}
+							<button
+								type="button"
+								class="rounded px-3 py-1.5 font-medium {taskView === v
+									? 'bg-white text-slate-900 shadow-sm'
+									: 'text-slate-500 hover:text-slate-700'}"
+								aria-pressed={taskView === v}
+								onclick={() => setTaskView(v as 'list' | 'board')}>{l}</button
+							>
+						{/each}
+					</div>
+					<button type="button" class="btn-primary" onclick={() => openAddTask(null)}>+ Add task</button>
+				</div>
 			</div>
 
 			{#if loadingTasks}
@@ -1426,6 +1473,20 @@
 					{/if}
 				</div>
 
+				{#if taskView === 'board'}
+					<TaskBoard
+						tasks={tasks.filter(matchesTaskFilters)}
+						statuses={boardStatuses(taskStatusFilters)}
+						statusOptions={statusFilterOptions}
+						statusTone={taskStatusTone}
+						priorityTone={taskPriorityTone}
+						{assigneesLabel}
+						{fitWarnings}
+						onOpen={openEditTask}
+						onMove={moveTask}
+						onTagSelect={addTagFilter}
+					/>
+				{:else}
 				<div class="space-y-4">
 					{#each taskGroups as group (group.key)}
 						<div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -1589,6 +1650,7 @@
 						</div>
 					{/each}
 				</div>
+				{/if}
 			{/if}
 		</section>
 
