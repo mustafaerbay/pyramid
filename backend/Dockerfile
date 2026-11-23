@@ -17,6 +17,10 @@ FROM alpine:3.20 AS run
 RUN apk add --no-cache ca-certificates wget && adduser -D -u 10001 app
 WORKDIR /app
 COPY --from=build /out/server /app/server
+# Attached files live here (a volume in compose); owned by app so a fresh
+# named volume inherits a writable directory.
+RUN mkdir -p /data/uploads && chown app:app /data/uploads
+ENV UPLOAD_DIR=/data/uploads
 USER app
 
 EXPOSE 8080

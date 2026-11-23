@@ -309,6 +309,18 @@ CREATE TABLE saved_queries (
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE attachments (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	entity_type TEXT NOT NULL,
+	entity_id TEXT NOT NULL,
+	filename TEXT NOT NULL,
+	url TEXT NOT NULL,
+	mime_type TEXT,
+	size_bytes INTEGER,
+	uploaded_by TEXT,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_labels (
 	task_id TEXT NOT NULL,
 	label_id TEXT NOT NULL,

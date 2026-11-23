@@ -1378,6 +1378,90 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/tasks/{id}/attachments:
+    get:
+      operationId: listTaskAttachments
+      tags: [tasks]
+      summary: A task's files, newest first
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttachmentList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: uploadTaskAttachment
+      tags: [tasks]
+      summary: Attach a file (up to 10 MB) to a task
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attachment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/attachments/{id}/download:
+    get:
+      operationId: downloadAttachment
+      tags: [tasks]
+      summary: Download a file (images can be shown inline with ?inline=1)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: inline
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/attachments/{id}:
+    delete:
+      operationId: deleteAttachment
+      tags: [tasks]
+      summary: Delete a file (its uploader, managers and admins)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not allowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tags:
     get:
       operationId: listTags
@@ -3856,6 +3940,46 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SavedQuery"
+
+    Attachment:
+      type: object
+      required: [id, taskId, filename, mimeType, sizeBytes, uploadedByPersonId, isImage, url, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+        uploadedByPersonId:
+          type: string
+          format: uuid
+          nullable: true
+        isImage:
+          type: boolean
+          description: A PNG, JPEG, GIF or WebP image that can be previewed.
+        url:
+          type: string
+          description: Download path in the app.
+        createdAt:
+          type: string
+          format: date-time
+
+    AttachmentList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attachment"
 
     TagList:
       type: object

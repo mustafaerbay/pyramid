@@ -54,6 +54,8 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -83,4 +85,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  uploads:
   pgdata:

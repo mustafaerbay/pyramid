@@ -47,6 +47,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "8080:8080"
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -70,4 +72,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  uploads:
   pgdata:

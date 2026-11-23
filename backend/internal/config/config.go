@@ -34,6 +34,8 @@ type Config struct {
 	SMTPFrom     string
 	// PublicURL makes links in emails absolute (PUBLIC_URL).
 	PublicURL string
+	// UploadDir is where attached files are kept (UPLOAD_DIR).
+	UploadDir string
 }
 
 // Load reads configuration from the environment, applying sensible defaults
@@ -56,6 +58,7 @@ func Load() Config {
 		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
 		SMTPFrom:     os.Getenv("SMTP_FROM"),
 		PublicURL:    os.Getenv("PUBLIC_URL"),
+		UploadDir:    getenv("UPLOAD_DIR", "./uploads"),
 	}
 }
 

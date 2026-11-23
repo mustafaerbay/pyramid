@@ -585,6 +585,7 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, api.Error{Message: "task not found"})
 		return
 	}
+	h.deleteTaskFiles(c.Param("id"))
 	c.Status(http.StatusNoContent)
 }
 

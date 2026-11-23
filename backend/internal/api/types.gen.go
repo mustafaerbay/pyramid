@@ -691,6 +691,28 @@ type AreaUpdate struct {
 	Path string `json:"path"`
 }
 
+// Attachment defines model for Attachment.
+type Attachment struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Filename  string             `json:"filename"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// IsImage A PNG, JPEG, GIF or WebP image that can be previewed.
+	IsImage            bool                `json:"isImage"`
+	MimeType           string              `json:"mimeType"`
+	SizeBytes          int64               `json:"sizeBytes"`
+	TaskId             openapi_types.UUID  `json:"taskId"`
+	UploadedByPersonId *openapi_types.UUID `json:"uploadedByPersonId"`
+
+	// Url Download path in the app.
+	Url string `json:"url"`
+}
+
+// AttachmentList defines model for AttachmentList.
+type AttachmentList struct {
+	Data []Attachment `json:"data"`
+}
+
 // AuthMe defines model for AuthMe.
 type AuthMe struct {
 	Person Person `json:"person"`
@@ -1868,6 +1890,11 @@ type ListAreasParams struct {
 	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
 }
 
+// DownloadAttachmentParams defines parameters for DownloadAttachment.
+type DownloadAttachmentParams struct {
+	Inline *string `form:"inline,omitempty" json:"inline,omitempty"`
+}
+
 // GetCapacityParams defines parameters for GetCapacity.
 type GetCapacityParams struct {
 	// Month YYYY-MM; defaults to the current month.
@@ -1973,6 +2000,11 @@ type ListTasksParams struct {
 	Tag *string `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
+// UploadTaskAttachmentMultipartBody defines body for UploadTaskAttachment for multipart/form-data ContentType.
+type UploadTaskAttachmentMultipartBody struct {
+	File openapi_types.File `json:"file"`
+}
+
 // ListVersionsParams defines parameters for ListVersions.
 type ListVersionsParams struct {
 	Page      *PageParam          `form:"page,omitempty" json:"page,omitempty"`
@@ -2070,6 +2102,9 @@ type CreateTaskJSONRequestBody = TaskCreate
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody = TaskUpdate
+
+// UploadTaskAttachmentMultipartRequestBody defines body for UploadTaskAttachment for multipart/form-data ContentType.
+type UploadTaskAttachmentMultipartRequestBody UploadTaskAttachmentMultipartBody
 
 // CreateTaskCommentJSONRequestBody defines body for CreateTaskComment for application/json ContentType.
 type CreateTaskCommentJSONRequestBody = TaskCommentInput

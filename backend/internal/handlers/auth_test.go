@@ -25,6 +25,7 @@ func newAuthRouter(t *testing.T, opts ...func(*Handler)) (*gin.Engine, *gorm.DB)
 		SessionSecret: []byte("test-secret-test-secret-test-secret"),
 		AdminEmail:    "admin@x.dev",
 		AdminPassword: "admin-pass",
+		UploadDir:     t.TempDir(),
 	}
 	h := New(db, cfg)
 	for _, o := range opts {
