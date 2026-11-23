@@ -22,7 +22,7 @@ Notes say what was built where it is simpler than ADO.
       activity) per person
 - [x] **Board fine settings** — split columns (Doing / Done), definition of done
       per column, which fields cards show, tag colours, card styling rules
-- [ ] **Query language** — AND/OR groups, custom-field conditions, tree queries
+- [x] **Query language** — AND/OR groups, custom-field conditions, tree queries
       (items with their children)
 - [ ] **Charts and dashboards** — pie, stacked bar and trend-over-time charts for
       queries; dashboards with widgets (query chart, burndown, velocity, CFD,

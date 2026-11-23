@@ -4559,6 +4559,50 @@ components:
           type: string
           format: date
           description: Due on or before this day.
+        where:
+          $ref: "#/components/schemas/QueryGroup"
+        tree:
+          type: boolean
+          description: Also return the children (and their children) of every match, after it.
+        childWhere:
+          $ref: "#/components/schemas/QueryGroup"
+
+    QueryGroup:
+      type: object
+      description: >
+        Conditions joined with AND (match all) or OR (match any); groups nest
+        up to 3 deep, with up to 50 conditions in all.
+      required: [match, conditions]
+      properties:
+        match:
+          type: string
+          enum: [all, any]
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryCondition"
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryGroup"
+
+    QueryCondition:
+      type: object
+      required: [field, op]
+      properties:
+        field:
+          type: string
+          description: >
+            title, description, state, status, type, priority, assignee, tag,
+            sprint, area (and its sub-areas), project, parent, storyPoints,
+            manDays, remaining, dueDate, startDate, createdAt, or
+            custom:<field key>.
+        op:
+          type: string
+          enum: [eq, ne, contains, not_contains, gt, gte, lt, lte, empty, not_empty]
+        value:
+          type: string
+          description: Dates are YYYY-MM-DD or @today, @today-7, @today+14.
 
     QueryResult:
       type: object
@@ -4573,6 +4617,12 @@ components:
         truncated:
           type: boolean
           description: True when more than 500 items matched; only the first 500 are returned.
+        childIds:
+          type: array
+          description: In a tree query, the items that are only there as children of a match.
+          items:
+            type: string
+            format: uuid
 
     QueryGroupBy:
       type: string

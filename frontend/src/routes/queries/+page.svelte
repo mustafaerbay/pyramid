@@ -3,6 +3,8 @@
 	import type { components } from '$lib/api/schema';
 	import { can } from '$lib/auth.svelte';
 	import { cleanFilters, groupResults, type GroupBy } from '$lib/queries';
+	import { cleanGroup, treeDepth, type Group } from '$lib/querylang';
+	import QueryGroupEditor from '$lib/components/QueryGroupEditor.svelte';
 	import { TYPE_OPTIONS } from '$lib/workItems';
 	import { areaLabel } from '$lib/areas';
 	import { formatManDays } from '$lib/capacity';
@@ -41,10 +43,17 @@
 	let dueAfter = $state('');
 	let dueBefore = $state('');
 	let groupBy = $state<GroupBy>('status');
+	let where = $state<Group>({ match: 'all', conditions: [] });
+	let tree = $state(false);
+	let childWhere = $state<Group>({ match: 'all', conditions: [] });
+	let advanced = $state(false);
+	let customFields = $state<{ key: string; label: string; type: string; options?: string[] | null }[]>([]);
+	let childIds = $state<Set<string>>(new Set());
 
 	let results = $state<Task[]>([]);
 	let total = $state(0);
 	let truncated = $state(false);
+	const depth = $derived(treeDepth(results, childIds));
 	let running = $state(false);
 	let error = $state<string | null>(null);
 	let current = $state<Saved | null>(null);
@@ -87,7 +96,10 @@
 			areaIds,
 			text,
 			dueAfter,
-			dueBefore
+			dueBefore,
+			where: cleanGroup(where),
+			tree,
+			childWhere: tree ? cleanGroup(childWhere) : null
 		}) as Filters
 	);
 	const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? 'Project';
@@ -101,6 +113,9 @@
 			api.GET('/api/v1/queries')
 		]).then(([p, pe, t, q]) => {
 			projects = (p.data?.data ?? []).map((x) => ({ id: x.id, name: x.name })).sort((a, b) => a.name.localeCompare(b.name));
+			const seen = new Map<string, (typeof customFields)[number]>();
+			for (const pr of p.data?.data ?? []) for (const f of pr.customFields ?? []) if (!seen.has(f.key)) seen.set(f.key, f);
+			customFields = [...seen.values()];
 			people = Object.fromEntries((pe.data?.data ?? []).map((x) => [x.id, `${x.firstName} ${x.lastName}`]));
 			tags = t.data?.data ?? [];
 			saved = q.data?.data ?? [];
@@ -150,6 +165,7 @@
 		selected = new Set([...selected].filter((id) => data.data.some((t) => t.id === id)));
 		total = data.total;
 		truncated = data.truncated;
+		childIds = new Set(data.childIds ?? []);
 	}
 
 	function load(q: Saved) {
@@ -165,6 +181,10 @@
 		dueAfter = f.dueAfter ?? '';
 		dueBefore = f.dueBefore ?? '';
 		groupBy = q.groupBy;
+		where = structuredClone(f.where ?? { match: 'all', conditions: [] }) as Group;
+		tree = !!f.tree;
+		childWhere = structuredClone(f.childWhere ?? { match: 'all', conditions: [] }) as Group;
+		advanced = !!(f.where || f.tree);
 		current = q;
 		saveName = q.name;
 		saveShared = q.shared;
@@ -185,6 +205,9 @@
 		areaIds = [];
 		unassigned = false;
 		text = dueAfter = dueBefore = '';
+		where = { match: 'all', conditions: [] };
+		childWhere = { match: 'all', conditions: [] };
+		tree = false;
 		current = null;
 		saveName = '';
 		saveShared = false;
@@ -258,6 +281,27 @@
 		</div>
 	</div>
 
+	<div class="rounded-lg border border-slate-200 bg-white p-4">
+		<button type="button" class="text-sm font-medium text-slate-700" aria-expanded={advanced} onclick={() => (advanced = !advanced)}>
+			{advanced ? '▾' : '▸'} Conditions (AND / OR, custom fields, tree)
+		</button>
+		{#if advanced}
+			{@const peopleList = Object.entries(people).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))}
+			<div class="mt-3 space-y-3">
+				<QueryGroupEditor bind:group={where} people={peopleList} {tags} {customFields} />
+				<label class="flex items-center gap-1.5 text-sm text-slate-600">
+					<input type="checkbox" bind:checked={tree} /> Tree: also show each match's children
+				</label>
+				{#if tree}
+					<div>
+						<p class="mb-1 text-xs text-slate-500">Only children that match (leave empty for all):</p>
+						<QueryGroupEditor bind:group={childWhere} people={peopleList} {tags} {customFields} />
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</div>
+
 	{#if can('member')}
 		<form
 			class="flex flex-wrap items-center gap-2 text-sm"
@@ -291,7 +335,9 @@
 							onchange={(e) => (selected = e.currentTarget.checked ? new Set(results.map((t) => t.id)) : new Set())}
 						/>
 					{/if}
-					<span class="font-semibold">{total} {total === 1 ? 'item' : 'items'}{running ? ' · …' : ''}</span>
+					<span class="font-semibold"
+						>{total} {total === 1 ? 'item' : 'items'}{childIds.size ? ` + ${childIds.size} children` : ''}{running ? ' · …' : ''}</span
+					>
 				</span>
 				<span class="flex items-center gap-2">
 					{#if truncated}<span class="text-xs text-amber-700">Showing the first 500</span>{/if}
@@ -302,7 +348,10 @@
 			</div>
 			<ul class="max-h-[32rem] divide-y divide-slate-100 overflow-y-auto text-sm">
 				{#each results as t (t.id)}
-					<li class="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2 {selected.has(t.id) ? 'bg-indigo-50' : ''}">
+					<li
+						class="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-4 py-2 {selected.has(t.id) ? 'bg-indigo-50' : ''} {childIds.has(t.id) ? 'text-slate-600' : ''}"
+						style:padding-left={depth[t.id] ? `${1 + depth[t.id] * 1.5}rem` : undefined}
+					>
 						{#if can('member')}
 							<input type="checkbox" aria-label="Select {t.title}" checked={selected.has(t.id)} onchange={() => toggle(t.id)} />
 						{/if}

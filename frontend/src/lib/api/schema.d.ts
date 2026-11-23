@@ -2288,12 +2288,33 @@ export interface components {
              * @description Due on or before this day.
              */
             dueBefore?: string;
+            where?: components["schemas"]["QueryGroup"];
+            /** @description Also return the children (and their children) of every match, after it. */
+            tree?: boolean;
+            childWhere?: components["schemas"]["QueryGroup"];
+        };
+        /** @description Conditions joined with AND (match all) or OR (match any); groups nest up to 3 deep, with up to 50 conditions in all. */
+        QueryGroup: {
+            /** @enum {string} */
+            match: "all" | "any";
+            conditions: components["schemas"]["QueryCondition"][];
+            groups?: components["schemas"]["QueryGroup"][];
+        };
+        QueryCondition: {
+            /** @description title, description, state, status, type, priority, assignee, tag, sprint, area (and its sub-areas), project, parent, storyPoints, manDays, remaining, dueDate, startDate, createdAt, or custom:<field key>. */
+            field: string;
+            /** @enum {string} */
+            op: "eq" | "ne" | "contains" | "not_contains" | "gt" | "gte" | "lt" | "lte" | "empty" | "not_empty";
+            /** @description Dates are YYYY-MM-DD or @today, @today-7, @today+14. */
+            value?: string;
         };
         QueryResult: {
             data: components["schemas"]["Task"][];
             total: number;
             /** @description True when more than 500 items matched; only the first 500 are returned. */
             truncated: boolean;
+            /** @description In a tree query, the items that are only there as children of a match. */
+            childIds?: string[];
         };
         /** @enum {string} */
         QueryGroupBy: "status" | "assignee" | "type" | "priority" | "project";

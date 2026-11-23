@@ -534,6 +534,66 @@ func (e ProjectStatus) Valid() bool {
 	}
 }
 
+// Defines values for QueryConditionOp.
+const (
+	QueryConditionOpContains    QueryConditionOp = "contains"
+	QueryConditionOpEmpty       QueryConditionOp = "empty"
+	QueryConditionOpEq          QueryConditionOp = "eq"
+	QueryConditionOpGt          QueryConditionOp = "gt"
+	QueryConditionOpGte         QueryConditionOp = "gte"
+	QueryConditionOpLt          QueryConditionOp = "lt"
+	QueryConditionOpLte         QueryConditionOp = "lte"
+	QueryConditionOpNe          QueryConditionOp = "ne"
+	QueryConditionOpNotContains QueryConditionOp = "not_contains"
+	QueryConditionOpNotEmpty    QueryConditionOp = "not_empty"
+)
+
+// Valid indicates whether the value is a known member of the QueryConditionOp enum.
+func (e QueryConditionOp) Valid() bool {
+	switch e {
+	case QueryConditionOpContains:
+		return true
+	case QueryConditionOpEmpty:
+		return true
+	case QueryConditionOpEq:
+		return true
+	case QueryConditionOpGt:
+		return true
+	case QueryConditionOpGte:
+		return true
+	case QueryConditionOpLt:
+		return true
+	case QueryConditionOpLte:
+		return true
+	case QueryConditionOpNe:
+		return true
+	case QueryConditionOpNotContains:
+		return true
+	case QueryConditionOpNotEmpty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QueryGroupMatch.
+const (
+	QueryGroupMatchAll QueryGroupMatch = "all"
+	QueryGroupMatchAny QueryGroupMatch = "any"
+)
+
+// Valid indicates whether the value is a known member of the QueryGroupMatch enum.
+func (e QueryGroupMatch) Valid() bool {
+	switch e {
+	case QueryGroupMatchAll:
+		return true
+	case QueryGroupMatchAny:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for QueryGroupBy.
 const (
 	QueryGroupByAssignee QueryGroupBy = "assignee"
@@ -1713,6 +1773,19 @@ type ProjectUpdate struct {
 	Workflow *[]WorkflowState `json:"workflow,omitempty"`
 }
 
+// QueryCondition defines model for QueryCondition.
+type QueryCondition struct {
+	// Field title, description, state, status, type, priority, assignee, tag, sprint, area (and its sub-areas), project, parent, storyPoints, manDays, remaining, dueDate, startDate, createdAt, or custom:<field key>.
+	Field string           `json:"field"`
+	Op    QueryConditionOp `json:"op"`
+
+	// Value Dates are YYYY-MM-DD or @today, @today-7, @today+14.
+	Value *string `json:"value,omitempty"`
+}
+
+// QueryConditionOp defines model for QueryCondition.Op.
+type QueryConditionOp string
+
 // QueryFilters Every list given must match (an item matches a list if it has any of its values). Empty or missing = any.
 type QueryFilters struct {
 	// AreaIds In any of these areas or their sub-areas.
@@ -1720,6 +1793,9 @@ type QueryFilters struct {
 
 	// AssigneeIds Assigned to any of these people.
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
+
+	// ChildWhere Conditions joined with AND (match all) or OR (match any); groups nest up to 3 deep, with up to 50 conditions in all.
+	ChildWhere *QueryGroup `json:"childWhere,omitempty"`
 
 	// DueAfter Due on or after this day.
 	DueAfter *openapi_types.Date `json:"dueAfter,omitempty"`
@@ -1739,20 +1815,38 @@ type QueryFilters struct {
 	Tags *[]string `json:"tags,omitempty"`
 
 	// Text Title contains this (ignoring case).
-	Text  *string     `json:"text,omitempty"`
+	Text *string `json:"text,omitempty"`
+
+	// Tree Also return the children (and their children) of every match, after it.
+	Tree  *bool       `json:"tree,omitempty"`
 	Types *[]TaskType `json:"types,omitempty"`
 
 	// Unassigned Only items with no one assigned.
 	Unassigned *bool `json:"unassigned,omitempty"`
+
+	// Where Conditions joined with AND (match all) or OR (match any); groups nest up to 3 deep, with up to 50 conditions in all.
+	Where *QueryGroup `json:"where,omitempty"`
 }
+
+// QueryGroup Conditions joined with AND (match all) or OR (match any); groups nest up to 3 deep, with up to 50 conditions in all.
+type QueryGroup struct {
+	Conditions []QueryCondition `json:"conditions"`
+	Groups     *[]QueryGroup    `json:"groups,omitempty"`
+	Match      QueryGroupMatch  `json:"match"`
+}
+
+// QueryGroupMatch defines model for QueryGroup.Match.
+type QueryGroupMatch string
 
 // QueryGroupBy defines model for QueryGroupBy.
 type QueryGroupBy string
 
 // QueryResult defines model for QueryResult.
 type QueryResult struct {
-	Data  []Task `json:"data"`
-	Total int    `json:"total"`
+	// ChildIds In a tree query, the items that are only there as children of a match.
+	ChildIds *[]openapi_types.UUID `json:"childIds,omitempty"`
+	Data     []Task                `json:"data"`
+	Total    int                   `json:"total"`
 
 	// Truncated True when more than 500 items matched; only the first 500 are returned.
 	Truncated bool `json:"truncated"`

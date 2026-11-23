@@ -104,6 +104,10 @@ func (h *Handler) RunQuery(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
 	}
+	if f.Where != nil || f.ChildWhere != nil || (f.Tree != nil && *f.Tree) {
+		h.runQueryLanguage(c, f, q)
+		return
+	}
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to run query", Details: strptr(err.Error())})
@@ -266,4 +270,110 @@ func (h *Handler) DeleteSavedQuery(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+// runQueryLanguage runs a where-group (and a tree) in Go over the items
+// the plain filters picked.
+func (h *Handler) runQueryLanguage(c *gin.Context, f api.QueryFilters, q *gorm.DB) {
+	where, err := h.compileQuery(f.Where, f.ProjectIds)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	childWhere, err := h.compileQuery(f.ChildWhere, f.ProjectIds)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	var cands []models.Task
+	if err := q.Joins("LEFT JOIN projects ON projects.id = tasks.project_id").
+		Order("COALESCE(projects.name, ''), tasks.project_id, tasks.rank, tasks.number").
+		Limit(maxQueryCandidates).Find(&cands).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to run query", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.enrichTasks(cands); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load results", Details: strptr(err.Error())})
+		return
+	}
+	var matches []models.Task
+	for i := range cands {
+		if where(&cands[i]) {
+			matches = append(matches, cands[i])
+		}
+	}
+	total := len(matches)
+	rows := matches
+	var childIDs []uuid.UUID
+	if f.Tree != nil && *f.Tree && len(matches) > 0 {
+		rows, childIDs, err = h.withChildren(matches, childWhere)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load children", Details: strptr(err.Error())})
+			return
+		}
+	}
+	truncated := len(rows) > maxQueryResults
+	if truncated {
+		rows = rows[:maxQueryResults]
+	}
+	out := make([]api.Task, len(rows))
+	for i := range rows {
+		out[i] = rows[i].ToAPI()
+	}
+	res := api.QueryResult{Data: out, Total: total, Truncated: truncated}
+	if f.Tree != nil && *f.Tree {
+		res.ChildIds = &childIDs
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// withChildren puts each match's descendants (that pass keep) right after
+// it, depth first in manual order. A descendant that is itself a match
+// stays where the matches put it.
+func (h *Handler) withChildren(matches []models.Task, keep matcher) ([]models.Task, []uuid.UUID, error) {
+	isMatch := map[uuid.UUID]bool{}
+	projects := map[uuid.UUID]bool{}
+	for _, m := range matches {
+		isMatch[m.ID] = true
+		projects[m.ProjectID] = true
+	}
+	ids := make([]uuid.UUID, 0, len(projects))
+	for id := range projects {
+		ids = append(ids, id)
+	}
+	var all []models.Task
+	if err := h.db.Where("project_id IN ? AND parent_id IS NOT NULL", ids).Order("rank, number").Find(&all).Error; err != nil {
+		return nil, nil, err
+	}
+	if err := h.enrichTasks(all); err != nil {
+		return nil, nil, err
+	}
+	kids := map[uuid.UUID][]int{}
+	for i := range all {
+		kids[*all[i].ParentID] = append(kids[*all[i].ParentID], i)
+	}
+	var out []models.Task
+	var childIDs []uuid.UUID
+	seen := map[uuid.UUID]bool{}
+	var walk func(id uuid.UUID, depth int)
+	walk = func(id uuid.UUID, depth int) {
+		if depth > 10 {
+			return
+		}
+		for _, i := range kids[id] {
+			k := all[i]
+			if isMatch[k.ID] || seen[k.ID] || !keep(&k) {
+				continue
+			}
+			seen[k.ID] = true
+			out = append(out, k)
+			childIDs = append(childIDs, k.ID)
+			walk(k.ID, depth+1)
+		}
+	}
+	for _, m := range matches {
+		out = append(out, m)
+		walk(m.ID, 1)
+	}
+	return out, childIDs, nil
 }
