@@ -1207,6 +1207,81 @@ paths:
                 $ref: "#/components/schemas/SprintReport"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/areas:
+    get:
+      operationId: listAreas
+      tags: [areas]
+      summary: A project's area paths, sorted by path
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Areas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AreaList"
+    post:
+      operationId: createArea
+      tags: [areas]
+      summary: Add an area path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AreaCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Area"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/areas/{id}:
+    patch:
+      operationId: updateArea
+      tags: [areas]
+      summary: Rename an area (its sub-areas follow)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AreaUpdate"
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Area"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteArea
+      tags: [areas]
+      summary: Delete an area without sub-areas; its items lose their area
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tags:
     get:
       operationId: listTags
@@ -1258,6 +1333,13 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/TaskStatus"
+        - name: areaId
+          in: query
+          required: false
+          description: Only items in this area or its sub-areas.
+          schema:
+            type: string
+            format: uuid
         - name: sprintId
           in: query
           required: false
@@ -2785,6 +2867,11 @@ components:
           format: uuid
           nullable: true
           description: The sprint this item is planned in (same project).
+        areaId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The area path this item belongs to (same project).
         title:
           type: string
         description:
@@ -2895,6 +2982,9 @@ components:
         sprintId:
           type: string
           format: uuid
+        areaId:
+          type: string
+          format: uuid
         title:
           type: string
           minLength: 1
@@ -3001,6 +3091,11 @@ components:
           format: uuid
           nullable: true
           description: Plan in this sprint; null takes it out of its sprint.
+        areaId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set the area; null clears it.
         title:
           type: string
         description:
@@ -3494,6 +3589,46 @@ components:
           description: Project team members and anyone with work in the sprint.
           items:
             $ref: "#/components/schemas/SprintCapacity"
+
+    Area:
+      type: object
+      required: [id, projectId, path]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        path:
+          type: string
+          description: Levels separated by "/", e.g. "Web/Checkout" (1–4 levels, 40 characters each).
+
+    AreaCreate:
+      type: object
+      required: [projectId, path]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        path:
+          type: string
+
+    AreaUpdate:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+
+    AreaList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Area"
 
     TagList:
       type: object

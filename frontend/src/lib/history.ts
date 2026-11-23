@@ -6,6 +6,8 @@ export type Names = {
 	person: (id: string) => string;
 	milestone: (id: string) => string;
 	task: (id: string) => string;
+	sprint?: (id: string) => string;
+	area?: (id: string) => string;
 };
 
 type Change = { from?: unknown; to?: unknown };
@@ -28,7 +30,9 @@ const LABELS: Record<string, string> = {
 	tags: 'Tags',
 	blockedByIds: 'Waiting on',
 	relatedIds: 'Related',
-	duplicateOfId: 'Duplicate of'
+	duplicateOfId: 'Duplicate of',
+	sprintId: 'Sprint',
+	areaId: 'Area'
 };
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
@@ -73,6 +77,14 @@ export function describeChange(field: string, change: Change, names: Names): str
 			return `${label}: ${none(from, (x) => x.replace('_', ' '))} → ${none(to, (x) => x.replace('_', ' '))}`;
 		case 'milestoneId':
 			return `${label}: ${none(from, names.milestone)} → ${none(to, names.milestone)}`;
+		case 'sprintId': {
+			const n = names.sprint ?? (() => 'a sprint');
+			return `${label}: ${none(from, n)} → ${none(to, n)}`;
+		}
+		case 'areaId': {
+			const n = names.area ?? (() => 'an area');
+			return `${label}: ${none(from, n)} → ${none(to, n)}`;
+		}
 		case 'parentId':
 		case 'duplicateOfId':
 			return `${label}: ${none(from, names.task)} → ${none(to, names.task)}`;

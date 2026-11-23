@@ -29,6 +29,11 @@ describe('describeChange', () => {
 			describeChange('assignments', { from: { p1: 2, p2: 1 }, to: { p1: 3, p3: 0 } }, names)
 		).toBe('Assignees: added Unknown person; removed Bo Li; Ada Kim 2 → 3 md');
 	});
+	it('names sprints and areas when it knows them', () => {
+		const n = { ...names, sprint: (id: string) => ({ s1: 'Sprint 1' })[id] ?? '?', area: (id: string) => ({ a1: 'Web' })[id] ?? '?' };
+		expect(describeChange('sprintId', { from: null, to: 's1' }, n)).toBe('Sprint: none → Sprint 1');
+		expect(describeChange('areaId', { from: 'a1', to: null }, n)).toBe('Area: Web → none');
+	});
 	it('only says the description changed', () => {
 		expect(describeChange('description', { from: 'x', to: 'y' }, names)).toBe('Description edited');
 	});

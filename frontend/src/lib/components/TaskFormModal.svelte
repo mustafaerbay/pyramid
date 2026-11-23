@@ -7,6 +7,7 @@
 	import TaskPicker from './TaskPicker.svelte';
 	import { parentOptions, subtaskSummary } from '$lib/subtasks';
 	import { TYPE_OPTIONS, type WorkItemType } from '$lib/workItems';
+	import { areaLabel } from '$lib/areas';
 	import { blockerOptions } from '$lib/dependencies';
 
 	type Task = components['schemas']['Task'];
@@ -18,6 +19,7 @@
 		task = null,
 		milestoneOptions = [],
 		sprintOptions = [],
+		areaOptions = [],
 		assigneeOptions = [],
 		initialMilestoneId = null,
 		projectTasks = [],
@@ -35,6 +37,8 @@
 		milestoneOptions?: { id: string; name: string }[];
 		// Open sprints of the project.
 		sprintOptions?: { id: string; name: string }[];
+		// The project's area paths.
+		areaOptions?: { id: string; path: string }[];
 		// The project's active team members — a task can only be assigned to
 		// someone already on the team, not any person in the org.
 		assigneeOptions?: { id: string; name: string }[];
@@ -70,6 +74,8 @@
 	let milestoneId = $state(initial?.milestoneId ?? initialMilestoneId ?? '');
 	// svelte-ignore state_referenced_locally
 	let sprintId = $state(initial?.sprintId ?? '');
+	// svelte-ignore state_referenced_locally
+	let areaId = $state(initial?.areaId ?? '');
 	// svelte-ignore state_referenced_locally
 	let parentId = $state(initial?.parentId ?? initialParentId ?? '');
 	// svelte-ignore state_referenced_locally
@@ -202,6 +208,7 @@
 						type,
 						milestoneId: milestoneId || null,
 						sprintId: sprintId || null,
+						areaId: areaId || null,
 						parentId: parentId || null,
 						// assigneeIds always replaces the full set — sending it
 						// (even as []) is how the backend knows to update it, vs.
@@ -233,6 +240,7 @@
 						type,
 						milestoneId: milestoneId || undefined,
 						sprintId: sprintId || undefined,
+						areaId: areaId || undefined,
 						parentId: parentId || undefined,
 						title,
 						description: description || undefined,
@@ -330,6 +338,18 @@
 					{/each}
 				</select>
 			</label>
+
+			{#if areaOptions.length > 0}
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Area</span>
+					<select class="input" bind:value={areaId}>
+						<option value="">No area</option>
+						{#each areaOptions as a (a.id)}
+							<option value={a.id}>{areaLabel(a.path)}</option>
+						{/each}
+					</select>
+				</label>
+			{/if}
 
 			{#if sprintOptions.length > 0 || sprintId}
 				<label class="block text-sm">

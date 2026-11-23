@@ -202,6 +202,7 @@ CREATE TABLE tasks (
 	rank REAL NOT NULL DEFAULT 0,
 	parent_id TEXT,
 	sprint_id TEXT,
+	area_id TEXT,
 	duplicate_of_id TEXT,
 	milestone_id TEXT,
 	type TEXT NOT NULL DEFAULT 'task',
@@ -288,6 +289,13 @@ CREATE TABLE sprints (
 	end_date DATE,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE areas (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	path TEXT NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE task_labels (

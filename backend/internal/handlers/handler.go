@@ -88,6 +88,11 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.PATCH("/versions/:id", h.UpdateVersion)
 		v1.DELETE("/versions/:id", h.DeleteVersion)
 
+		v1.GET("/areas", h.ListAreas)
+		v1.POST("/areas", h.CreateArea)
+		v1.PATCH("/areas/:id", h.UpdateArea)
+		v1.DELETE("/areas/:id", h.DeleteArea)
+
 		v1.GET("/sprints", h.ListSprints)
 		v1.POST("/sprints", h.CreateSprint)
 		v1.GET("/sprints/:id", h.GetSprint)

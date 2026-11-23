@@ -332,6 +332,15 @@ CREATE TABLE sprints (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Area paths: a project's areas, "Web/Checkout" style
+CREATE TABLE areas (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    path       TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX idx_areas_project_path ON areas(project_id, lower(path));
+
 CREATE TABLE tasks (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id    UUID NOT NULL REFERENCES projects(id)   ON DELETE CASCADE,
@@ -339,6 +348,7 @@ CREATE TABLE tasks (
     rank          DOUBLE PRECISION NOT NULL DEFAULT 0,     -- manual backlog order, lower first
     parent_id     UUID REFERENCES tasks(id)      ON DELETE SET NULL,  -- subtasks / epic children
     duplicate_of_id UUID REFERENCES tasks(id)    ON DELETE SET NULL,  -- this is a copy of that task
+    area_id       UUID REFERENCES areas(id)      ON DELETE SET NULL,  -- area path
     milestone_id  UUID REFERENCES milestones(id) ON DELETE SET NULL,
     sprint_id     UUID REFERENCES sprints(id)    ON DELETE SET NULL,
     title         TEXT NOT NULL,

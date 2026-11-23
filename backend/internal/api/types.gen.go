@@ -639,6 +639,31 @@ func (e VersionStatus) Valid() bool {
 	}
 }
 
+// Area defines model for Area.
+type Area struct {
+	Id openapi_types.UUID `json:"id"`
+
+	// Path Levels separated by "/", e.g. "Web/Checkout" (1–4 levels, 40 characters each).
+	Path      string             `json:"path"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+}
+
+// AreaCreate defines model for AreaCreate.
+type AreaCreate struct {
+	Path      string             `json:"path"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+}
+
+// AreaList defines model for AreaList.
+type AreaList struct {
+	Data []Area `json:"data"`
+}
+
+// AreaUpdate defines model for AreaUpdate.
+type AreaUpdate struct {
+	Path string `json:"path"`
+}
+
 // AuthMe defines model for AuthMe.
 type AuthMe struct {
 	Person Person `json:"person"`
@@ -1371,6 +1396,9 @@ type TagList struct {
 
 // Task defines model for Task.
 type Task struct {
+	// AreaId The area path this item belongs to (same project).
+	AreaId *openapi_types.UUID `json:"areaId"`
+
 	// AssigneeIds People assigned to this task. Empty array means unassigned.
 	AssigneeIds []openapi_types.UUID `json:"assigneeIds"`
 
@@ -1465,6 +1493,8 @@ type TaskCommentList struct {
 
 // TaskCreate defines model for TaskCreate.
 type TaskCreate struct {
+	AreaId *openapi_types.UUID `json:"areaId,omitempty"`
+
 	// AssigneeIds People to assign at creation. Defaults to none if omitted.
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
 
@@ -1556,6 +1586,9 @@ type TaskType string
 
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
+	// AreaId Set the area; null clears it.
+	AreaId *openapi_types.UUID `json:"areaId"`
+
 	// AssigneeIds Replaces the full assignee set when present — send every assignee the task should have, or an empty array to unassign everyone. Omit the field entirely to leave assignees unchanged.
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
 
@@ -1727,6 +1760,11 @@ type DefaultError = Error
 // NotFound defines model for NotFound.
 type NotFound = Error
 
+// ListAreasParams defines parameters for ListAreas.
+type ListAreasParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
 // GetCapacityParams defines parameters for GetCapacity.
 type GetCapacityParams struct {
 	// Month YYYY-MM; defaults to the current month.
@@ -1822,6 +1860,9 @@ type ListTasksParams struct {
 	AssigneeId *openapi_types.UUID `form:"assigneeId,omitempty" json:"assigneeId,omitempty"`
 	Status     *TaskStatus         `form:"status,omitempty" json:"status,omitempty"`
 
+	// AreaId Only items in this area or its sub-areas.
+	AreaId *openapi_types.UUID `form:"areaId,omitempty" json:"areaId,omitempty"`
+
 	// SprintId Only tasks in this sprint, or "none" for tasks in no sprint.
 	SprintId *string `form:"sprintId,omitempty" json:"sprintId,omitempty"`
 
@@ -1842,6 +1883,12 @@ type ListWeeklySummariesParams struct {
 	PageSize  *PageSizeParam      `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
 }
+
+// CreateAreaJSONRequestBody defines body for CreateArea for application/json ContentType.
+type CreateAreaJSONRequestBody = AreaCreate
+
+// UpdateAreaJSONRequestBody defines body for UpdateArea for application/json ContentType.
+type UpdateAreaJSONRequestBody = AreaUpdate
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest

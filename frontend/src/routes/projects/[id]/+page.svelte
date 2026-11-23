@@ -23,6 +23,8 @@
 	import { can } from '$lib/auth.svelte';
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
+	import AreaManager from '$lib/components/AreaManager.svelte';
+	import { areaIdsUnder, areaLabel } from '$lib/areas';
 	import { TYPE_OPTIONS, childType, type WorkItemType } from '$lib/workItems';
 	import { afterIdToPlaceBefore, boardStatuses } from '$lib/board';
 	import { countsTowardTotals, nestTasks, subtaskSummary } from '$lib/subtasks';
@@ -301,6 +303,14 @@
 		sprints = data?.data ?? [];
 	}
 	let taskSprintFilter = $state('');
+	let areas = $state<components['schemas']['Area'][]>([]);
+	async function loadAreas() {
+		const { data } = await api.GET('/api/v1/areas', { params: { query: { projectId } } });
+		areas = data?.data ?? [];
+	}
+	let taskAreaFilter = $state('');
+	let managingAreas = $state(false);
+	const areaFilterIds = $derived(taskAreaFilter ? areaIdsUnder(areas, taskAreaFilter) : null);
 
 	async function loadTasks() {
 		loadingTasks = true;
@@ -389,6 +399,7 @@
 		if (taskAssigneeFilter && taskAssigneeFilter !== '__unassigned__' && !t.assigneeIds.includes(taskAssigneeFilter))
 			return false;
 		if (taskTypeFilter && t.type !== taskTypeFilter) return false;
+		if (areaFilterIds && !(t.areaId && areaFilterIds.has(t.areaId))) return false;
 		if (taskSprintFilter === '__none__' ? t.sprintId : taskSprintFilter && t.sprintId !== taskSprintFilter) return false;
 		return hasAllTags(t.tags, taskTagFilters);
 	}
@@ -1017,6 +1028,7 @@
 		loadWeeklySummaries();
 		loadTasks();
 		loadSprints();
+		loadAreas();
 	});
 </script>
 
@@ -1539,6 +1551,15 @@
 							{/each}
 						</select>
 					{/if}
+					<select class="input w-auto" aria-label="Filter by area" bind:value={taskAreaFilter}>
+						<option value="">All areas</option>
+						{#each areas as a (a.id)}
+							<option value={a.id}>{areaLabel(a.path)}</option>
+						{/each}
+					</select>
+					{#if can('member')}
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingAreas = true)}>Areas…</button>
+					{/if}
 					<select class="input w-auto" aria-label="Filter by type" bind:value={taskTypeFilter}>
 						<option value="">All types</option>
 						{#each TYPE_OPTIONS as o (o.value)}
@@ -2014,6 +2035,7 @@
 		{projectId}
 		task={editingTask}
 		{milestoneOptions}
+		areaOptions={areas}
 		sprintOptions={sprints.filter((sp) => sp.status !== 'completed' && sp.status !== 'cancelled').map((sp) => ({ id: sp.id, name: sp.name }))}
 		{assigneeOptions}
 		initialMilestoneId={taskModalMilestoneId}
@@ -2085,3 +2107,7 @@
 	onConfirm={confirmRemoveTask}
 	onCancel={() => (removingTask = null)}
 />
+
+{#if managingAreas}
+	<AreaManager {projectId} {areas} onChange={loadAreas} onClose={() => (managingAreas = false)} />
+{/if}

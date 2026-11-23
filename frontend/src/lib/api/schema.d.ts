@@ -616,6 +616,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/areas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's area paths, sorted by path */
+        get: operations["listAreas"];
+        put?: never;
+        /** Add an area path */
+        post: operations["createArea"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/areas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an area without sub-areas; its items lose their area */
+        delete: operations["deleteArea"];
+        options?: never;
+        head?: never;
+        /** Rename an area (its sub-areas follow) */
+        patch: operations["updateArea"];
+        trace?: never;
+    };
     "/api/v1/tags": {
         parameters: {
             query?: never;
@@ -1329,6 +1365,11 @@ export interface components {
              * @description The sprint this item is planned in (same project).
              */
             sprintId?: string | null;
+            /**
+             * Format: uuid
+             * @description The area path this item belongs to (same project).
+             */
+            areaId?: string | null;
             title: string;
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -1400,6 +1441,8 @@ export interface components {
             type?: components["schemas"]["TaskType"];
             /** Format: uuid */
             sprintId?: string;
+            /** Format: uuid */
+            areaId?: string;
             title: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1446,6 +1489,11 @@ export interface components {
              * @description Plan in this sprint; null takes it out of its sprint.
              */
             sprintId?: string | null;
+            /**
+             * Format: uuid
+             * @description Set the area; null clears it.
+             */
+            areaId?: string | null;
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1696,6 +1744,25 @@ export interface components {
             days: components["schemas"]["SprintDay"][];
             /** @description Project team members and anyone with work in the sprint. */
             capacity: components["schemas"]["SprintCapacity"][];
+        };
+        Area: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** @description Levels separated by "/", e.g. "Web/Checkout" (1–4 levels, 40 characters each). */
+            path: string;
+        };
+        AreaCreate: {
+            /** Format: uuid */
+            projectId: string;
+            path: string;
+        };
+        AreaUpdate: {
+            path: string;
+        };
+        AreaList: {
+            data: components["schemas"]["Area"][];
         };
         TagList: {
             data: string[];
@@ -3512,6 +3579,103 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listAreas: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Areas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaList"];
+                };
+            };
+        };
+    };
+    createArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Area"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaUpdate"];
+            };
+        };
+        responses: {
+            /** @description Renamed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Area"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listTags: {
         parameters: {
             query?: never;
@@ -3543,6 +3707,8 @@ export interface operations {
                 /** @description Only tasks that have this person among their assignees. */
                 assigneeId?: string;
                 status?: components["schemas"]["TaskStatus"];
+                /** @description Only items in this area or its sub-areas. */
+                areaId?: string;
                 /** @description Only tasks in this sprint, or "none" for tasks in no sprint. */
                 sprintId?: string;
                 /** @description Only tasks that carry this tag (ignoring case). */

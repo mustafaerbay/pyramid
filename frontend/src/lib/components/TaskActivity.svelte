@@ -18,6 +18,8 @@
 	let comments = $state<Comment[]>([]);
 	let history = $state<Entry[]>([]);
 	let people = $state<Record<string, string>>({});
+	let sprintNames = $state<Record<string, string>>({});
+	let areaNames = $state<Record<string, string>>({});
 	let draft = $state('');
 	let editingId = $state<string | null>(null);
 	let editDraft = $state('');
@@ -25,11 +27,15 @@
 	let error = $state<string | null>(null);
 
 	async function load() {
-		const [c, h, p] = await Promise.all([
+		const [c, h, p, sp, ar] = await Promise.all([
 			api.GET('/api/v1/tasks/{id}/comments', { params: { path: { id: task.id } } }),
 			api.GET('/api/v1/tasks/{id}/history', { params: { path: { id: task.id } } }),
-			api.GET('/api/v1/people', { params: { query: { page: 1, pageSize: 100 } } })
+			api.GET('/api/v1/people', { params: { query: { page: 1, pageSize: 100 } } }),
+			api.GET('/api/v1/sprints', { params: { query: { projectId: task.projectId } } }),
+			api.GET('/api/v1/areas', { params: { query: { projectId: task.projectId } } })
 		]);
+		sprintNames = Object.fromEntries((sp.data?.data ?? []).map((x) => [x.id, x.name]));
+		areaNames = Object.fromEntries((ar.data?.data ?? []).map((x) => [x.id, x.path]));
 		comments = c.data?.data ?? [];
 		history = h.data?.data ?? [];
 		people = Object.fromEntries((p.data?.data ?? []).map((x) => [x.id, `${x.firstName} ${x.lastName}`]));
@@ -42,6 +48,8 @@
 	const names: Names = {
 		person: (id) => people[id] ?? 'Someone',
 		milestone: (id) => milestoneOptions.find((m) => m.id === id)?.name ?? 'a deleted milestone',
+		sprint: (id) => sprintNames[id] ?? 'a deleted sprint',
+		area: (id) => areaNames[id] ?? 'a deleted area',
 		task: (id) => {
 			const t = projectTasks.find((x) => x.id === id);
 			return t ? `#${t.number} ${t.title}` : 'a deleted task';

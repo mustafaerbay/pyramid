@@ -27,6 +27,8 @@ type Task struct {
 	// ParentID puts this work item under another (same project).
 	ParentID *uuid.UUID   `gorm:"type:uuid;index"`
 	Type     api.TaskType `gorm:"type:task_type;not null;default:task"`
+	// AreaID is the area path the item belongs to.
+	AreaID *uuid.UUID `gorm:"type:uuid;index"`
 	// SprintID is the sprint the item is planned in.
 	SprintID *uuid.UUID `gorm:"type:uuid;index"`
 	// DuplicateOfID marks this as a copy of another task.
@@ -155,6 +157,7 @@ func (t Task) ToAPI() api.Task {
 	copy(out.RelatedIds, t.RelatedIDs)
 	out.DuplicateOfId = t.DuplicateOfID
 	out.SprintId = t.SprintID
+	out.AreaId = t.AreaID
 	if total == 0 && t.EstimateManDays != nil {
 		out.ManDays = *t.EstimateManDays
 	}
@@ -186,6 +189,7 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 		ParentID:         in.ParentId,
 		DuplicateOfID:    in.DuplicateOfId,
 		SprintID:         in.SprintId,
+		AreaID:           in.AreaId,
 		Type:             api.TaskTypeTask,
 		StoryPoints:      in.StoryPoints,
 		RemainingManDays: in.RemainingManDays,

@@ -40,6 +40,14 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	if s := c.Query("status"); s != "" {
 		q = q.Where("status = ?", s)
 	}
+	if ar := c.Query("areaId"); ar != "" {
+		ids, err := h.areaAndBelow(ar)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "unknown areaId"})
+			return
+		}
+		q = q.Where("area_id IN ?", ids)
+	}
 	if sp := c.Query("sprintId"); sp == "none" {
 		q = q.Where("sprint_id IS NULL")
 	} else if sp != "" {
@@ -248,6 +256,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		return
 	}
 	if err := h.validateSprint(&t); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	if err := h.validateArea(&t); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
 	}
@@ -460,6 +472,16 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	if err := h.validateLinks(&t, related); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
+	}
+	if _, ok := raw["areaId"]; ok {
+		t.AreaID = nil
+		if !isExplicitNull(raw, "areaId") {
+			t.AreaID = in.AreaId
+		}
+		if err := h.validateArea(&t); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
 	}
 	if _, ok := raw["sprintId"]; ok {
 		t.SprintID = nil
