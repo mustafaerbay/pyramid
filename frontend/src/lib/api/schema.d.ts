@@ -843,6 +843,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your dashboards and the shared ones */
+        get: operations["listDashboards"];
+        put?: never;
+        /** Make a dashboard */
+        post: operations["createDashboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One dashboard (yours or shared) */
+        get: operations["getDashboard"];
+        put?: never;
+        post?: never;
+        /** Delete your dashboard (admins can delete any) */
+        delete: operations["deleteDashboard"];
+        options?: never;
+        head?: never;
+        /** Change your dashboard */
+        patch: operations["updateDashboard"];
+        trace?: never;
+    };
     "/api/v1/queries/{id}": {
         parameters: {
             query?: never;
@@ -2318,6 +2355,52 @@ export interface components {
         };
         /** @enum {string} */
         QueryGroupBy: "status" | "assignee" | "type" | "priority" | "project";
+        Dashboard: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description Everyone can see it; only its owner can change it. */
+            shared: boolean;
+            mine: boolean;
+            /** Format: uuid */
+            ownerPersonId: string | null;
+            widgets: components["schemas"]["DashboardWidget"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        DashboardList: {
+            data: components["schemas"]["Dashboard"][];
+        };
+        DashboardInput: {
+            name: string;
+            shared?: boolean;
+            widgets?: components["schemas"]["DashboardWidget"][];
+        };
+        /** @description query (a saved query as a chart, list or count), burndown and velocity (a project's sprints), cfd (a project's flow), capacity (this month's team capacity) or notes (Markdown text). */
+        DashboardWidget: {
+            id: string;
+            /** @enum {string} */
+            kind: "query" | "burndown" | "velocity" | "cfd" | "capacity" | "notes";
+            title?: string;
+            /** @enum {string} */
+            size: "small" | "wide";
+            /** Format: uuid */
+            queryId?: string;
+            /** @enum {string} */
+            chart?: "bar" | "pie" | "stacked" | "trend" | "list" | "count";
+            groupBy?: components["schemas"]["QueryGroupBy"];
+            stackBy?: components["schemas"]["QueryGroupBy"];
+            /** Format: uuid */
+            projectId?: string;
+            /**
+             * Format: uuid
+             * @description For burndown; missing = the project's current sprint.
+             */
+            sprintId?: string;
+            text?: string;
+        };
         SavedQuery: {
             /** Format: uuid */
             id: string;
@@ -4666,6 +4749,141 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    listDashboards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardList"];
+                };
+            };
+        };
+    };
+    createDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DashboardInput"];
+            };
+        };
+        responses: {
+            /** @description Made */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dashboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not yours */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DashboardInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Not yours */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     deleteSavedQuery: {

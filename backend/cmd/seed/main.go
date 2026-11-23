@@ -51,7 +51,7 @@ func ins(table string, row map[string]any) uuid.UUID {
 func wipe() {
 	// Keep accounts and their people; everything else goes.
 	for _, q := range []string{
-		"TRUNCATE projects, labels, notifications, activity_log, saved_queries, attachments, password_resets, goals, contributions, leave_requests RESTART IDENTITY CASCADE",
+		"TRUNCATE projects, labels, notifications, activity_log, saved_queries, dashboards, attachments, password_resets, goals, contributions, leave_requests RESTART IDENTITY CASCADE",
 		"DELETE FROM people WHERE id NOT IN (SELECT person_id FROM users)",
 	} {
 		if err := db.Exec(q).Error; err != nil {

@@ -712,6 +712,17 @@ CREATE TABLE saved_queries (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Dashboards: widgets (charts of saved queries, sprint charts, notes), personal or shared
+CREATE TABLE dashboards (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    shared     BOOLEAN NOT NULL DEFAULT false,
+    widgets    JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Audit / activity trail (polymorphic target + JSON diff)
 CREATE TABLE activity_log (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

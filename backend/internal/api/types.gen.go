@@ -150,6 +150,84 @@ func (e CustomFieldType) Valid() bool {
 	}
 }
 
+// Defines values for DashboardWidgetChart.
+const (
+	DashboardWidgetChartBar     DashboardWidgetChart = "bar"
+	DashboardWidgetChartCount   DashboardWidgetChart = "count"
+	DashboardWidgetChartList    DashboardWidgetChart = "list"
+	DashboardWidgetChartPie     DashboardWidgetChart = "pie"
+	DashboardWidgetChartStacked DashboardWidgetChart = "stacked"
+	DashboardWidgetChartTrend   DashboardWidgetChart = "trend"
+)
+
+// Valid indicates whether the value is a known member of the DashboardWidgetChart enum.
+func (e DashboardWidgetChart) Valid() bool {
+	switch e {
+	case DashboardWidgetChartBar:
+		return true
+	case DashboardWidgetChartCount:
+		return true
+	case DashboardWidgetChartList:
+		return true
+	case DashboardWidgetChartPie:
+		return true
+	case DashboardWidgetChartStacked:
+		return true
+	case DashboardWidgetChartTrend:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DashboardWidgetKind.
+const (
+	DashboardWidgetKindBurndown DashboardWidgetKind = "burndown"
+	DashboardWidgetKindCapacity DashboardWidgetKind = "capacity"
+	DashboardWidgetKindCfd      DashboardWidgetKind = "cfd"
+	DashboardWidgetKindNotes    DashboardWidgetKind = "notes"
+	DashboardWidgetKindQuery    DashboardWidgetKind = "query"
+	DashboardWidgetKindVelocity DashboardWidgetKind = "velocity"
+)
+
+// Valid indicates whether the value is a known member of the DashboardWidgetKind enum.
+func (e DashboardWidgetKind) Valid() bool {
+	switch e {
+	case DashboardWidgetKindBurndown:
+		return true
+	case DashboardWidgetKindCapacity:
+		return true
+	case DashboardWidgetKindCfd:
+		return true
+	case DashboardWidgetKindNotes:
+		return true
+	case DashboardWidgetKindQuery:
+		return true
+	case DashboardWidgetKindVelocity:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DashboardWidgetSize.
+const (
+	DashboardWidgetSizeSmall DashboardWidgetSize = "small"
+	DashboardWidgetSizeWide  DashboardWidgetSize = "wide"
+)
+
+// Valid indicates whether the value is a known member of the DashboardWidgetSize enum.
+func (e DashboardWidgetSize) Valid() bool {
+	switch e {
+	case DashboardWidgetSizeSmall:
+		return true
+	case DashboardWidgetSizeWide:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EmploymentType.
 const (
 	EmploymentTypeContractor EmploymentType = "contractor"
@@ -1087,6 +1165,58 @@ type CustomField struct {
 
 // CustomFieldType defines model for CustomField.Type.
 type CustomFieldType string
+
+// Dashboard defines model for Dashboard.
+type Dashboard struct {
+	CreatedAt     time.Time           `json:"createdAt"`
+	Id            openapi_types.UUID  `json:"id"`
+	Mine          bool                `json:"mine"`
+	Name          string              `json:"name"`
+	OwnerPersonId *openapi_types.UUID `json:"ownerPersonId"`
+
+	// Shared Everyone can see it; only its owner can change it.
+	Shared    bool              `json:"shared"`
+	UpdatedAt time.Time         `json:"updatedAt"`
+	Widgets   []DashboardWidget `json:"widgets"`
+}
+
+// DashboardInput defines model for DashboardInput.
+type DashboardInput struct {
+	Name    string             `json:"name"`
+	Shared  *bool              `json:"shared,omitempty"`
+	Widgets *[]DashboardWidget `json:"widgets,omitempty"`
+}
+
+// DashboardList defines model for DashboardList.
+type DashboardList struct {
+	Data []Dashboard `json:"data"`
+}
+
+// DashboardWidget query (a saved query as a chart, list or count), burndown and velocity (a project's sprints), cfd (a project's flow), capacity (this month's team capacity) or notes (Markdown text).
+type DashboardWidget struct {
+	Chart     *DashboardWidgetChart `json:"chart,omitempty"`
+	GroupBy   *QueryGroupBy         `json:"groupBy,omitempty"`
+	Id        string                `json:"id"`
+	Kind      DashboardWidgetKind   `json:"kind"`
+	ProjectId *openapi_types.UUID   `json:"projectId,omitempty"`
+	QueryId   *openapi_types.UUID   `json:"queryId,omitempty"`
+	Size      DashboardWidgetSize   `json:"size"`
+
+	// SprintId For burndown; missing = the project's current sprint.
+	SprintId *openapi_types.UUID `json:"sprintId,omitempty"`
+	StackBy  *QueryGroupBy       `json:"stackBy,omitempty"`
+	Text     *string             `json:"text,omitempty"`
+	Title    *string             `json:"title,omitempty"`
+}
+
+// DashboardWidgetChart defines model for DashboardWidget.Chart.
+type DashboardWidgetChart string
+
+// DashboardWidgetKind defines model for DashboardWidget.Kind.
+type DashboardWidgetKind string
+
+// DashboardWidgetSize defines model for DashboardWidget.Size.
+type DashboardWidgetSize string
 
 // EmploymentType defines model for EmploymentType.
 type EmploymentType string
@@ -2612,6 +2742,12 @@ type CreateContributionJSONRequestBody = ContributionCreate
 
 // UpdateContributionJSONRequestBody defines body for UpdateContribution for application/json ContentType.
 type UpdateContributionJSONRequestBody = ContributionUpdate
+
+// CreateDashboardJSONRequestBody defines body for CreateDashboard for application/json ContentType.
+type CreateDashboardJSONRequestBody = DashboardInput
+
+// UpdateDashboardJSONRequestBody defines body for UpdateDashboard for application/json ContentType.
+type UpdateDashboardJSONRequestBody = DashboardInput
 
 // CreateGoalJSONRequestBody defines body for CreateGoal for application/json ContentType.
 type CreateGoalJSONRequestBody = GoalCreate

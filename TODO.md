@@ -24,7 +24,7 @@ Notes say what was built where it is simpler than ADO.
       per column, which fields cards show, tag colours, card styling rules
 - [x] **Query language** — AND/OR groups, custom-field conditions, tree queries
       (items with their children)
-- [ ] **Charts and dashboards** — pie, stacked bar and trend-over-time charts for
+- [x] **Charts and dashboards** — pie, stacked bar and trend-over-time charts for
       queries; dashboards with widgets (query chart, burndown, velocity, CFD,
       capacity, notes), personal and shared
 - [ ] **Delivery plans** — saved plans, dependency lines, markers, team lanes

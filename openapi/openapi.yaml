@@ -1544,6 +1544,99 @@ paths:
                 $ref: "#/components/schemas/SavedQuery"
         "400":
           $ref: "#/components/responses/BadRequest"
+  /api/v1/dashboards:
+    get:
+      operationId: listDashboards
+      tags: [dashboards]
+      summary: Your dashboards and the shared ones
+      responses:
+        "200":
+          description: Dashboards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardList"
+    post:
+      operationId: createDashboard
+      tags: [dashboards]
+      summary: Make a dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DashboardInput"
+      responses:
+        "201":
+          description: Made
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/dashboards/{id}:
+    get:
+      operationId: getDashboard
+      tags: [dashboards]
+      summary: One dashboard (yours or shared)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: The dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateDashboard
+      tags: [dashboards]
+      summary: Change your dashboard
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DashboardInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: Not yours
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteDashboard
+      tags: [dashboards]
+      summary: Delete your dashboard (admins can delete any)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not yours
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/queries/{id}:
     patch:
       operationId: updateSavedQuery
@@ -4627,6 +4720,101 @@ components:
     QueryGroupBy:
       type: string
       enum: [status, assignee, type, priority, project]
+
+    Dashboard:
+      type: object
+      required: [id, name, shared, mine, ownerPersonId, widgets, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        shared:
+          type: boolean
+          description: Everyone can see it; only its owner can change it.
+        mine:
+          type: boolean
+        ownerPersonId:
+          type: string
+          format: uuid
+          nullable: true
+        widgets:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardWidget"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DashboardList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dashboard"
+
+    DashboardInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        shared:
+          type: boolean
+        widgets:
+          type: array
+          maxItems: 30
+          items:
+            $ref: "#/components/schemas/DashboardWidget"
+
+    DashboardWidget:
+      type: object
+      description: >
+        query (a saved query as a chart, list or count), burndown and
+        velocity (a project's sprints), cfd (a project's flow), capacity
+        (this month's team capacity) or notes (Markdown text).
+      required: [id, kind, size]
+      properties:
+        id:
+          type: string
+          maxLength: 40
+        kind:
+          type: string
+          enum: [query, burndown, velocity, cfd, capacity, notes]
+        title:
+          type: string
+          maxLength: 100
+        size:
+          type: string
+          enum: [small, wide]
+        queryId:
+          type: string
+          format: uuid
+        chart:
+          type: string
+          enum: [bar, pie, stacked, trend, list, count]
+        groupBy:
+          $ref: "#/components/schemas/QueryGroupBy"
+        stackBy:
+          $ref: "#/components/schemas/QueryGroupBy"
+        projectId:
+          type: string
+          format: uuid
+        sprintId:
+          type: string
+          format: uuid
+          description: For burndown; missing = the project's current sprint.
+        text:
+          type: string
+          maxLength: 4000
 
     SavedQuery:
       type: object

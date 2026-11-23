@@ -2,14 +2,14 @@
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import { can } from '$lib/auth.svelte';
-	import { cleanFilters, groupResults, type GroupBy } from '$lib/queries';
+	import { cleanFilters, type GroupBy } from '$lib/queries';
 	import { cleanGroup, treeDepth, type Group } from '$lib/querylang';
 	import QueryGroupEditor from '$lib/components/QueryGroupEditor.svelte';
 	import { TYPE_OPTIONS } from '$lib/workItems';
 	import { areaLabel } from '$lib/areas';
 	import { formatManDays } from '$lib/capacity';
 	import ChipSelect from '$lib/components/ChipSelect.svelte';
-	import CountBars from '$lib/components/CountBars.svelte';
+	import QueryChart, { type ChartKind } from '$lib/components/QueryChart.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import BulkBar from '$lib/components/BulkBar.svelte';
 	import { download } from '$lib/csv';
@@ -43,6 +43,8 @@
 	let dueAfter = $state('');
 	let dueBefore = $state('');
 	let groupBy = $state<GroupBy>('status');
+	let chartKind = $state<ChartKind>('bar');
+	let stackBy = $state<GroupBy>('priority');
 	let where = $state<Group>({ match: 'all', conditions: [] });
 	let tree = $state(false);
 	let childWhere = $state<Group>({ match: 'all', conditions: [] });
@@ -103,7 +105,7 @@
 		}) as Filters
 	);
 	const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? 'Project';
-	const chart = $derived(groupResults(results, groupBy, { person: (id) => people[id] ?? 'Someone', project: projectName }));
+	const names = { person: (id: string) => people[id] ?? 'Someone', project: (id: string) => projectName(id) };
 
 	$effect(() => {
 		Promise.all([
@@ -371,15 +373,34 @@
 		<div class="rounded-lg border border-slate-200 bg-white p-4 lg:self-start">
 			<div class="mb-3 flex items-center justify-between gap-2">
 				<h2 class="font-semibold">Chart</h2>
-				<select class="input w-auto" aria-label="Group by" bind:value={groupBy}>
-					<option value="status">By status</option>
-					<option value="assignee">By person</option>
-					<option value="type">By type</option>
-					<option value="priority">By priority</option>
-					<option value="project">By project</option>
+				<select class="input w-auto" aria-label="Chart" bind:value={chartKind}>
+					<option value="bar">Bars</option>
+					<option value="pie">Pie</option>
+					<option value="stacked">Stacked bars</option>
+					<option value="trend">Trend (30 days)</option>
 				</select>
 			</div>
-			<CountBars data={chart} label="Items by {groupBy}" />
+			{#if chartKind !== 'trend'}
+				<div class="mb-3 flex flex-wrap gap-2">
+					<select class="input w-auto" aria-label="Group by" bind:value={groupBy}>
+						<option value="status">By status</option>
+						<option value="assignee">By person</option>
+						<option value="type">By type</option>
+						<option value="priority">By priority</option>
+						<option value="project">By project</option>
+					</select>
+					{#if chartKind === 'stacked'}
+						<select class="input w-auto" aria-label="Stack by" bind:value={stackBy}>
+							<option value="status">split by status</option>
+							<option value="assignee">split by person</option>
+							<option value="type">split by type</option>
+							<option value="priority">split by priority</option>
+							<option value="project">split by project</option>
+						</select>
+					{/if}
+				</div>
+			{/if}
+			<QueryChart rows={results} chart={chartKind} {groupBy} {stackBy} {names} />
 		</div>
 	</div>
 	{#if selectedTasks.length > 0}
