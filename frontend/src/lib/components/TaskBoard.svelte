@@ -260,7 +260,7 @@
 										<p class="mb-0.5 truncate text-xs text-slate-500">↳ {parent.title}</p>
 									{/if}
 									<button type="button" class="block w-full text-left font-medium text-slate-800 hover:underline" onclick={() => onOpen(task)}>
-										<TypeBadge type={task.type} /> {task.title}
+										<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> {task.title}
 									</button>
 									{#if sub.count > 0}
 										<p class="mt-1 text-xs text-slate-500">{sub.done}/{sub.count} children done</p>

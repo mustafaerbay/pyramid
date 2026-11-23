@@ -153,7 +153,7 @@
 			<summary class="cursor-pointer font-medium">Items without dates</summary>
 			<ul class="mt-2 space-y-1">
 				{#each lanes.flatMap((l) => l.undated.map((t) => ({ t, project: l.name }))) as { t, project } (t.id)}
-					<li><TypeBadge type={t.type} /> <a class="hover:underline" href="/projects/{t.projectId}?task={t.id}">{t.title}</a> <span class="text-slate-500">· {project}</span></li>
+					<li><TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} /> <a class="hover:underline" href="/projects/{t.projectId}?task={t.id}">{t.title}</a> <span class="text-slate-500">· {project}</span></li>
 				{/each}
 			</ul>
 		</details>

@@ -59,6 +59,7 @@ func taskSnapshot(t models.Task) map[string]any {
 		"title":            t.Title,
 		"description":      str(t.Description),
 		"type":             string(t.Type),
+		"customType":       str(t.CustomType),
 		"status":           string(t.Status),
 		"state":            t.State,
 		"priority":         string(t.Priority),

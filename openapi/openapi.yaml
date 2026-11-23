@@ -2283,6 +2283,26 @@ components:
           enum: [none, type, priority]
           description: Colour the edge of each card by this field.
 
+    WorkItemTypeColor:
+      type: string
+      enum: [orange, violet, sky, red, amber, emerald, pink, slate]
+
+    WorkItemTypeDef:
+      type: object
+      required: [key, label, base, color]
+      properties:
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{0,39}$"
+        label:
+          type: string
+          minLength: 1
+          maxLength: 30
+        base:
+          $ref: "#/components/schemas/TaskType"
+        color:
+          $ref: "#/components/schemas/WorkItemTypeColor"
+
     WorkflowState:
       type: object
       required: [key, label, category]
@@ -2322,13 +2342,22 @@ components:
 
     Project:
       type: object
-      required: [workflow, customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
+      required: [workItemTypes, workflow, customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
       properties:
         id:
           type: string
           format: uuid
         key:
           type: string
+        workItemTypes:
+          type: array
+          description: >
+            The project's own work item types (up to 20), each behaving like
+            its base type for levels and capacity. A type still used by items
+            can't be removed.
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/WorkItemTypeDef"
         workflow:
           type: array
           description: >
@@ -2453,6 +2482,15 @@ components:
       properties:
         key:
           type: string
+        workItemTypes:
+          type: array
+          description: >
+            The project's own work item types (up to 20), each behaving like
+            its base type for levels and capacity. A type still used by items
+            can't be removed.
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/WorkItemTypeDef"
         workflow:
           type: array
           description: >
@@ -3152,6 +3190,19 @@ components:
         state:
           type: string
           description: The item's state in its project's workflow; status is that state's category.
+        customType:
+          type: string
+          nullable: true
+          description: One of the project's own types (key); type is then its base.
+        customTypeLabel:
+          type: string
+          nullable: true
+          readOnly: true
+        customTypeColor:
+          allOf:
+            - $ref: "#/components/schemas/WorkItemTypeColor"
+          nullable: true
+          readOnly: true
         title:
           type: string
         description:
@@ -3271,6 +3322,9 @@ components:
         state:
           type: string
           description: A state of the project's workflow (sets status); otherwise the first state of status's category.
+        customType:
+          type: string
+          description: One of the project's own types (sets type to its base).
         title:
           type: string
           minLength: 1
@@ -3389,6 +3443,10 @@ components:
         state:
           type: string
           description: Move to this workflow state (sets status). Sending only status picks the first state of that category.
+        customType:
+          type: string
+          nullable: true
+          description: One of the project's own types (sets type to its base); null clears it.
         title:
           type: string
         description:

@@ -690,6 +690,42 @@ func (e VersionStatus) Valid() bool {
 	}
 }
 
+// Defines values for WorkItemTypeColor.
+const (
+	WorkItemTypeColorAmber   WorkItemTypeColor = "amber"
+	WorkItemTypeColorEmerald WorkItemTypeColor = "emerald"
+	WorkItemTypeColorOrange  WorkItemTypeColor = "orange"
+	WorkItemTypeColorPink    WorkItemTypeColor = "pink"
+	WorkItemTypeColorRed     WorkItemTypeColor = "red"
+	WorkItemTypeColorSky     WorkItemTypeColor = "sky"
+	WorkItemTypeColorSlate   WorkItemTypeColor = "slate"
+	WorkItemTypeColorViolet  WorkItemTypeColor = "violet"
+)
+
+// Valid indicates whether the value is a known member of the WorkItemTypeColor enum.
+func (e WorkItemTypeColor) Valid() bool {
+	switch e {
+	case WorkItemTypeColorAmber:
+		return true
+	case WorkItemTypeColorEmerald:
+		return true
+	case WorkItemTypeColorOrange:
+		return true
+	case WorkItemTypeColorPink:
+		return true
+	case WorkItemTypeColorRed:
+		return true
+	case WorkItemTypeColorSky:
+		return true
+	case WorkItemTypeColorSlate:
+		return true
+	case WorkItemTypeColorViolet:
+		return true
+	default:
+		return false
+	}
+}
+
 // Area defines model for Area.
 type Area struct {
 	Id openapi_types.UUID `json:"id"`
@@ -1246,6 +1282,9 @@ type Project struct {
 	TurkeySe        *string             `json:"turkeySe"`
 	UpdatedAt       time.Time           `json:"updatedAt"`
 
+	// WorkItemTypes The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed.
+	WorkItemTypes []WorkItemTypeDef `json:"workItemTypes"`
+
 	// Workflow The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed.
 	Workflow []WorkflowState `json:"workflow"`
 }
@@ -1424,6 +1463,9 @@ type ProjectUpdate struct {
 	TurkeyPm        *string             `json:"turkeyPm"`
 	TurkeyQa        *string             `json:"turkeyQa"`
 	TurkeySe        *string             `json:"turkeySe"`
+
+	// WorkItemTypes The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed.
+	WorkItemTypes *[]WorkItemTypeDef `json:"workItemTypes,omitempty"`
 
 	// Workflow The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed.
 	Workflow *[]WorkflowState `json:"workflow,omitempty"`
@@ -1620,6 +1662,11 @@ type Task struct {
 	CompletedManDays *float64  `json:"completedManDays"`
 	CreatedAt        time.Time `json:"createdAt"`
 
+	// CustomType One of the project's own types (key); type is then its base.
+	CustomType      *string            `json:"customType"`
+	CustomTypeColor *WorkItemTypeColor `json:"customTypeColor"`
+	CustomTypeLabel *string            `json:"customTypeLabel"`
+
 	// CustomValues Values of the project's custom fields, by key (text, number or YYYY-MM-DD; a select's option).
 	CustomValues map[string]any      `json:"customValues"`
 	Description  *string             `json:"description"`
@@ -1717,9 +1764,12 @@ type TaskCreate struct {
 	// BlockedByIds Tasks this one waits on. Every id must be another task in the same project, and the links may not form a loop.
 	BlockedByIds     *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
 	CompletedManDays *float64              `json:"completedManDays"`
-	CustomValues     *map[string]any       `json:"customValues,omitempty"`
-	Description      *string               `json:"description,omitempty"`
-	DueDate          *openapi_types.Date   `json:"dueDate,omitempty"`
+
+	// CustomType One of the project's own types (sets type to its base).
+	CustomType   *string             `json:"customType,omitempty"`
+	CustomValues *map[string]any     `json:"customValues,omitempty"`
+	Description  *string             `json:"description,omitempty"`
+	DueDate      *openapi_types.Date `json:"dueDate,omitempty"`
 
 	// DuplicateOfId Mark as a copy of that task; null clears.
 	DuplicateOfId   *openapi_types.UUID `json:"duplicateOfId"`
@@ -1815,6 +1865,9 @@ type TaskUpdate struct {
 	// BlockedByIds Replaces the full set when present (empty array clears it); omit to leave unchanged. Every id must be another task in the same project, and the links may not form a loop.
 	BlockedByIds     *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
 	CompletedManDays *float64              `json:"completedManDays"`
+
+	// CustomType One of the project's own types (sets type to its base); null clears it.
+	CustomType *string `json:"customType"`
 
 	// CustomValues Replaces all custom values when present.
 	CustomValues *map[string]any     `json:"customValues,omitempty"`
@@ -1963,6 +2016,18 @@ type WeeklySummaryList struct {
 type WeeklySummaryUpdate struct {
 	Summary *string             `json:"summary,omitempty"`
 	WeekOf  *openapi_types.Date `json:"weekOf,omitempty"`
+}
+
+// WorkItemTypeColor defines model for WorkItemTypeColor.
+type WorkItemTypeColor string
+
+// WorkItemTypeDef defines model for WorkItemTypeDef.
+type WorkItemTypeDef struct {
+	// Base Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+	Base  TaskType          `json:"base"`
+	Color WorkItemTypeColor `json:"color"`
+	Key   string            `json:"key"`
+	Label string            `json:"label"`
 }
 
 // WorkflowState defines model for WorkflowState.

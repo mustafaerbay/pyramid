@@ -23,6 +23,7 @@
 		areaOptions = [],
 		customFields = [],
 		workflow = [],
+		itemTypes = [],
 		assigneeOptions = [],
 		initialMilestoneId = null,
 		projectTasks = [],
@@ -46,6 +47,8 @@
 		customFields?: components['schemas']['CustomField'][];
 		// The project's workflow states; status is set through these.
 		workflow?: components['schemas']['WorkflowState'][];
+		// The project's own work item types.
+		itemTypes?: components['schemas']['WorkItemTypeDef'][];
 		// The project's active team members — a task can only be assigned to
 		// someone already on the team, not any person in the org.
 		assigneeOptions?: { id: string; name: string }[];
@@ -91,7 +94,13 @@
 	// svelte-ignore state_referenced_locally
 	let parentId = $state(initial?.parentId ?? initialParentId ?? '');
 	// svelte-ignore state_referenced_locally
-	let type = $state<WorkItemType>((initial?.type as WorkItemType) ?? initialType);
+	// "story", or "custom:spike" for one of the project's own types.
+	// svelte-ignore state_referenced_locally
+	let typeChoice = $state<string>(initial?.customType ? `custom:${initial.customType}` : ((initial?.type as WorkItemType) ?? initialType));
+	const customKey = $derived(typeChoice.startsWith('custom:') ? typeChoice.slice(7) : null);
+	const type = $derived<WorkItemType>(
+		customKey ? ((itemTypes.find((t) => t.key === customKey)?.base as WorkItemType) ?? 'task') : (typeChoice as WorkItemType)
+	);
 	const parentChoices = $derived(parentOptions(projectTasks, initial?.id ?? null, type));
 	// svelte-ignore state_referenced_locally
 	const subtasks = initial ? projectTasks.filter((t) => t.parentId === initial.id) : [];
@@ -220,6 +229,7 @@
 						// Explicit null (not undefined) so the backend can tell
 						// "clear this" apart from "field wasn't touched".
 						type,
+						customType: customKey,
 						milestoneId: milestoneId || null,
 						sprintId: sprintId || null,
 						areaId: areaId || null,
@@ -253,6 +263,7 @@
 					body: {
 						projectId,
 						type,
+						customType: customKey ?? undefined,
 						milestoneId: milestoneId || undefined,
 						sprintId: sprintId || undefined,
 						areaId: areaId || undefined,
@@ -323,10 +334,17 @@
 			<div class="flex gap-2">
 				<label class="block w-32 shrink-0 text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Type</span>
-					<select class="input" bind:value={type}>
+					<select class="input" bind:value={typeChoice}>
 						{#each TYPE_OPTIONS as o (o.value)}
 							<option value={o.value}>{o.label}</option>
 						{/each}
+						{#if itemTypes.length}
+							<optgroup label="This project">
+								{#each itemTypes as t (t.key)}
+									<option value="custom:{t.key}">{t.label}</option>
+								{/each}
+							</optgroup>
+						{/if}
 					</select>
 				</label>
 				<label class="block min-w-0 flex-1 text-sm">

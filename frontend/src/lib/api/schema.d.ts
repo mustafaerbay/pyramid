@@ -1106,6 +1106,14 @@ export interface components {
              */
             cardColor: "none" | "type" | "priority";
         };
+        /** @enum {string} */
+        WorkItemTypeColor: "orange" | "violet" | "sky" | "red" | "amber" | "emerald" | "pink" | "slate";
+        WorkItemTypeDef: {
+            key: string;
+            label: string;
+            base: components["schemas"]["TaskType"];
+            color: components["schemas"]["WorkItemTypeColor"];
+        };
         WorkflowState: {
             key: string;
             label: string;
@@ -1125,6 +1133,8 @@ export interface components {
             /** Format: uuid */
             id: string;
             key: string;
+            /** @description The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed. */
+            workItemTypes: components["schemas"]["WorkItemTypeDef"][];
             /** @description The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed. */
             workflow: components["schemas"]["WorkflowState"][];
             /** @description Extra fields every work item in this project has (up to 20). */
@@ -1174,6 +1184,8 @@ export interface components {
         };
         ProjectUpdate: {
             key?: string;
+            /** @description The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed. */
+            workItemTypes?: components["schemas"]["WorkItemTypeDef"][];
             /** @description The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed. */
             workflow?: components["schemas"]["WorkflowState"][];
             /** @description Extra fields every work item in this project has (up to 20). */
@@ -1521,6 +1533,10 @@ export interface components {
             };
             /** @description The item's state in its project's workflow; status is that state's category. */
             state: string;
+            /** @description One of the project's own types (key); type is then its base. */
+            customType?: string | null;
+            readonly customTypeLabel?: string | null;
+            readonly customTypeColor?: components["schemas"]["WorkItemTypeColor"] | null;
             title: string;
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -1599,6 +1615,8 @@ export interface components {
             };
             /** @description A state of the project's workflow (sets status); otherwise the first state of status's category. */
             state?: string;
+            /** @description One of the project's own types (sets type to its base). */
+            customType?: string;
             title: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1656,6 +1674,8 @@ export interface components {
             };
             /** @description Move to this workflow state (sets status). Sending only status picks the first state of that category. */
             state?: string;
+            /** @description One of the project's own types (sets type to its base); null clears it. */
+            customType?: string | null;
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];

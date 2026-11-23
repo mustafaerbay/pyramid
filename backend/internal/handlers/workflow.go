@@ -63,3 +63,28 @@ func (h *Handler) settleDone(t *models.Task) {
 		t.RemainingManDays = &zero
 	}
 }
+
+// resolveType applies a requested project type (sets Type to its base);
+// choosing a built-in type drops the project type.
+func (h *Handler) resolveType(t *models.Task, custom *string, clear, builtInSent bool) error {
+	switch {
+	case clear:
+		t.CustomType = nil
+	case custom != nil:
+		var p models.Project
+		if err := h.db.Select("id, work_item_types").First(&p, "id = ?", t.ProjectID).Error; err != nil {
+			return err
+		}
+		for _, d := range p.ItemTypes() {
+			if d.Key == *custom {
+				key := d.Key
+				t.CustomType, t.Type = &key, d.Base
+				return nil
+			}
+		}
+		return fmt.Errorf("this project has no type %q", *custom)
+	case builtInSent:
+		t.CustomType = nil
+	}
+	return nil
+}

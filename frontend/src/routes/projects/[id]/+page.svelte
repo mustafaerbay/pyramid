@@ -27,6 +27,7 @@
 	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
 	import CustomFieldsManager from '$lib/components/CustomFieldsManager.svelte';
 	import WorkflowManager from '$lib/components/WorkflowManager.svelte';
+	import TypesManager from '$lib/components/TypesManager.svelte';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
 	import { areaIdsUnder, areaLabel } from '$lib/areas';
@@ -318,6 +319,16 @@
 	let importing = $state(false);
 	let managingFields = $state(false);
 	let managingWorkflow = $state(false);
+	let managingTypes = $state(false);
+	async function saveTypes(workItemTypes: components['schemas']['WorkItemTypeDef'][]): Promise<string | null> {
+		if (!project) return 'No project';
+		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { workItemTypes } });
+		if (err || !data) return err?.message ?? 'Could not save the types.';
+		project = data;
+		flash('success', 'Work item types saved.');
+		loadTasks();
+		return null;
+	}
 	async function saveWorkflow(states: components['schemas']['WorkflowState'][]): Promise<string | null> {
 		if (!project) return 'No project';
 		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { workflow: states } });
@@ -1610,6 +1621,7 @@
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingAreas = true)}>Areas…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingFields = true)}>Fields…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingWorkflow = true)}>Workflow…</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTypes = true)}>Types…</button>
 					{/if}
 					<select class="input w-auto" aria-label="Filter by type" bind:value={taskTypeFilter}>
 						<option value="">All types</option>
@@ -1711,7 +1723,7 @@
 												onclick={() => openEditTask(task)}
 											>
 												<span class="font-medium text-slate-800"
-													>{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} /> {task.title}</span
+													>{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> {task.title}</span
 												>
 												{#if row.depth === 0 && row.parent}
 													<span class="block text-xs text-slate-500">↳ subtask of {row.parent.title}</span>
@@ -1806,7 +1818,7 @@
 												}}
 											>
 												<td class="py-2.5 pr-4" style="padding-left: {1 + row.depth * 1.5}rem">
-													{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} /> <button
+													{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> <button
 														type="button"
 														class="text-left font-medium text-slate-800 hover:underline"
 														onclick={() => openEditTask(task)}
@@ -2076,6 +2088,7 @@
 		areaOptions={areas}
 		customFields={project?.customFields ?? []}
 		workflow={project?.workflow ?? []}
+		itemTypes={project?.workItemTypes ?? []}
 		sprintOptions={sprints.filter((sp) => sp.status !== 'completed' && sp.status !== 'cancelled').map((sp) => ({ id: sp.id, name: sp.name }))}
 		{assigneeOptions}
 		initialMilestoneId={taskModalMilestoneId}
@@ -2171,4 +2184,8 @@
 
 {#if managingWorkflow && project}
 	<WorkflowManager states={project.workflow} onSave={saveWorkflow} onClose={() => (managingWorkflow = false)} />
+{/if}
+
+{#if managingTypes && project}
+	<TypesManager types={project.workItemTypes} onSave={saveTypes} onClose={() => (managingTypes = false)} />
 {/if}

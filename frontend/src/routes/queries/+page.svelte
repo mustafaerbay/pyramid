@@ -306,7 +306,7 @@
 						{#if can('member')}
 							<input type="checkbox" aria-label="Select {t.title}" checked={selected.has(t.id)} onchange={() => toggle(t.id)} />
 						{/if}
-						<TypeBadge type={t.type} />
+						<TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} />
 						<a href="/projects/{t.projectId}?task={t.id}" class="min-w-0 flex-1 truncate font-medium text-slate-800 hover:underline">{t.title}</a>
 						<span class="w-full pl-12 text-xs text-slate-500">
 							{projectName(t.projectId)} · {t.status.replace('_', ' ')} · {t.assigneeIds.map((id) => people[id] ?? '?').join(', ') || 'Unassigned'}{t.dueDate

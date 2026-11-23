@@ -27,7 +27,12 @@ type Task struct {
 	// ParentID puts this work item under another (same project).
 	ParentID *uuid.UUID   `gorm:"type:uuid;index"`
 	Type     api.TaskType `gorm:"type:task_type;not null;default:task"`
-	// State is the item\'s state in its project\'s workflow (Status is its category).
+	// CustomType is one of the project's own types (Type is its base).
+	CustomType *string `gorm:"type:text"`
+	// TypeLabel/TypeColor describe CustomType (filled by the handler).
+	TypeLabel *string                `gorm:"-"`
+	TypeColor *api.WorkItemTypeColor `gorm:"-"`
+	// State is the item's state in its project's workflow (Status is its category).
 	State string `gorm:"type:text"`
 	// CustomValues is JSON: the project custom field values, by key.
 	CustomValues *string `gorm:"type:jsonb"`
@@ -73,7 +78,7 @@ type Task struct {
 	BlockedByIDs []uuid.UUID `gorm:"-"`
 	// RelatedIDs are the tasks linked as related, either way (task_related).
 	RelatedIDs []uuid.UUID `gorm:"-"`
-	// Values are CustomValues filtered to the project\'s current fields
+	// Values are CustomValues filtered to the project's current fields
 	// (filled by the handler).
 	Values map[string]any `gorm:"-"`
 }
@@ -165,6 +170,9 @@ func (t Task) ToAPI() api.Task {
 	out.DuplicateOfId = t.DuplicateOfID
 	out.SprintId = t.SprintID
 	out.State = t.State
+	out.CustomType = t.CustomType
+	out.CustomTypeLabel = t.TypeLabel
+	out.CustomTypeColor = t.TypeColor
 	if out.State == "" {
 		out.State = string(t.Status)
 	}

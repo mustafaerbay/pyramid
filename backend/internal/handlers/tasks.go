@@ -217,6 +217,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	}
 
 	t := models.NewTaskFromCreate(in)
+	if err := h.resolveType(&t, in.CustomType, false, false); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
 	if err := t.ValidateDates(); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
@@ -336,6 +340,7 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
 	}
+	_ = h.attachCustom(&t)
 	c.JSON(http.StatusCreated, t.ToAPI())
 }
 
@@ -442,6 +447,11 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	if isExplicitNull(raw, "completedManDays") {
 		t.CompletedManDays = nil
 	}
+	_, customSent := raw["customType"]
+	if err := h.resolveType(&t, in.CustomType, isExplicitNull(raw, "customType"), in.Type != nil && !customSent); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
 	_, parentSent := raw["parentId"]
 	if parentSent {
 		t.ParentID = nil
@@ -449,7 +459,7 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 			t.ParentID = in.ParentId
 		}
 	}
-	if parentSent || in.Type != nil {
+	if parentSent || in.Type != nil || customSent {
 		if err := h.validateParent(&t); err != nil {
 			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 			return
@@ -583,6 +593,7 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		h.notifyTaskChange(c, before, after, t)
 	}
 
+	_ = h.attachCustom(&t)
 	c.JSON(http.StatusOK, t.ToAPI())
 }
 

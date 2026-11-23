@@ -109,6 +109,23 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 			return
 		}
 	}
+	if in.WorkItemTypes != nil {
+		if err := models.ValidateItemTypes(*in.WorkItemTypes); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+		keys := []string{""}
+		for _, t := range *in.WorkItemTypes {
+			keys = append(keys, t.Key)
+		}
+		var used []string
+		h.db.Model(&models.Task{}).Distinct("custom_type").
+			Where("project_id = ? AND custom_type IS NOT NULL AND custom_type NOT IN ?", p.ID, keys).Pluck("custom_type", &used)
+		if len(used) > 0 {
+			c.JSON(http.StatusBadRequest, api.Error{Message: fmt.Sprintf("items still use %s; change their type first", strings.Join(used, ", "))})
+			return
+		}
+	}
 	states := p.States()
 	if in.Workflow != nil {
 		if err := models.ValidateWorkflow(*in.Workflow); err != nil {

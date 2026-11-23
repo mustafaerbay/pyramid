@@ -236,6 +236,7 @@ CREATE TABLE projects (
     board_settings JSONB,                                  -- board WIP limits, swimlanes, card colours
     custom_fields  JSONB,                                  -- this project's extra task fields
     workflow       JSONB,                                  -- this project's states (key, label, category)
+    work_item_types JSONB,                                 -- this project's own types (key, label, base type, colour)
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -359,6 +360,7 @@ CREATE TABLE tasks (
     type          task_type     NOT NULL DEFAULT 'task',
     status        task_status   NOT NULL DEFAULT 'backlog',
     state         TEXT,                                    -- state in the project's workflow; status is its category
+    custom_type   TEXT,                                    -- one of the project's own types (type is its base)
     priority      task_priority NOT NULL DEFAULT 'medium',
     reporter_id   UUID REFERENCES people(id) ON DELETE SET NULL,
     story_points  NUMERIC(5,2),

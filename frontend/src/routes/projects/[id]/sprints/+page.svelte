@@ -286,7 +286,7 @@
 				<ul class="divide-y divide-slate-100 text-sm">
 					{#each inSprint as t (t.id)}
 						<li class="flex items-center gap-2 py-2">
-							<TypeBadge type={t.type} />
+							<TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} />
 							<a href="/projects/{projectId}?task={t.id}" class="min-w-0 flex-1 truncate hover:underline {t.status === 'done' ? 'text-slate-400 line-through' : ''}">{t.title}</a>
 							<span class="shrink-0 text-xs text-slate-500">{t.status.replace('_', ' ')}{t.storyPoints != null ? ` · ${formatManDays(t.storyPoints)} pts` : ''}</span>
 							{#if can('member')}
@@ -304,7 +304,7 @@
 				<ul class="max-h-96 divide-y divide-slate-100 overflow-y-auto text-sm">
 					{#each backlog as t (t.id)}
 						<li class="flex items-center gap-2 py-2">
-							<TypeBadge type={t.type} />
+							<TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} />
 							<span class="min-w-0 flex-1 truncate">{t.title}</span>
 							<span class="shrink-0 text-xs text-slate-500">{t.storyPoints != null ? `${formatManDays(t.storyPoints)} pts` : ''}</span>
 							{#if can('member')}

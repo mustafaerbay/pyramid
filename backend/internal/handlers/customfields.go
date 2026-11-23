@@ -105,8 +105,22 @@ func encodeValues(values map[string]any) *string {
 // item's project still defines.
 func (h *Handler) attachCustom(tasks ...*models.Task) error {
 	fields := map[uuid.UUID]map[string]bool{}
+	types := map[uuid.UUID][]api.WorkItemTypeDef{}
 	for _, t := range tasks {
 		t.Values = map[string]any{}
+		if t.CustomType != nil {
+			if _, ok := types[t.ProjectID]; !ok {
+				var p models.Project
+				h.db.Select("id, work_item_types").First(&p, "id = ?", t.ProjectID)
+				types[t.ProjectID] = p.ItemTypes()
+			}
+			for _, d := range types[t.ProjectID] {
+				if d.Key == *t.CustomType {
+					label, color := d.Label, d.Color
+					t.TypeLabel, t.TypeColor = &label, &color
+				}
+			}
+		}
 		if t.CustomValues == nil {
 			continue
 		}

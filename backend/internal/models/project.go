@@ -54,6 +54,8 @@ type Project struct {
 	CustomFields *string `gorm:"type:jsonb"`
 	// Workflow is JSON ([]api.WorkflowState); nil means the default seven.
 	Workflow *string `gorm:"type:jsonb"`
+	// WorkItemTypes is JSON ([]api.WorkItemTypeDef): the project's own types.
+	WorkItemTypes *string `gorm:"type:jsonb"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -61,6 +63,43 @@ type Project struct {
 
 // TableName pins the model to the existing pluralized table.
 func (Project) TableName() string { return "projects" }
+
+// ItemTypes returns the project's own work item types ([] when none).
+func (p Project) ItemTypes() []api.WorkItemTypeDef {
+	out := []api.WorkItemTypeDef{}
+	if p.WorkItemTypes != nil {
+		_ = json.Unmarshal([]byte(*p.WorkItemTypes), &out)
+	}
+	return out
+}
+
+// ValidateItemTypes checks a project's own types: up to 20, unique keys
+// that aren't built-in type names, a known base and colour.
+func ValidateItemTypes(types []api.WorkItemTypeDef) error {
+	if len(types) > 20 {
+		return errors.New("a project can have at most 20 types of its own")
+	}
+	seen := map[string]bool{}
+	for _, t := range types {
+		if !fieldKey.MatchString(t.Key) || api.TaskType(t.Key).Valid() {
+			return fmt.Errorf("type key %q must be lowercase letters, digits or _ and not a built-in type", t.Key)
+		}
+		if seen[t.Key] {
+			return fmt.Errorf("two types use the key %q", t.Key)
+		}
+		seen[t.Key] = true
+		if l := strings.TrimSpace(t.Label); l == "" || len([]rune(l)) > 30 {
+			return errors.New("every type needs a name of 1–30 characters")
+		}
+		if !t.Base.Valid() {
+			return fmt.Errorf("unknown base type %q", t.Base)
+		}
+		if !t.Color.Valid() {
+			return fmt.Errorf("unknown colour %q", t.Color)
+		}
+	}
+	return nil
+}
 
 // DefaultWorkflow is one state per status, keyed by the status.
 func DefaultWorkflow() []api.WorkflowState {
@@ -212,6 +251,7 @@ func ValidateBoard(b api.BoardSettings, states []api.WorkflowState) error {
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {
 	out := api.Project{
+		WorkItemTypes:    p.ItemTypes(),
 		Workflow:         p.States(),
 		CustomFields:     p.Fields(),
 		BoardSettings:    p.Board(),
@@ -277,6 +317,12 @@ func NewProjectFromCreate(in api.ProjectCreate) Project {
 
 // ApplyUpdate mutates the model in place with the non-nil fields of a patch.
 func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
+	if in.WorkItemTypes != nil {
+		if b, err := json.Marshal(*in.WorkItemTypes); err == nil {
+			v := string(b)
+			p.WorkItemTypes = &v
+		}
+	}
 	if in.Workflow != nil {
 		if b, err := json.Marshal(*in.Workflow); err == nil {
 			v := string(b)
