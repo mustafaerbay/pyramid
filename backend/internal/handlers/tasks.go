@@ -277,8 +277,12 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	}
 	in0 := map[string]any{}
 	if in.CustomValues != nil {
-		in0 = *in.CustomValues
+		for k, v := range *in.CustomValues {
+			in0[k] = v
+		}
 	}
+	rules, _ := h.projectRules(t.ProjectID)
+	applyDefaults(&t, in, in0, rules)
 	values, err := checkCustomValues(h.projectFields(t.ProjectID), in0)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
@@ -286,6 +290,18 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	}
 	t.CustomValues = encodeValues(values)
 	t.Values = values
+	nAssignees, nTags := 0, 0
+	if in.Assignments != nil {
+		nAssignees = len(*in.Assignments)
+	} else if in.AssigneeIds != nil {
+		nAssignees = len(*in.AssigneeIds)
+	}
+	if in.Tags != nil {
+		nTags = len(*in.Tags)
+	}
+	if !h.checkRequired(c, itemFields{assignees: nAssignees, tags: nTags, t: &t}) {
+		return
+	}
 
 	// Per-project sequential number (PYR-42 style), assigned here since it
 	// needs a DB read the model constructor shouldn't own.
@@ -517,6 +533,9 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 			return
 		}
+		if !h.checkReadOnly(c, t.ProjectID, t.Values, values) {
+			return
+		}
 		t.CustomValues = encodeValues(values)
 		t.Values = values
 	}
@@ -539,6 +558,18 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 			return
 		}
+	}
+	nAssignees, nTags := len(t.AssigneeIDs), len(t.Tags)
+	if in.Assignments != nil {
+		nAssignees = len(*in.Assignments)
+	} else if in.AssigneeIds != nil {
+		nAssignees = len(*in.AssigneeIds)
+	}
+	if in.Tags != nil {
+		nTags = len(*in.Tags)
+	}
+	if !h.checkRequired(c, itemFields{assignees: nAssignees, tags: nTags, t: &t}) {
+		return
 	}
 	if err := h.db.Save(&t).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task", Details: strptr(err.Error())})

@@ -153,6 +153,16 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 		}
 		states = *in.Workflow
 	}
+	if in.Rules != nil {
+		fields := p.Fields()
+		if in.CustomFields != nil {
+			fields = *in.CustomFields
+		}
+		if err := validateRules(*in.Rules, states, fields); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 	if in.BoardSettings != nil {
 		if err := models.ValidateBoard(*in.BoardSettings, states); err != nil {
 			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})

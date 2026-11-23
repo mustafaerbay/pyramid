@@ -58,6 +58,8 @@ type Project struct {
 	WorkItemTypes *string `gorm:"type:jsonb"`
 	// Restricted: only members with write access (and managers) change it.
 	Restricted bool `gorm:"not null;default:false"`
+	// Rules is JSON (api.WorkItemRules).
+	Rules *string `gorm:"type:jsonb"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -253,6 +255,7 @@ func ValidateBoard(b api.BoardSettings, states []api.WorkflowState) error {
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {
 	out := api.Project{
+		Rules:            p.RulesOf(),
 		Restricted:       p.Restricted,
 		WorkItemTypes:    p.ItemTypes(),
 		Workflow:         p.States(),
@@ -319,7 +322,31 @@ func NewProjectFromCreate(in api.ProjectCreate) Project {
 }
 
 // ApplyUpdate mutates the model in place with the non-nil fields of a patch.
+// RulesOf returns the project's work item rules (empty when none).
+func (p Project) RulesOf() api.WorkItemRules {
+	out := api.WorkItemRules{}
+	if p.Rules != nil {
+		_ = json.Unmarshal([]byte(*p.Rules), &out)
+	}
+	if out.RequiredByState == nil {
+		out.RequiredByState = map[string][]string{}
+	}
+	if out.Defaults == nil {
+		out.Defaults = map[string]any{}
+	}
+	if out.ReadOnly == nil {
+		out.ReadOnly = []string{}
+	}
+	return out
+}
+
 func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
+	if in.Rules != nil {
+		if b, err := json.Marshal(*in.Rules); err == nil {
+			v := string(b)
+			p.Rules = &v
+		}
+	}
 	if in.Restricted != nil {
 		p.Restricted = *in.Restricted
 	}

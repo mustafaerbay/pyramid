@@ -29,6 +29,7 @@
 	import WorkflowManager from '$lib/components/WorkflowManager.svelte';
 	import TypesManager from '$lib/components/TypesManager.svelte';
 	import TeamsManager from '$lib/components/TeamsManager.svelte';
+	import RulesManager from '$lib/components/RulesManager.svelte';
 	import { teamFilter } from '$lib/teams';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
@@ -323,6 +324,15 @@
 	let managingWorkflow = $state(false);
 	let managingTypes = $state(false);
 	let managingTeams = $state(false);
+	let managingRules = $state(false);
+	async function saveRules(rules: components['schemas']['WorkItemRules']): Promise<string | null> {
+		if (!project) return 'No project';
+		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { rules } });
+		if (err || !data) return err?.message ?? 'Could not save the rules.';
+		project = data;
+		flash('success', 'Rules saved.');
+		return null;
+	}
 	let teams = $state<components['schemas']['ProjectTeam'][]>([]);
 	async function loadTeams() {
 		const { data } = await api.GET('/api/v1/project-teams', { params: { query: { projectId } } });
@@ -1651,6 +1661,7 @@
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingWorkflow = true)}>Workflow…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTypes = true)}>Types…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTeams = true)}>Teams…</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingRules = true)}>Rules…</button>
 					{/if}
 					{#if can('manager') && project}
 						<label class="flex items-center gap-1 text-xs text-slate-600" title="Only project members with write access (and managers) can change a restricted project">
@@ -2233,4 +2244,8 @@
 		onChange={loadTeams}
 		onClose={() => (managingTeams = false)}
 	/>
+{/if}
+
+{#if managingRules && project}
+	<RulesManager rules={project.rules} states={project.workflow} fields={project.customFields} onSave={saveRules} onClose={() => (managingRules = false)} />
 {/if}

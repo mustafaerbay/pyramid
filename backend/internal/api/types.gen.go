@@ -1338,7 +1338,10 @@ type Project struct {
 	ReportPeriod    *string             `json:"reportPeriod"`
 
 	// Restricted Only project members with write access (and managers/admins) can change it.
-	Restricted      bool                `json:"restricted"`
+	Restricted bool `json:"restricted"`
+
+	// Rules Field names are custom field keys or the built-ins assignees, dueDate, startDate, storyPoints, manDays, description, area, sprint, tags.
+	Rules           WorkItemRules       `json:"rules"`
 	Sponsor         *string             `json:"sponsor"`
 	StartDate       *openapi_types.Date `json:"startDate"`
 	Status          ProjectStatus       `json:"status"`
@@ -1564,7 +1567,10 @@ type ProjectUpdate struct {
 	ReportPeriod    *string             `json:"reportPeriod"`
 
 	// Restricted Only project members with write access (and managers/admins) can change it.
-	Restricted      *bool               `json:"restricted,omitempty"`
+	Restricted *bool `json:"restricted,omitempty"`
+
+	// Rules Field names are custom field keys or the built-ins assignees, dueDate, startDate, storyPoints, manDays, description, area, sprint, tags.
+	Rules           *WorkItemRules      `json:"rules,omitempty"`
 	Sponsor         *string             `json:"sponsor"`
 	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
 	Status          *ProjectStatus      `json:"status,omitempty"`
@@ -2138,6 +2144,18 @@ type WeeklySummaryList struct {
 type WeeklySummaryUpdate struct {
 	Summary *string             `json:"summary,omitempty"`
 	WeekOf  *openapi_types.Date `json:"weekOf,omitempty"`
+}
+
+// WorkItemRules Field names are custom field keys or the built-ins assignees, dueDate, startDate, storyPoints, manDays, description, area, sprint, tags.
+type WorkItemRules struct {
+	// Defaults Values new items get when they don't say otherwise (priority, storyPoints or a custom field key).
+	Defaults map[string]any `json:"defaults"`
+
+	// ReadOnly Custom field keys only managers and admins can change after the item is created.
+	ReadOnly []string `json:"readOnly"`
+
+	// RequiredByState For a workflow state key, the fields an item needs before it can be in that state.
+	RequiredByState map[string][]string `json:"requiredByState"`
 }
 
 // WorkItemTypeColor defines model for WorkItemTypeColor.

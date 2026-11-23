@@ -247,6 +247,7 @@ CREATE TABLE projects (
     workflow       JSONB,                                  -- this project's states (key, label, category)
     work_item_types JSONB,                                 -- this project's own types (key, label, base type, colour)
     restricted    BOOLEAN NOT NULL DEFAULT false,          -- only members with write access can change it
+    rules          JSONB,                                  -- work item rules: required per state, defaults, read-only
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );

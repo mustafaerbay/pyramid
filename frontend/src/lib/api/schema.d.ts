@@ -1193,6 +1193,19 @@ export interface components {
              */
             cardColor: "none" | "type" | "priority";
         };
+        /** @description Field names are custom field keys or the built-ins assignees, dueDate, startDate, storyPoints, manDays, description, area, sprint, tags. */
+        WorkItemRules: {
+            /** @description For a workflow state key, the fields an item needs before it can be in that state. */
+            requiredByState: {
+                [key: string]: string[];
+            };
+            /** @description Values new items get when they don't say otherwise (priority, storyPoints or a custom field key). */
+            defaults: {
+                [key: string]: unknown;
+            };
+            /** @description Custom field keys only managers and admins can change after the item is created. */
+            readOnly: string[];
+        };
         /** @enum {string} */
         WorkItemTypeColor: "orange" | "violet" | "sky" | "red" | "amber" | "emerald" | "pink" | "slate";
         WorkItemTypeDef: {
@@ -1220,6 +1233,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             key: string;
+            rules: components["schemas"]["WorkItemRules"];
             /** @description Only project members with write access (and managers/admins) can change it. */
             restricted: boolean;
             /** @description The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed. */
@@ -1273,6 +1287,7 @@ export interface components {
         };
         ProjectUpdate: {
             key?: string;
+            rules?: components["schemas"]["WorkItemRules"];
             /** @description Only project members with write access (and managers/admins) can change it. */
             restricted?: boolean;
             /** @description The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed. */

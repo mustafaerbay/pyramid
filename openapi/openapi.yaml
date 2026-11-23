@@ -2407,6 +2407,31 @@ components:
           enum: [none, type, priority]
           description: Colour the edge of each card by this field.
 
+    WorkItemRules:
+      type: object
+      required: [requiredByState, defaults, readOnly]
+      description: >
+        Field names are custom field keys or the built-ins assignees,
+        dueDate, startDate, storyPoints, manDays, description, area, sprint,
+        tags.
+      properties:
+        requiredByState:
+          type: object
+          description: For a workflow state key, the fields an item needs before it can be in that state.
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        defaults:
+          type: object
+          description: Values new items get when they don't say otherwise (priority, storyPoints or a custom field key).
+          additionalProperties: {}
+        readOnly:
+          type: array
+          description: Custom field keys only managers and admins can change after the item is created.
+          items:
+            type: string
+
     WorkItemTypeColor:
       type: string
       enum: [orange, violet, sky, red, amber, emerald, pink, slate]
@@ -2466,13 +2491,15 @@ components:
 
     Project:
       type: object
-      required: [restricted, workItemTypes, workflow, customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
+      required: [rules, restricted, workItemTypes, workflow, customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
       properties:
         id:
           type: string
           format: uuid
         key:
           type: string
+        rules:
+          $ref: "#/components/schemas/WorkItemRules"
         restricted:
           type: boolean
           description: Only project members with write access (and managers/admins) can change it.
@@ -2609,6 +2636,8 @@ components:
       properties:
         key:
           type: string
+        rules:
+          $ref: "#/components/schemas/WorkItemRules"
         restricted:
           type: boolean
           description: Only project members with write access (and managers/admins) can change it.

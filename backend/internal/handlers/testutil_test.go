@@ -157,6 +157,7 @@ CREATE TABLE projects (
 	workflow TEXT,
 	work_item_types TEXT,
 	restricted BOOLEAN NOT NULL DEFAULT 0,
+	rules TEXT,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
