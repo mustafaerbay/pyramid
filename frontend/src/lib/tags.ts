@@ -16,6 +16,18 @@ export const TAG_COLORS = [
 	'bg-slate-100 text-slate-700 ring-slate-300'
 ] as const;
 
+/** Chip classes for the named colours a board can give a tag. */
+export const TAG_COLOR_BY_NAME: Record<string, string> = {
+	orange: 'bg-orange-50 text-orange-800 ring-orange-200',
+	violet: 'bg-violet-50 text-violet-700 ring-violet-200',
+	sky: 'bg-sky-50 text-sky-700 ring-sky-200',
+	red: 'bg-red-50 text-red-700 ring-red-200',
+	amber: 'bg-amber-50 text-amber-800 ring-amber-200',
+	emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+	pink: 'bg-pink-50 text-pink-700 ring-pink-200',
+	slate: 'bg-slate-100 text-slate-700 ring-slate-300'
+};
+
 export function tagColor(tag: string): string {
 	let h = 0;
 	for (const ch of tag.toLowerCase()) h = (h * 31 + ch.codePointAt(0)!) >>> 0;

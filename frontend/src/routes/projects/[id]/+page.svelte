@@ -672,13 +672,15 @@
 
 	// Board and row moves: the item changes state at once and goes back if
 	// saving fails.
-	async function moveTask(task: Task, state: string) {
-		const before = { state: task.state, status: task.status };
-		if (before.state === state) return;
-		tasks = tasks.map((t) => (t.id === task.id ? { ...t, state, status: categoryOf(state) } : t));
+	// done: which half of a split board column it lands in.
+	async function moveTask(task: Task, state: string, done?: boolean) {
+		const before = { state: task.state, status: task.status, boardDone: task.boardDone };
+		const boardDone = done ?? (before.state === state ? task.boardDone : false);
+		if (before.state === state && before.boardDone === boardDone) return;
+		tasks = tasks.map((t) => (t.id === task.id ? { ...t, state, status: categoryOf(state), boardDone } : t));
 		const { data, error: err } = await api.PATCH('/api/v1/tasks/{id}', {
 			params: { path: { id: task.id } },
-			body: { state }
+			body: done === undefined ? { state } : { state, boardDone: done }
 		});
 		if (err || !data) {
 			tasks = tasks.map((t) => (t.id === task.id ? { ...t, ...before } : t));
@@ -1737,6 +1739,7 @@
 						{fitWarnings}
 						onOpen={openEditTask}
 						onMove={moveTask}
+						customFields={project.customFields}
 						onPlaceBefore={placeBefore}
 						personName={personLabel}
 						settings={project.boardSettings}

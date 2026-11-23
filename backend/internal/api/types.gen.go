@@ -57,6 +57,36 @@ func (e BoardSettingsSwimlanes) Valid() bool {
 	}
 }
 
+// Defines values for CardRuleField.
+const (
+	CardRuleFieldAssignee CardRuleField = "assignee"
+	CardRuleFieldBlocked  CardRuleField = "blocked"
+	CardRuleFieldOverdue  CardRuleField = "overdue"
+	CardRuleFieldPriority CardRuleField = "priority"
+	CardRuleFieldTag      CardRuleField = "tag"
+	CardRuleFieldType     CardRuleField = "type"
+)
+
+// Valid indicates whether the value is a known member of the CardRuleField enum.
+func (e CardRuleField) Valid() bool {
+	switch e {
+	case CardRuleFieldAssignee:
+		return true
+	case CardRuleFieldBlocked:
+		return true
+	case CardRuleFieldOverdue:
+		return true
+	case CardRuleFieldPriority:
+		return true
+	case CardRuleFieldTag:
+		return true
+	case CardRuleFieldType:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ContributionType.
 const (
 	ContributionTypeCodeReview    ContributionType = "code_review"
@@ -880,8 +910,23 @@ type BoardSettings struct {
 	// CardColor Colour the edge of each card by this field.
 	CardColor BoardSettingsCardColor `json:"cardColor"`
 
+	// CardFields What cards show: any of assignees, manDays, points, due, tags, priority, parent, remaining, or custom:<field key>. Missing = the defaults (assignees, manDays, points, due, tags, priority, parent).
+	CardFields *[]string `json:"cardFields,omitempty"`
+
+	// CardRules First matching rule tints the card.
+	CardRules *[]CardRule `json:"cardRules,omitempty"`
+
+	// DefinitionOfDone Per state, what has to be true before an item leaves the column (up to 500 characters).
+	DefinitionOfDone *map[string]string `json:"definitionOfDone,omitempty"`
+
+	// SplitColumns States whose column is split into Doing and Done.
+	SplitColumns *[]string `json:"splitColumns,omitempty"`
+
 	// Swimlanes Split the board into rows by this field.
 	Swimlanes BoardSettingsSwimlanes `json:"swimlanes"`
+
+	// TagColors Colour per tag on this board.
+	TagColors *map[string]WorkItemTypeColor `json:"tagColors,omitempty"`
 
 	// WipLimits Most items allowed in a board column at once (1–999), by workflow state key. Missing = no limit.
 	WipLimits map[string]int `json:"wipLimits"`
@@ -911,6 +956,18 @@ type CapacityReport struct {
 	// WorkingDays Mon–Fri days in the month.
 	WorkingDays int `json:"workingDays"`
 }
+
+// CardRule defines model for CardRule.
+type CardRule struct {
+	Color WorkItemTypeColor `json:"color"`
+
+	// Field overdue and blocked match on value "true".
+	Field CardRuleField `json:"field"`
+	Value string        `json:"value"`
+}
+
+// CardRuleField overdue and blocked match on value "true".
+type CardRuleField string
 
 // Contribution defines model for Contribution.
 type Contribution struct {
@@ -1878,7 +1935,10 @@ type Task struct {
 
 	// BlockedByIds Tasks that must be finished before this one can be (same project). Sorted by task number.
 	BlockedByIds []openapi_types.UUID `json:"blockedByIds"`
-	CompletedAt  *time.Time           `json:"completedAt"`
+
+	// BoardDone In the Done half of a split board column (cleared when the state changes).
+	BoardDone   bool       `json:"boardDone"`
+	CompletedAt *time.Time `json:"completedAt"`
 
 	// CompletedManDays Work done so far, in man-days (0–9999).
 	CompletedManDays *float64  `json:"completedManDays"`
@@ -2086,6 +2146,7 @@ type TaskUpdate struct {
 
 	// BlockedByIds Replaces the full set when present (empty array clears it); omit to leave unchanged. Every id must be another task in the same project, and the links may not form a loop.
 	BlockedByIds     *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
+	BoardDone        *bool                 `json:"boardDone,omitempty"`
 	CompletedManDays *float64              `json:"completedManDays"`
 
 	// CustomType One of the project's own types (sets type to its base); null clears it.

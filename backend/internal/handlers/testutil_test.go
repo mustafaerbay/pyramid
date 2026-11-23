@@ -218,6 +218,7 @@ CREATE TABLE tasks (
 	status TEXT NOT NULL DEFAULT 'backlog',
 	state TEXT,
 	custom_type TEXT,
+	board_done BOOLEAN NOT NULL DEFAULT false,
 	priority TEXT NOT NULL DEFAULT 'medium',
 	start_date DATE,
 	estimate_man_days REAL,

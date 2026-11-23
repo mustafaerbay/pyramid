@@ -79,3 +79,50 @@ export function boardLanes<T extends LaneTask>(
 	}
 	return [...lanes.values()].sort((a, b) => a.order.localeCompare(b.order)).map(({ key, label, tasks }) => ({ key, label, tasks }));
 }
+
+export type CardRule = { field: 'priority' | 'type' | 'tag' | 'overdue' | 'blocked' | 'assignee'; value: string; color: string };
+type RuleTask = {
+	priority: string;
+	type: string;
+	customType?: string | null;
+	tags: string[];
+	dueDate?: string | null;
+	status: string;
+	blockedByIds: string[];
+	assigneeIds: string[];
+};
+
+/** The colour of the first card rule the task matches (today is YYYY-MM-DD), or null. */
+export function cardRuleColor(t: RuleTask, rules: readonly CardRule[] | undefined, today: string): string | null {
+	const open = t.status !== 'done' && t.status !== 'cancelled';
+	const v = (s: string) => s.trim().toLowerCase();
+	for (const r of rules ?? []) {
+		const want = v(r.value);
+		const hit =
+			r.field === 'priority'
+				? t.priority === want
+				: r.field === 'type'
+					? (t.customType ?? t.type) === r.value || t.type === want
+					: r.field === 'tag'
+						? t.tags.some((x) => v(x) === want)
+						: r.field === 'overdue'
+							? want === 'true' && open && !!t.dueDate && t.dueDate < today
+							: r.field === 'blocked'
+								? want === 'true' && open && t.blockedByIds.length > 0
+								: t.assigneeIds.includes(r.value);
+		if (hit) return r.color;
+	}
+	return null;
+}
+
+export const DEFAULT_CARD_FIELDS = ['assignees', 'manDays', 'points', 'due', 'tags', 'priority', 'parent'];
+
+/** Whether cards show this field, by the board's card field list (missing = the defaults). */
+export function cardShows(fields: readonly string[] | undefined | null, f: string): boolean {
+	return (fields ?? DEFAULT_CARD_FIELDS).includes(f);
+}
+
+/** The Doing and Done halves of a split column. */
+export function splitColumn<T extends { boardDone: boolean }>(tasks: readonly T[]): { doing: T[]; done: T[] } {
+	return { doing: tasks.filter((t) => !t.boardDone), done: tasks.filter((t) => t.boardDone) };
+}

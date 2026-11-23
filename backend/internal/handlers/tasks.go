@@ -454,10 +454,17 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	_ = json.Unmarshal(body, &raw)
 	clearMilestone := isExplicitNull(raw, "milestoneId")
 
+	prevState := t.State
 	t.ApplyUpdate(in, clearMilestone)
 	if err := h.resolveState(&t, in.State, in.Status != nil); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
+	}
+	// The Done half of a split column belongs to the state it was set in.
+	if in.BoardDone != nil {
+		t.BoardDone = *in.BoardDone
+	} else if t.State != prevState {
+		t.BoardDone = false
 	}
 	// These three can be cleared with an explicit null.
 	if isExplicitNull(raw, "storyPoints") {

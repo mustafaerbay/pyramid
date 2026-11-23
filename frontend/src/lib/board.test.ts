@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { afterIdToPlaceBefore, boardColumns, boardStates } from './board';
+import { afterIdToPlaceBefore, boardColumns, boardStates, cardRuleColor, cardShows, splitColumn } from './board';
 
 type T = { id: string; number: number; rank: number; state: string; priority: 'low' | 'medium' | 'high' | 'urgent' };
 const t = (number: number, status: string, priority: T['priority'] = 'medium', rank = number): T => ({
@@ -90,5 +90,48 @@ describe('boardLanes', () => {
 		expect(boardLanes(items, 'priority', names).map((l) => l.label)).toEqual(['Urgent', 'Low']);
 		expect(boardLanes(items, 'type', names).map((l) => l.label)).toEqual(['Bug', 'Task']);
 		expect(boardLanes(items, 'parent', names).map((l) => l.label)).toEqual(['Parent P', 'No parent']);
+	});
+});
+
+describe('cardRuleColor', () => {
+	const base = { priority: 'medium', type: 'task', customType: null, tags: ['ui'], dueDate: null, status: 'todo', blockedByIds: [], assigneeIds: ['p1'] };
+	it('picks the first matching rule', () => {
+		const rules = [
+			{ field: 'tag', value: 'UI', color: 'sky' },
+			{ field: 'priority', value: 'medium', color: 'red' }
+		] as const;
+		expect(cardRuleColor(base, [...rules], '2026-11-23')).toBe('sky');
+	});
+	it('matches overdue and blocked only when true', () => {
+		expect(cardRuleColor({ ...base, dueDate: '2026-11-22' }, [{ field: 'overdue', value: 'true', color: 'red' }], '2026-11-23')).toBe('red');
+		expect(cardRuleColor({ ...base, dueDate: '2026-11-22', status: 'done' }, [{ field: 'overdue', value: 'true', color: 'red' }], '2026-11-23')).toBeNull();
+		expect(cardRuleColor(base, [{ field: 'blocked', value: 'true', color: 'amber' }], '2026-11-23')).toBeNull();
+		expect(cardRuleColor({ ...base, blockedByIds: ['x'] }, [{ field: 'blocked', value: 'true', color: 'amber' }], '2026-11-23')).toBe('amber');
+	});
+	it('matches a project type by its key and an assignee by id', () => {
+		expect(cardRuleColor({ ...base, customType: 'spike' }, [{ field: 'type', value: 'spike', color: 'pink' }], '2026-11-23')).toBe('pink');
+		expect(cardRuleColor(base, [{ field: 'assignee', value: 'p1', color: 'violet' }], '2026-11-23')).toBe('violet');
+	});
+});
+
+describe('cardShows', () => {
+	it('uses the defaults when nothing is set', () => {
+		expect(cardShows(undefined, 'assignees')).toBe(true);
+		expect(cardShows(undefined, 'remaining')).toBe(false);
+	});
+	it('follows the saved list', () => {
+		expect(cardShows(['due'], 'assignees')).toBe(false);
+		expect(cardShows(['due'], 'due')).toBe(true);
+	});
+});
+
+describe('splitColumn', () => {
+	it('splits a column by boardDone', () => {
+		const { doing, done } = splitColumn([
+			{ id: 'a', boardDone: false },
+			{ id: 'b', boardDone: true }
+		]);
+		expect(doing.map((t) => t.id)).toEqual(['a']);
+		expect(done.map((t) => t.id)).toEqual(['b']);
 	});
 });

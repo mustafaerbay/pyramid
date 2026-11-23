@@ -2474,6 +2474,19 @@ components:
       type: string
       enum: [on_track, at_risk, off_track]
 
+    CardRule:
+      type: object
+      required: [field, value, color]
+      properties:
+        field:
+          type: string
+          enum: [priority, type, tag, overdue, blocked, assignee]
+          description: overdue and blocked match on value "true".
+        value:
+          type: string
+        color:
+          $ref: "#/components/schemas/WorkItemTypeColor"
+
     BoardSettings:
       type: object
       required: [wipLimits, swimlanes, cardColor]
@@ -2493,6 +2506,35 @@ components:
           type: string
           enum: [none, type, priority]
           description: Colour the edge of each card by this field.
+        splitColumns:
+          type: array
+          description: States whose column is split into Doing and Done.
+          items:
+            type: string
+        definitionOfDone:
+          type: object
+          description: Per state, what has to be true before an item leaves the column (up to 500 characters).
+          additionalProperties:
+            type: string
+        cardFields:
+          type: array
+          description: >
+            What cards show: any of assignees, manDays, points, due, tags,
+            priority, parent, remaining, or custom:<field key>. Missing =
+            the defaults (assignees, manDays, points, due, tags, priority, parent).
+          items:
+            type: string
+        tagColors:
+          type: object
+          description: Colour per tag on this board.
+          additionalProperties:
+            $ref: "#/components/schemas/WorkItemTypeColor"
+        cardRules:
+          type: array
+          description: First matching rule tints the card.
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/CardRule"
 
     WorkItemRules:
       type: object
@@ -3401,7 +3443,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, rank, number, type, state, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, customValues, createdAt, updatedAt]
+      required: [id, projectId, rank, number, type, state, boardDone, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, customValues, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -3461,6 +3503,9 @@ components:
             - $ref: "#/components/schemas/WorkItemTypeColor"
           nullable: true
           readOnly: true
+        boardDone:
+          type: boolean
+          description: In the Done half of a split board column (cleared when the state changes).
         title:
           type: string
         description:
@@ -3705,6 +3750,8 @@ components:
           type: string
           nullable: true
           description: One of the project's own types (sets type to its base); null clears it.
+        boardDone:
+          type: boolean
         title:
           type: string
         description:

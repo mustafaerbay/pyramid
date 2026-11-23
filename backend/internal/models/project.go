@@ -230,10 +230,12 @@ func (p Project) Board() api.BoardSettings {
 }
 
 // ValidateBoard checks limits (1–999, known statuses) and the options.
-func ValidateBoard(b api.BoardSettings, states []api.WorkflowState) error {
+func ValidateBoard(b api.BoardSettings, states []api.WorkflowState, fields []api.CustomField) error {
 	known := map[string]bool{}
+	category := map[string]api.TaskStatus{}
 	for _, s := range states {
 		known[s.Key] = true
+		category[s.Key] = s.Category
 	}
 	for state, n := range b.WipLimits {
 		if !known[state] {
@@ -249,8 +251,67 @@ func ValidateBoard(b api.BoardSettings, states []api.WorkflowState) error {
 	if !b.CardColor.Valid() {
 		return errors.New("unknown cardColor option")
 	}
+	if b.SplitColumns != nil {
+		for _, st := range *b.SplitColumns {
+			if !known[st] {
+				return fmt.Errorf("this project has no state %q to split", st)
+			}
+			if c := category[st]; c == api.TaskStatusDone || c == api.TaskStatusCancelled {
+				return errors.New("done and cancelled columns can't be split")
+			}
+		}
+	}
+	if b.DefinitionOfDone != nil {
+		for st, text := range *b.DefinitionOfDone {
+			if !known[st] {
+				return fmt.Errorf("this project has no state %q for a definition of done", st)
+			}
+			if len([]rune(text)) > 500 {
+				return errors.New("a definition of done can be up to 500 characters")
+			}
+		}
+	}
+	if b.CardFields != nil {
+		fieldKeys := map[string]bool{}
+		for _, f := range fields {
+			fieldKeys[f.Key] = true
+		}
+		for _, f := range *b.CardFields {
+			if strings.HasPrefix(f, "custom:") {
+				if !fieldKeys[strings.TrimPrefix(f, "custom:")] {
+					return fmt.Errorf("this project has no custom field %q", strings.TrimPrefix(f, "custom:"))
+				}
+				continue
+			}
+			if !cardFields[f] {
+				return fmt.Errorf("cards can't show %q", f)
+			}
+		}
+	}
+	if b.TagColors != nil {
+		for tag, c := range *b.TagColors {
+			if !c.Valid() {
+				return fmt.Errorf("unknown colour for tag %q", tag)
+			}
+		}
+	}
+	if b.CardRules != nil {
+		if len(*b.CardRules) > 20 {
+			return errors.New("up to 20 card rules")
+		}
+		for _, r := range *b.CardRules {
+			if !r.Field.Valid() {
+				return errors.New("unknown card rule field")
+			}
+			if !r.Color.Valid() {
+				return errors.New("unknown card rule colour")
+			}
+		}
+	}
 	return nil
 }
+
+var cardFields = map[string]bool{"assignees": true, "manDays": true, "points": true, "due": true, "tags": true, "priority": true, "parent": true, "remaining": true}
 
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {

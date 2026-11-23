@@ -20,7 +20,7 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Sprint taskboard and sprint capacity** — stories as rows, their tasks
       across the states; per-sprint capacity overrides (days off, hours per day,
       activity) per person
-- [ ] **Board fine settings** — split columns (Doing / Done), definition of done
+- [x] **Board fine settings** — split columns (Doing / Done), definition of done
       per column, which fields cards show, tag colours, card styling rules
 - [ ] **Query language** — AND/OR groups, custom-field conditions, tree queries
       (items with their children)

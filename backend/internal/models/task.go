@@ -34,6 +34,8 @@ type Task struct {
 	TypeColor *api.WorkItemTypeColor `gorm:"-"`
 	// State is the item's state in its project's workflow (Status is its category).
 	State string `gorm:"type:text"`
+	// BoardDone puts the item in the Done half of a split board column.
+	BoardDone bool `gorm:"not null;default:false"`
 	// CustomValues is JSON: the project custom field values, by key.
 	CustomValues *string `gorm:"type:jsonb"`
 	// AreaID is the area path the item belongs to.
@@ -170,6 +172,7 @@ func (t Task) ToAPI() api.Task {
 	out.DuplicateOfId = t.DuplicateOfID
 	out.SprintId = t.SprintID
 	out.State = t.State
+	out.BoardDone = t.BoardDone
 	out.CustomType = t.CustomType
 	out.CustomTypeLabel = t.TypeLabel
 	out.CustomTypeColor = t.TypeColor

@@ -1246,6 +1246,15 @@ export interface components {
         ProjectPriority: "low" | "medium" | "high" | "critical";
         /** @enum {string} */
         ProjectHealth: "on_track" | "at_risk" | "off_track";
+        CardRule: {
+            /**
+             * @description overdue and blocked match on value "true".
+             * @enum {string}
+             */
+            field: "priority" | "type" | "tag" | "overdue" | "blocked" | "assignee";
+            value: string;
+            color: components["schemas"]["WorkItemTypeColor"];
+        };
         BoardSettings: {
             /** @description Most items allowed in a board column at once (1–999), by workflow state key. Missing = no limit. */
             wipLimits: {
@@ -1261,6 +1270,20 @@ export interface components {
              * @enum {string}
              */
             cardColor: "none" | "type" | "priority";
+            /** @description States whose column is split into Doing and Done. */
+            splitColumns?: string[];
+            /** @description Per state, what has to be true before an item leaves the column (up to 500 characters). */
+            definitionOfDone?: {
+                [key: string]: string;
+            };
+            /** @description What cards show: any of assignees, manDays, points, due, tags, priority, parent, remaining, or custom:<field key>. Missing = the defaults (assignees, manDays, points, due, tags, priority, parent). */
+            cardFields?: string[];
+            /** @description Colour per tag on this board. */
+            tagColors?: {
+                [key: string]: components["schemas"]["WorkItemTypeColor"];
+            };
+            /** @description First matching rule tints the card. */
+            cardRules?: components["schemas"]["CardRule"][];
         };
         /** @description Field names are custom field keys or the built-ins assignees, dueDate, startDate, storyPoints, manDays, description, area, sprint, tags. */
         WorkItemRules: {
@@ -1727,6 +1750,8 @@ export interface components {
             customType?: string | null;
             readonly customTypeLabel?: string | null;
             readonly customTypeColor?: components["schemas"]["WorkItemTypeColor"] | null;
+            /** @description In the Done half of a split board column (cleared when the state changes). */
+            boardDone: boolean;
             title: string;
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -1866,6 +1891,7 @@ export interface components {
             state?: string;
             /** @description One of the project's own types (sets type to its base); null clears it. */
             customType?: string | null;
+            boardDone?: boolean;
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];

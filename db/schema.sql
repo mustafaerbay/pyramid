@@ -400,6 +400,7 @@ CREATE TABLE tasks (
     status        task_status   NOT NULL DEFAULT 'backlog',
     state         TEXT,                                    -- state in the project's workflow; status is its category
     custom_type   TEXT,                                    -- one of the project's own types (type is its base)
+    board_done    BOOLEAN NOT NULL DEFAULT false,          -- in the Done half of a split board column
     priority      task_priority NOT NULL DEFAULT 'medium',
     reporter_id   UUID REFERENCES people(id) ON DELETE SET NULL,
     story_points  NUMERIC(5,2),
