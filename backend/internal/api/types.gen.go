@@ -9,6 +9,54 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for BoardSettingsCardColor.
+const (
+	BoardSettingsCardColorNone     BoardSettingsCardColor = "none"
+	BoardSettingsCardColorPriority BoardSettingsCardColor = "priority"
+	BoardSettingsCardColorType     BoardSettingsCardColor = "type"
+)
+
+// Valid indicates whether the value is a known member of the BoardSettingsCardColor enum.
+func (e BoardSettingsCardColor) Valid() bool {
+	switch e {
+	case BoardSettingsCardColorNone:
+		return true
+	case BoardSettingsCardColorPriority:
+		return true
+	case BoardSettingsCardColorType:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BoardSettingsSwimlanes.
+const (
+	BoardSettingsSwimlanesAssignee BoardSettingsSwimlanes = "assignee"
+	BoardSettingsSwimlanesNone     BoardSettingsSwimlanes = "none"
+	BoardSettingsSwimlanesParent   BoardSettingsSwimlanes = "parent"
+	BoardSettingsSwimlanesPriority BoardSettingsSwimlanes = "priority"
+	BoardSettingsSwimlanesType     BoardSettingsSwimlanes = "type"
+)
+
+// Valid indicates whether the value is a known member of the BoardSettingsSwimlanes enum.
+func (e BoardSettingsSwimlanes) Valid() bool {
+	switch e {
+	case BoardSettingsSwimlanesAssignee:
+		return true
+	case BoardSettingsSwimlanesNone:
+		return true
+	case BoardSettingsSwimlanesParent:
+		return true
+	case BoardSettingsSwimlanesPriority:
+		return true
+	case BoardSettingsSwimlanesType:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ContributionType.
 const (
 	ContributionTypeCodeReview    ContributionType = "code_review"
@@ -573,6 +621,24 @@ type AuthMe struct {
 	User   User   `json:"user"`
 }
 
+// BoardSettings defines model for BoardSettings.
+type BoardSettings struct {
+	// CardColor Colour the edge of each card by this field.
+	CardColor BoardSettingsCardColor `json:"cardColor"`
+
+	// Swimlanes Split the board into rows by this field.
+	Swimlanes BoardSettingsSwimlanes `json:"swimlanes"`
+
+	// WipLimits Most items allowed in a status column at once (1–999), by status. Missing = no limit.
+	WipLimits map[string]int `json:"wipLimits"`
+}
+
+// BoardSettingsCardColor Colour the edge of each card by this field.
+type BoardSettingsCardColor string
+
+// BoardSettingsSwimlanes Split the board into rows by this field.
+type BoardSettingsSwimlanes string
+
 // CapacityReport defines model for CapacityReport.
 type CapacityReport struct {
 	// CapacityManDays Sum of the people's capacity for this month (active and on-leave people), after taking out their approved leave days.
@@ -989,6 +1055,7 @@ type PersonWorkloadTask struct {
 // Project defines model for Project.
 type Project struct {
 	AccountName      *string             `json:"accountName"`
+	BoardSettings    BoardSettings       `json:"boardSettings"`
 	ChineseInterface *string             `json:"chineseInterface"`
 	CreatedAt        time.Time           `json:"createdAt"`
 	Description      *string             `json:"description"`
@@ -1157,6 +1224,7 @@ type ProjectStatus string
 // ProjectUpdate defines model for ProjectUpdate.
 type ProjectUpdate struct {
 	AccountName      *string             `json:"accountName"`
+	BoardSettings    *BoardSettings      `json:"boardSettings,omitempty"`
 	ChineseInterface *string             `json:"chineseInterface"`
 	Description      *string             `json:"description,omitempty"`
 	Health           *ProjectHealth      `json:"health,omitempty"`

@@ -1,6 +1,9 @@
 package models
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,6 +46,9 @@ type Project struct {
 	TeamSizeActual   *int    `gorm:"column:team_size_actual"`
 	TeamSizePlanned  *int    `gorm:"column:team_size_planned"`
 
+	// BoardSettings is JSON (api.BoardSettings); nil means the defaults.
+	BoardSettings *string `gorm:"type:jsonb"`
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -50,9 +56,47 @@ type Project struct {
 // TableName pins the model to the existing pluralized table.
 func (Project) TableName() string { return "projects" }
 
+// Board returns the project's board settings, with defaults filled in.
+func (p Project) Board() api.BoardSettings {
+	out := api.BoardSettings{WipLimits: map[string]int{}, Swimlanes: api.BoardSettingsSwimlanesNone, CardColor: api.BoardSettingsCardColorNone}
+	if p.BoardSettings != nil {
+		_ = json.Unmarshal([]byte(*p.BoardSettings), &out)
+	}
+	if out.WipLimits == nil {
+		out.WipLimits = map[string]int{}
+	}
+	if out.Swimlanes == "" {
+		out.Swimlanes = api.BoardSettingsSwimlanesNone
+	}
+	if out.CardColor == "" {
+		out.CardColor = api.BoardSettingsCardColorNone
+	}
+	return out
+}
+
+// ValidateBoard checks limits (1–999, known statuses) and the options.
+func ValidateBoard(b api.BoardSettings) error {
+	for status, n := range b.WipLimits {
+		if !api.TaskStatus(status).Valid() {
+			return fmt.Errorf("unknown status %q in wipLimits", status)
+		}
+		if n < 1 || n > 999 {
+			return errors.New("WIP limits must be between 1 and 999")
+		}
+	}
+	if !b.Swimlanes.Valid() {
+		return errors.New("unknown swimlanes option")
+	}
+	if !b.CardColor.Valid() {
+		return errors.New("unknown cardColor option")
+	}
+	return nil
+}
+
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {
 	out := api.Project{
+		BoardSettings:    p.Board(),
 		Id:               p.ID,
 		Key:              p.Key,
 		Name:             p.Name,
@@ -115,6 +159,12 @@ func NewProjectFromCreate(in api.ProjectCreate) Project {
 
 // ApplyUpdate mutates the model in place with the non-nil fields of a patch.
 func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
+	if in.BoardSettings != nil {
+		if b, err := json.Marshal(in.BoardSettings); err == nil {
+			v := string(b)
+			p.BoardSettings = &v
+		}
+	}
 	if in.Key != nil {
 		p.Key = *in.Key
 	}

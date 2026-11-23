@@ -50,3 +50,39 @@ describe('afterIdToPlaceBefore', () => {
 		expect(afterIdToPlaceBefore(order, 'a', 'b')).toBeNull();
 	});
 });
+
+import { boardLanes, wipState } from './board';
+
+describe('wipState', () => {
+	it('says when a column is at or over its limit', () => {
+		expect(wipState(2, undefined)).toBe('none');
+		expect(wipState(2, 3)).toBe('ok');
+		expect(wipState(3, 3)).toBe('full');
+		expect(wipState(4, 3)).toBe('over');
+	});
+});
+
+describe('boardLanes', () => {
+	type L = { id: string; assigneeIds: string[]; priority: string; type: string; parentId?: string | null };
+	const items: L[] = [
+		{ id: '1', assigneeIds: ['b'], priority: 'low', type: 'bug' },
+		{ id: '2', assigneeIds: [], priority: 'urgent', type: 'task', parentId: 'p' },
+		{ id: '3', assigneeIds: ['a', 'b'], priority: 'low', type: 'task' }
+	];
+	const names = { person: (id: string) => ({ a: 'Ada', b: 'Bo' })[id] ?? '?', task: () => 'Parent P' };
+	it('is one lane when off', () => {
+		expect(boardLanes(items, 'none', names).map((l) => l.tasks.length)).toEqual([3]);
+	});
+	it('groups by first assignee by name, unassigned last', () => {
+		expect(boardLanes(items, 'assignee', names).map((l) => [l.label, l.tasks.map((t) => t.id)])).toEqual([
+			['Ada', ['3']],
+			['Bo', ['1']],
+			['Unassigned', ['2']]
+		]);
+	});
+	it('orders priority and type lanes from the top', () => {
+		expect(boardLanes(items, 'priority', names).map((l) => l.label)).toEqual(['Urgent', 'Low']);
+		expect(boardLanes(items, 'type', names).map((l) => l.label)).toEqual(['Bug', 'Task']);
+		expect(boardLanes(items, 'parent', names).map((l) => l.label)).toEqual(['Parent P', 'No parent']);
+	});
+});

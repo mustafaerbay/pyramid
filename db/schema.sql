@@ -233,6 +233,7 @@ CREATE TABLE projects (
     project_code       TEXT,
     team_size_actual   INTEGER,
     team_size_planned  INTEGER,
+    board_settings JSONB,                                  -- board WIP limits, swimlanes, card colours
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -152,6 +152,7 @@ CREATE TABLE projects (
 	project_code TEXT,
 	team_size_actual INTEGER,
 	team_size_planned INTEGER,
+	board_settings TEXT,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

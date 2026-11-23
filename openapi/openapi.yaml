@@ -1869,15 +1869,37 @@ components:
       type: string
       enum: [on_track, at_risk, off_track]
 
+    BoardSettings:
+      type: object
+      required: [wipLimits, swimlanes, cardColor]
+      properties:
+        wipLimits:
+          type: object
+          description: Most items allowed in a status column at once (1–999), by status. Missing = no limit.
+          additionalProperties:
+            type: integer
+            minimum: 1
+            maximum: 999
+        swimlanes:
+          type: string
+          enum: [none, assignee, priority, type, parent]
+          description: Split the board into rows by this field.
+        cardColor:
+          type: string
+          enum: [none, type, priority]
+          description: Colour the edge of each card by this field.
+
     Project:
       type: object
-      required: [id, key, name, status, priority, health, createdAt, updatedAt]
+      required: [boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
       properties:
         id:
           type: string
           format: uuid
         key:
           type: string
+        boardSettings:
+          $ref: "#/components/schemas/BoardSettings"
         name:
           type: string
         description:
@@ -1983,6 +2005,8 @@ components:
       properties:
         key:
           type: string
+        boardSettings:
+          $ref: "#/components/schemas/BoardSettings"
         name:
           type: string
         description:

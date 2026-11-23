@@ -878,10 +878,27 @@ export interface components {
         ProjectPriority: "low" | "medium" | "high" | "critical";
         /** @enum {string} */
         ProjectHealth: "on_track" | "at_risk" | "off_track";
+        BoardSettings: {
+            /** @description Most items allowed in a status column at once (1–999), by status. Missing = no limit. */
+            wipLimits: {
+                [key: string]: number;
+            };
+            /**
+             * @description Split the board into rows by this field.
+             * @enum {string}
+             */
+            swimlanes: "none" | "assignee" | "priority" | "type" | "parent";
+            /**
+             * @description Colour the edge of each card by this field.
+             * @enum {string}
+             */
+            cardColor: "none" | "type" | "priority";
+        };
         Project: {
             /** Format: uuid */
             id: string;
             key: string;
+            boardSettings: components["schemas"]["BoardSettings"];
             name: string;
             description?: string | null;
             status: components["schemas"]["ProjectStatus"];
@@ -926,6 +943,7 @@ export interface components {
         };
         ProjectUpdate: {
             key?: string;
+            boardSettings?: components["schemas"]["BoardSettings"];
             name?: string;
             description?: string;
             status?: components["schemas"]["ProjectStatus"];

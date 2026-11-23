@@ -20,6 +20,7 @@
 	import MetricCard from '$lib/components/MetricCard.svelte';
 	import TagChips from '$lib/components/TagChips.svelte';
 	import TaskBoard from '$lib/components/TaskBoard.svelte';
+	import { can } from '$lib/auth.svelte';
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import { TYPE_OPTIONS, childType, type WorkItemType } from '$lib/workItems';
@@ -547,6 +548,21 @@
 		else placeTask(task, siblings[j].id);
 	}
 	let draggingRow = $state<string | null>(null);
+
+	async function saveBoardSettings(settings: components['schemas']['BoardSettings']): Promise<boolean> {
+		if (!project) return false;
+		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', {
+			params: { path: { id: project.id } },
+			body: { boardSettings: settings }
+		});
+		if (err || !data) {
+			flash('error', err?.message ?? 'Failed to save board settings.');
+			return false;
+		}
+		project = data;
+		flash('success', 'Board settings saved.');
+		return true;
+	}
 
 	// Board moves update the card at once and put it back if saving fails.
 	async function moveTask(task: Task, status: TaskStatus) {
@@ -1561,6 +1577,10 @@
 						onOpen={openEditTask}
 						onMove={moveTask}
 						onPlaceBefore={placeBefore}
+						personName={personLabel}
+						settings={project.boardSettings}
+						canEditSettings={can('member')}
+						onSaveSettings={saveBoardSettings}
 						onTagSelect={addTagFilter}
 					/>
 				{:else}

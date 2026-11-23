@@ -101,6 +101,12 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 		return
 	}
 
+	if in.BoardSettings != nil {
+		if err := models.ValidateBoard(*in.BoardSettings); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 	p.ApplyUpdate(in)
 	if err := h.db.Save(&p).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update project", Details: strptr(err.Error())})
