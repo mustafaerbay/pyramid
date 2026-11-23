@@ -154,7 +154,7 @@
 		<a href="/projects/{projectId}" class="text-sm text-slate-500 hover:text-slate-700">← {projectName || 'Project'}</a>
 		<div class="mt-1 flex flex-wrap items-center justify-between gap-2">
 			<h1 class="text-2xl font-semibold tracking-tight">Sprints</h1>
-			{#if can('member')}<button type="button" class="btn-primary" onclick={openNew}>+ New sprint</button>{/if}
+			{#if can('member')}<button data-write type="button" class="btn-primary" onclick={openNew}>+ New sprint</button>{/if}
 		</div>
 	</div>
 
@@ -214,14 +214,14 @@
 				</div>
 				{#if can('member')}
 					<div class="flex flex-wrap gap-2">
-						<select class="input w-auto" aria-label="Sprint status" value={selected.status} onchange={(e) => setStatus(e.currentTarget.value as SprintStatus)}>
+						<select data-write-lock tabindex={can('member') ? 0 : -1} class="input w-auto" aria-label="Sprint status" value={selected.status} onchange={(e) => setStatus(e.currentTarget.value as SprintStatus)}>
 							<option value="planned">Planned</option>
 							<option value="active">Active</option>
 							<option value="completed">Completed</option>
 							<option value="cancelled">Cancelled</option>
 						</select>
-						<button type="button" class="btn-secondary" onclick={openEdit}>Edit</button>
-						<button type="button" class="btn-secondary text-red-600 hover:bg-red-50" onclick={removeSprint}>Delete</button>
+						<button data-write type="button" class="btn-secondary" onclick={openEdit}>Edit</button>
+						<button data-write type="button" class="btn-secondary text-red-600 hover:bg-red-50" onclick={removeSprint}>Delete</button>
 					</div>
 				{/if}
 			</div>

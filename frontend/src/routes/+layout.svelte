@@ -33,6 +33,11 @@
 		if (!onLogin && session.checked && !session.me) goto('/login', { replaceState: true });
 	});
 
+	// Read-only accounts: CSS hides write controls (see app.css).
+	$effect(() => {
+		document.documentElement.toggleAttribute('data-viewer', !!session.me && !can('member'));
+	});
+
 	async function doSignOut() {
 		await signOut();
 		goto('/login', { replaceState: true });

@@ -1120,13 +1120,13 @@
 					</dl>
 				</div>
 				<div class="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
-					<button type="button" class="btn-secondary" onclick={() => (showLogContribution = true)}>
+					<button data-write type="button" class="btn-secondary" onclick={() => (showLogContribution = true)}>
 						Log contribution
 					</button>
-					<button type="button" class="btn-secondary" onclick={() => (editingProject = true)}>
+					<button data-write type="button" class="btn-secondary" onclick={() => (editingProject = true)}>
 						Edit project
 					</button>
-					<button
+					<button data-write
 						type="button"
 						class="btn-secondary"
 						onclick={() => (editingProjectInfo = true)}
@@ -1173,7 +1173,7 @@
 						{existingPersonIds.length === 1 ? 'active member' : 'active members'}
 					</p>
 				</div>
-				<button type="button" class="btn-primary" onclick={openAddMembers}>+ Add person</button>
+				<button data-write type="button" class="btn-primary" onclick={openAddMembers}>+ Add person</button>
 			</div>
 
 			{#if loadingMembers}
@@ -1200,8 +1200,8 @@
 								{#if member.leftAt}<span>Left {member.leftAt}</span>{/if}
 							</div>
 							<div class="m-actions">
-								<button type="button" class="btn-secondary" onclick={() => openEditMember(member)}>Edit</button>
-								<button
+								<button data-write type="button" class="btn-secondary" onclick={() => openEditMember(member)}>Edit</button>
+								<button data-write
 									type="button"
 									class="btn-secondary text-red-600 hover:bg-red-50"
 									onclick={() => askRemove(member)}
@@ -1249,14 +1249,14 @@
 										class="px-4 py-3 text-right whitespace-nowrap"
 										onclick={(e) => e.stopPropagation()}
 									>
-										<button
+										<button data-write
 											type="button"
 											class="btn-ghost px-2 py-1"
 											onclick={() => openEditMember(member)}
 										>
 											Edit
 										</button>
-										<button
+										<button data-write
 											type="button"
 											class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 											onclick={() => askRemove(member)}
@@ -1280,7 +1280,7 @@
 						{kickoff ? 'The kickoff meeting record for this project.' : 'No kickoff recorded yet.'}
 					</p>
 				</div>
-				<button type="button" class="btn-primary" onclick={openKickoff}>
+				<button data-write type="button" class="btn-primary" onclick={openKickoff}>
 					{kickoff ? 'Edit kickoff' : 'Run kickoff'}
 				</button>
 			</div>
@@ -1414,7 +1414,7 @@
 										{#if item.taskId}
 											<Badge tone="success">Task created</Badge>
 										{:else}
-											<button
+											<button data-write
 												type="button"
 												class="btn-ghost shrink-0 px-2 py-1 text-xs"
 												disabled={convertingActionItemIndex === i}
@@ -1441,7 +1441,7 @@
 						{versions.length === 1 ? 'version' : 'versions'}
 					</p>
 				</div>
-				<button type="button" class="btn-primary" onclick={openAddVersion}>+ Add version</button>
+				<button data-write type="button" class="btn-primary" onclick={openAddVersion}>+ Add version</button>
 			</div>
 
 			{#if loadingVersions || loadingMilestones}
@@ -1470,7 +1470,7 @@
 						{milestones.length === 1 ? 'milestone' : 'milestones'}
 					</p>
 				</div>
-				<button type="button" class="btn-primary" onclick={openAddMilestone}>+ Add milestone</button>
+				<button data-write type="button" class="btn-primary" onclick={openAddMilestone}>+ Add milestone</button>
 			</div>
 
 			{#if loadingMilestones}
@@ -1524,7 +1524,7 @@
 							>
 						{/each}
 					</div>
-					<button type="button" class="btn-primary" onclick={() => openAddTask(null)}>+ Add task</button>
+					<button data-write type="button" class="btn-primary" onclick={() => openAddTask(null)}>+ Add task</button>
 				</div>
 			</div>
 
@@ -1672,7 +1672,7 @@
 										{/if}
 									</span>
 								</div>
-								<button
+								<button data-write
 									type="button"
 									class="btn-ghost px-2 py-1 text-xs"
 									onclick={() => openAddTask(group.milestoneId)}
@@ -1715,7 +1715,7 @@
 											</button>
 											<div class="flex items-center gap-2">
 												<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
-												<select
+												<select data-write-lock tabindex={can('member') ? 0 : -1}
 													class="ml-auto min-h-10 rounded-md border-0 px-3 text-sm font-medium {badgeToneClass[
 														taskStatusTone(task.status)
 													]}"
@@ -1733,22 +1733,22 @@
 												</select>
 											</div>
 											<div class="flex gap-2">
-												<button
+												<button data-write
 													type="button"
 													class="btn-secondary px-3"
 													aria-label="Move {task.title} up"
 													disabled={i === 0}
 													onclick={() => shift(task, siblings, -1)}>↑</button
 												>
-												<button
+												<button data-write
 													type="button"
 													class="btn-secondary px-3"
 													aria-label="Move {task.title} down"
 													disabled={i === siblings.length - 1}
 													onclick={() => shift(task, siblings, 1)}>↓</button
 												>
-												<button type="button" class="btn-secondary flex-1" onclick={() => openEditTask(task)}>Edit</button>
-												<button
+												<button data-write type="button" class="btn-secondary flex-1" onclick={() => openEditTask(task)}>Edit</button>
+												<button data-write
 													type="button"
 													class="btn-secondary flex-1 text-red-600 hover:bg-red-50"
 													onclick={() => askRemoveTask(task)}
@@ -1777,7 +1777,7 @@
 											{@const warnings = fitWarnings(task)}
 											<tr
 												class="hover:bg-slate-50 {draggingRow === task.id ? 'opacity-50' : ''}"
-												draggable="true"
+												draggable={can('member')}
 												title="Drag to reorder"
 												ondragstart={(e) => {
 													draggingRow = task.id;
@@ -1837,7 +1837,7 @@
 													<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
 												</td>
 												<td class="px-4 py-2.5">
-													<select
+													<select data-write-lock tabindex={can('member') ? 0 : -1}
 														class="rounded-full border-0 px-2 py-0.5 text-xs font-medium {badgeToneClass[
 															taskStatusTone(task.status)
 														]}"
@@ -1858,14 +1858,14 @@
 													{task.dueDate ?? ''}
 												</td>
 												<td class="px-4 py-2.5 text-right whitespace-nowrap">
-													<button
+													<button data-write
 														type="button"
 														class="btn-ghost px-2 py-1"
 														onclick={() => openEditTask(task)}
 													>
 														Edit
 													</button>
-													<button
+													<button data-write
 														type="button"
 														class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 														onclick={() => askRemoveTask(task)}
@@ -1894,7 +1894,7 @@
 						{weeklySummaries.length === 1 ? 'entry' : 'entries'}
 					</p>
 				</div>
-				<button type="button" class="btn-primary" onclick={openAddWeeklySummary}>
+				<button data-write type="button" class="btn-primary" onclick={openAddWeeklySummary}>
 					+ Add weekly summary
 				</button>
 			</div>

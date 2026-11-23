@@ -207,7 +207,7 @@
 				{total === 1 ? 'person' : 'people'} in the department
 			</p>
 		</div>
-		<button type="button" class="btn-primary" onclick={openCreate}>+ Add person</button>
+		<button data-write type="button" class="btn-primary" onclick={openCreate}>+ Add person</button>
 	</div>
 
 	{#if banner}
@@ -313,8 +313,8 @@
 						</div>
 					</a>
 					<div class="m-actions">
-						<button type="button" class="btn-secondary" onclick={() => openEdit(person)}>Edit</button>
-						<button
+						<button data-write type="button" class="btn-secondary" onclick={() => openEdit(person)}>Edit</button>
+						<button data-write
 							type="button"
 							class="btn-secondary text-red-600 hover:bg-red-50"
 							onclick={() => askDelete(person)}
@@ -387,10 +387,10 @@
 								class="px-4 py-3 text-right whitespace-nowrap"
 								onclick={(e) => e.stopPropagation()}
 							>
-								<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(person)}>
+								<button data-write type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(person)}>
 									Edit
 								</button>
-								<button
+								<button data-write
 									type="button"
 									class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 									onclick={() => askDelete(person)}

@@ -206,7 +206,7 @@
 				{total === 1 ? 'request' : 'requests'}
 			</p>
 		</div>
-		<button type="button" class="btn-primary" onclick={openCreate}>+ New request</button>
+		<button data-write type="button" class="btn-primary" onclick={openCreate}>+ New request</button>
 	</div>
 
 	{#if banner}
@@ -272,14 +272,14 @@
 					</div>
 					{#if request.status === 'pending'}
 						<div class="m-actions">
-							<button
+							<button data-write
 								type="button"
 								class="btn-secondary text-emerald-700 hover:bg-emerald-50"
 								onclick={() => setStatus(request, 'approved')}
 							>
 								Approve
 							</button>
-							<button
+							<button data-write
 								type="button"
 								class="btn-secondary text-red-600 hover:bg-red-50"
 								onclick={() => setStatus(request, 'rejected')}
@@ -289,8 +289,8 @@
 						</div>
 					{/if}
 					<div class="m-actions {request.status === 'pending' ? 'mt-2 border-t-0 pt-0' : ''}">
-						<button type="button" class="btn-secondary" onclick={() => openEdit(request)}>Edit</button>
-						<button
+						<button data-write type="button" class="btn-secondary" onclick={() => openEdit(request)}>Edit</button>
+						<button data-write
 							type="button"
 							class="btn-secondary text-red-600 hover:bg-red-50"
 							onclick={() => askDelete(request)}
@@ -326,14 +326,14 @@
 							</td>
 							<td class="px-4 py-3 text-right whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
 								{#if request.status === 'pending'}
-									<button
+									<button data-write
 										type="button"
 										class="btn-ghost px-2 py-1 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
 										onclick={() => setStatus(request, 'approved')}
 									>
 										Approve
 									</button>
-									<button
+									<button data-write
 										type="button"
 										class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 										onclick={() => setStatus(request, 'rejected')}
@@ -341,10 +341,10 @@
 										Reject
 									</button>
 								{/if}
-								<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(request)}>
+								<button data-write type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(request)}>
 									Edit
 								</button>
-								<button
+								<button data-write
 									type="button"
 									class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 									onclick={() => askDelete(request)}

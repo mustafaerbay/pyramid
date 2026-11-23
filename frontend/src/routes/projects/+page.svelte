@@ -199,7 +199,7 @@
 				{total === 1 ? 'project' : 'projects'}
 			</p>
 		</div>
-		<button type="button" class="btn-primary" onclick={openCreate}>+ Add project</button>
+		<button data-write type="button" class="btn-primary" onclick={openCreate}>+ Add project</button>
 	</div>
 
 	{#if banner}
@@ -273,8 +273,8 @@
 						</div>
 					</a>
 					<div class="m-actions">
-						<button type="button" class="btn-secondary" onclick={() => openEdit(project)}>Edit</button>
-						<button
+						<button data-write type="button" class="btn-secondary" onclick={() => openEdit(project)}>Edit</button>
+						<button data-write
 							type="button"
 							class="btn-secondary text-red-600 hover:bg-red-50"
 							onclick={() => askDelete(project)}
@@ -327,10 +327,10 @@
 								<Badge tone={statusTone(project.status)}>{project.status.replace('_', ' ')}</Badge>
 							</td>
 							<td class="px-4 py-3 text-right whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
-								<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(project)}>
+								<button data-write type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(project)}>
 									Edit
 								</button>
-								<button
+								<button data-write
 									type="button"
 									class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 									onclick={() => askDelete(project)}

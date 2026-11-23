@@ -179,7 +179,7 @@
 				{total === 1 ? 'goal' : 'goals'}
 			</p>
 		</div>
-		<button type="button" class="btn-primary" onclick={openCreate}>+ Add goal</button>
+		<button data-write type="button" class="btn-primary" onclick={openCreate}>+ Add goal</button>
 	</div>
 
 	{#if banner}
@@ -249,10 +249,10 @@
 							</p>
 						</div>
 						<div class="flex shrink-0 gap-1 max-sm:order-last max-sm:gap-2 max-sm:border-t max-sm:border-slate-100 max-sm:pt-3 max-sm:[&>*]:flex-1">
-							<button type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(goal)}>
+							<button data-write type="button" class="btn-ghost px-2 py-1" onclick={() => openEdit(goal)}>
 								Edit
 							</button>
-							<button
+							<button data-write
 								type="button"
 								class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 								onclick={() => askDelete(goal)}

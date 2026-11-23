@@ -55,3 +55,16 @@
 		font-size: 1rem;
 	}
 }
+
+/* Viewers can only read: hide create/save buttons and anything marked as a
+   write action; status pickers become plain labels. The API refuses writes
+   anyway; this keeps viewers from hitting buttons that can only fail. */
+:root[data-viewer] .btn-primary,
+:root[data-viewer] [data-write] {
+	display: none !important;
+}
+:root[data-viewer] [data-write-lock] {
+	pointer-events: none;
+	appearance: none;
+	background-image: none;
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { can } from '$lib/auth.svelte';
 	import type { components } from '$lib/api/schema';
 	import Badge from '$lib/components/Badge.svelte';
 	import TagChips from '$lib/components/TagChips.svelte';
@@ -226,7 +227,7 @@
 									task.id
 										? 'opacity-50'
 										: ''}"
-									draggable="true"
+									draggable={can('member')}
 									ondragstart={(e) => {
 										draggingId = task.id;
 										e.dataTransfer?.setData('text/plain', task.id);
@@ -279,7 +280,7 @@
 													title="Story points">{formatManDays(task.storyPoints)}</span
 												>{/if}
 										</span>
-										<select
+										<select data-write-lock tabindex={can('member') ? 0 : -1}
 											class="min-h-8 min-w-0 max-w-full rounded-md border-0 bg-slate-100 py-0 pl-2 pr-6 text-xs text-slate-600"
 											aria-label="Move {task.title} to"
 											value={task.status}

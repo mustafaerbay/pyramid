@@ -169,7 +169,7 @@
 					Capacity <span class="font-medium text-slate-900">{formatManDays(capacity)} man-days</span> a month
 				</p>
 			</div>
-			<button type="button" class="btn-secondary w-full sm:w-auto" onclick={() => (editing = true)}>Edit</button>
+			<button data-write type="button" class="btn-secondary w-full sm:w-auto" onclick={() => (editing = true)}>Edit</button>
 		</div>
 
 		<div class="rounded-lg border border-slate-200 bg-white p-4 sm:p-6">

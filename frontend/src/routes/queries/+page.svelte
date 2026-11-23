@@ -262,7 +262,7 @@
 			<button type="submit" class="btn-primary">{current?.mine ? 'Save' : 'Save query'}</button>
 			{#if current?.mine}
 				<button type="button" class="btn-secondary" onclick={() => save(true)}>Save as new</button>
-				<button type="button" class="btn-ghost text-red-600" onclick={remove}>Delete</button>
+				<button data-write type="button" class="btn-ghost text-red-600" onclick={remove}>Delete</button>
 			{/if}
 			{#if banner}<span class="text-slate-600" role="status">{banner}</span>{/if}
 		</form>

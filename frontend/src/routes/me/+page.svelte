@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
-	import { session } from '$lib/auth.svelte';
+	import { can, session } from '$lib/auth.svelte';
 	import type { components } from '$lib/api/schema';
 	import PersonSelect from '$lib/components/PersonSelect.svelte';
 	import Badge from '$lib/components/Badge.svelte';
@@ -245,7 +245,7 @@
 									<div class="flex items-center gap-2">
 										<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
 										{#if task.dueDate}<span class="text-xs text-slate-500">Due {task.dueDate}</span>{/if}
-										<select
+										<select data-write-lock tabindex={can('member') ? 0 : -1}
 											class="ml-auto min-h-10 rounded-md border-0 px-3 text-sm font-medium {badgeToneClass[
 												taskStatusTone(task.status)
 											]}"
@@ -294,7 +294,7 @@
 											<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
 										</td>
 										<td class="px-4 py-2.5">
-											<select
+											<select data-write-lock tabindex={can('member') ? 0 : -1}
 												class="rounded-full border-0 px-2 py-0.5 text-xs font-medium {badgeToneClass[
 													taskStatusTone(task.status)
 												]}"

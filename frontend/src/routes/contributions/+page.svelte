@@ -211,7 +211,7 @@
 				{total === 1 ? 'entry' : 'entries'} in the activity feed
 			</p>
 		</div>
-		<button type="button" class="btn-primary" onclick={openCreate}>+ Log contribution</button>
+		<button data-write type="button" class="btn-primary" onclick={openCreate}>+ Log contribution</button>
 	</div>
 
 	{#if banner}
@@ -292,8 +292,8 @@
 						<span>{contribution.occurredAt.slice(0, 10)}</span>
 					</div>
 					<div class="m-actions">
-						<button type="button" class="btn-secondary" onclick={() => openEdit(contribution)}>Edit</button>
-						<button
+						<button data-write type="button" class="btn-secondary" onclick={() => openEdit(contribution)}>Edit</button>
+						<button data-write
 							type="button"
 							class="btn-secondary text-red-600 hover:bg-red-50"
 							onclick={() => askDelete(contribution)}
@@ -346,14 +346,14 @@
 							</td>
 							<td class="px-4 py-3 text-slate-600">{contribution.occurredAt.slice(0, 10)}</td>
 							<td class="px-4 py-3 text-right whitespace-nowrap" onclick={(e) => e.stopPropagation()}>
-								<button
+								<button data-write
 									type="button"
 									class="btn-ghost px-2 py-1"
 									onclick={() => openEdit(contribution)}
 								>
 									Edit
 								</button>
-								<button
+								<button data-write
 									type="button"
 									class="btn-ghost px-2 py-1 text-red-600 hover:bg-red-50 hover:text-red-700"
 									onclick={() => askDelete(contribution)}
