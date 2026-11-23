@@ -74,6 +74,10 @@ func (h *Handler) ListTasks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load tags", Details: strptr(err.Error())})
 		return
 	}
+	if err := h.attachBlockers(ptrs...); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
+		return
+	}
 	if err := h.attachAvailability(ptrs...); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -217,6 +221,14 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
 	}
+	var blockers []uuid.UUID
+	if in.BlockedByIds != nil {
+		blockers = dedupeIDs(*in.BlockedByIds)
+		if err := h.validateBlockers(&t, blockers); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 
 	// Per-project sequential number (PYR-42 style), assigned here since it
 	// needs a DB read the model constructor shouldn't own.
@@ -251,6 +263,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to tag task", Details: strptr(err.Error())})
 		return
 	}
+	if err := h.replaceBlockers(&t, blockers); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save dependencies", Details: strptr(err.Error())})
+		return
+	}
 
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
@@ -276,6 +292,10 @@ func (h *Handler) GetTask(c *gin.Context) {
 	}
 	if err := h.attachTags(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load tags", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.attachBlockers(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
 		return
 	}
 	if err := h.attachAvailability(&t); err != nil {
@@ -347,6 +367,14 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 			return
 		}
 	}
+	var blockers []uuid.UUID
+	if in.BlockedByIds != nil {
+		blockers = dedupeIDs(*in.BlockedByIds)
+		if err := h.validateBlockers(&t, blockers); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 	if err := h.db.Save(&t).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task", Details: strptr(err.Error())})
 		return
@@ -381,6 +409,15 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load tags", Details: strptr(err.Error())})
 		return
 	}
+	if in.BlockedByIds != nil {
+		if err := h.replaceBlockers(&t, blockers); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save dependencies", Details: strptr(err.Error())})
+			return
+		}
+	} else if err := h.attachBlockers(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
+		return
+	}
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -400,6 +437,12 @@ func isExplicitNull(raw map[string]json.RawMessage, key string) bool {
 // DeleteTask implements DELETE /api/v1/tasks/{id}. task_assignees rows are
 // cleaned up by the DB via ON DELETE CASCADE — nothing to do here.
 func (h *Handler) DeleteTask(c *gin.Context) {
+	// Postgres cascades these; deleting explicitly keeps other databases
+	// (the SQLite tests) from leaving links to a task that's gone.
+	if err := h.db.Where("task_id = ? OR depends_on_id = ?", c.Param("id"), c.Param("id")).Delete(&models.TaskDependency{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to delete task", Details: strptr(err.Error())})
+		return
+	}
 	res := h.db.Delete(&models.Task{}, "id = ?", c.Param("id"))
 	if res.Error != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to delete task", Details: strptr(res.Error.Error())})

@@ -2318,7 +2318,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, number, title, status, priority, assigneeIds, assignments, manDays, tags, createdAt, updatedAt]
+      required: [id, projectId, number, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -2382,6 +2382,14 @@ components:
           type: string
           format: date
           nullable: true
+        blockedByIds:
+          type: array
+          description: >
+            Tasks that must be finished before this one can be (same
+            project). Sorted by task number.
+          items:
+            type: string
+            format: uuid
         tags:
           type: array
           description: The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects.
@@ -2445,6 +2453,15 @@ components:
         dueDate:
           type: string
           format: date
+        blockedByIds:
+          type: array
+          description: >
+            Tasks this one waits on. Every id must be another task in the same
+            project, and the links may not form a loop.
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
         tags:
           type: array
           description: >
@@ -2507,6 +2524,15 @@ components:
         dueDate:
           type: string
           format: date
+        blockedByIds:
+          type: array
+          description: >
+            Replaces the full set when present (empty array clears it); omit to leave unchanged. Every id must be another task in the same
+            project, and the links may not form a loop.
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
         tags:
           type: array
           description: >

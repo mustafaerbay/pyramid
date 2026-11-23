@@ -1053,11 +1053,14 @@ type Task struct {
 	AssigneeIds []openapi_types.UUID `json:"assigneeIds"`
 
 	// Assignments Each assignee's share of the task's man-days.
-	Assignments []TaskAssignment    `json:"assignments"`
-	CompletedAt *time.Time          `json:"completedAt"`
-	CreatedAt   time.Time           `json:"createdAt"`
-	Description *string             `json:"description"`
-	DueDate     *openapi_types.Date `json:"dueDate"`
+	Assignments []TaskAssignment `json:"assignments"`
+
+	// BlockedByIds Tasks that must be finished before this one can be (same project). Sorted by task number.
+	BlockedByIds []openapi_types.UUID `json:"blockedByIds"`
+	CompletedAt  *time.Time           `json:"completedAt"`
+	CreatedAt    time.Time            `json:"createdAt"`
+	Description  *string              `json:"description"`
+	DueDate      *openapi_types.Date  `json:"dueDate"`
 
 	// EstimateManDays The task's man-day size as entered on the task itself, before (or without) splitting it across assignees.
 	EstimateManDays *float64           `json:"estimateManDays"`
@@ -1099,11 +1102,14 @@ type TaskCreate struct {
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
 
 	// Assignments Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent.
-	Assignments     *[]TaskAssignment   `json:"assignments,omitempty"`
-	Description     *string             `json:"description,omitempty"`
-	DueDate         *openapi_types.Date `json:"dueDate,omitempty"`
-	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
-	MilestoneId     *openapi_types.UUID `json:"milestoneId,omitempty"`
+	Assignments *[]TaskAssignment `json:"assignments,omitempty"`
+
+	// BlockedByIds Tasks this one waits on. Every id must be another task in the same project, and the links may not form a loop.
+	BlockedByIds    *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
+	Description     *string               `json:"description,omitempty"`
+	DueDate         *openapi_types.Date   `json:"dueDate,omitempty"`
+	EstimateManDays *float64              `json:"estimateManDays,omitempty"`
+	MilestoneId     *openapi_types.UUID   `json:"milestoneId,omitempty"`
 
 	// ParentId Make this a subtask of that task (same project; the parent can't itself be a subtask).
 	ParentId  *openapi_types.UUID `json:"parentId,omitempty"`
@@ -1135,11 +1141,14 @@ type TaskUpdate struct {
 	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
 
 	// Assignments Replaces the full assignee set with these people and man-days. Takes precedence over assigneeIds when both are sent.
-	Assignments     *[]TaskAssignment   `json:"assignments,omitempty"`
-	Description     *string             `json:"description,omitempty"`
-	DueDate         *openapi_types.Date `json:"dueDate,omitempty"`
-	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
-	MilestoneId     *openapi_types.UUID `json:"milestoneId"`
+	Assignments *[]TaskAssignment `json:"assignments,omitempty"`
+
+	// BlockedByIds Replaces the full set when present (empty array clears it); omit to leave unchanged. Every id must be another task in the same project, and the links may not form a loop.
+	BlockedByIds    *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
+	Description     *string               `json:"description,omitempty"`
+	DueDate         *openapi_types.Date   `json:"dueDate,omitempty"`
+	EstimateManDays *float64              `json:"estimateManDays,omitempty"`
+	MilestoneId     *openapi_types.UUID   `json:"milestoneId"`
 
 	// ParentId Set to make this a subtask (same project; not allowed when the parent is a subtask or this task has subtasks), null to make it a top-level task again, or omit to leave unchanged.
 	ParentId  *openapi_types.UUID `json:"parentId"`

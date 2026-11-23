@@ -1039,6 +1039,8 @@ export interface components {
             startDate?: string | null;
             /** Format: date */
             dueDate?: string | null;
+            /** @description Tasks that must be finished before this one can be (same project). Sorted by task number. */
+            blockedByIds: string[];
             /** @description The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects. */
             tags: string[];
             /** Format: date-time */
@@ -1072,6 +1074,8 @@ export interface components {
             startDate?: string;
             /** Format: date */
             dueDate?: string;
+            /** @description Tasks this one waits on. Every id must be another task in the same project, and the links may not form a loop. */
+            blockedByIds?: string[];
             /** @description Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling. */
             tags?: string[];
         };
@@ -1097,6 +1101,8 @@ export interface components {
             startDate?: string;
             /** Format: date */
             dueDate?: string;
+            /** @description Replaces the full set when present (empty array clears it); omit to leave unchanged. Every id must be another task in the same project, and the links may not form a loop. */
+            blockedByIds?: string[];
             /** @description Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling. */
             tags?: string[];
         };

@@ -53,6 +53,8 @@ type Task struct {
 	// Tags are the task's labels (labels/task_labels tables), sorted.
 	// Filled by the handler; ToAPI turns nil into [].
 	Tags []string `gorm:"-"`
+	// BlockedByIDs are the tasks this one waits on (task_dependencies).
+	BlockedByIDs []uuid.UUID `gorm:"-"`
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -88,6 +90,15 @@ type TaskLabel struct {
 
 func (TaskLabel) TableName() string { return "task_labels" }
 
+// TaskDependency says TaskID can't finish before DependsOnID.
+type TaskDependency struct {
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	TaskID      uuid.UUID `gorm:"type:uuid;not null"`
+	DependsOnID uuid.UUID `gorm:"type:uuid;not null"`
+}
+
+func (TaskDependency) TableName() string { return "task_dependencies" }
+
 // ToAPI converts the persistence model into the generated API DTO. The
 // caller must have already populated t.AssigneeIDs (see the field comment).
 func (t Task) ToAPI() api.Task {
@@ -121,6 +132,8 @@ func (t Task) ToAPI() api.Task {
 	if out.Tags == nil {
 		out.Tags = []string{}
 	}
+	out.BlockedByIds = make([]openapi_types.UUID, len(t.BlockedByIDs))
+	copy(out.BlockedByIds, t.BlockedByIDs)
 	if total == 0 && t.EstimateManDays != nil {
 		out.ManDays = *t.EstimateManDays
 	}

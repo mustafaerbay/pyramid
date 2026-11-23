@@ -6,6 +6,7 @@
 	import { boardColumns, type BoardStatus } from '$lib/board';
 	import { formatManDays } from '$lib/capacity';
 	import { subtaskSummary } from '$lib/subtasks';
+	import DependencyNote from '$lib/components/DependencyNote.svelte';
 
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
@@ -111,6 +112,7 @@
 						{#if sub.count > 0}
 							<p class="mt-1 text-xs text-slate-500">{sub.done}/{sub.count} subtasks done</p>
 						{/if}
+						<DependencyNote {task} all={allTasks} />
 						{#if task.tags.length}
 							<div class="mt-1.5"><TagChips tags={task.tags} onSelect={onTagSelect} /></div>
 						{/if}

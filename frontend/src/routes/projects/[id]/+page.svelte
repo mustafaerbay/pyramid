@@ -20,6 +20,7 @@
 	import MetricCard from '$lib/components/MetricCard.svelte';
 	import TagChips from '$lib/components/TagChips.svelte';
 	import TaskBoard from '$lib/components/TaskBoard.svelte';
+	import DependencyNote from '$lib/components/DependencyNote.svelte';
 	import { boardStatuses } from '$lib/board';
 	import { countsTowardTotals, nestTasks, subtaskSummary } from '$lib/subtasks';
 	import { hasAllTags, tagColor } from '$lib/tags';
@@ -1552,6 +1553,7 @@
 												{#if subtaskLabel(task)}
 													<span class="block text-xs text-slate-500">{subtaskLabel(task)}</span>
 												{/if}
+												<DependencyNote {task} all={tasks} />
 												{#if task.tags.length}
 													<span class="mt-1 block"><TagChips tags={task.tags} /></span>
 												{/if}
@@ -1625,6 +1627,7 @@
 													{#if subtaskLabel(task)}
 														<div class="text-xs text-slate-500">{subtaskLabel(task)}</div>
 													{/if}
+													<DependencyNote {task} all={tasks} />
 													{#if task.tags.length}
 														<div class="mt-1"><TagChips tags={task.tags} onSelect={addTagFilter} /></div>
 													{/if}

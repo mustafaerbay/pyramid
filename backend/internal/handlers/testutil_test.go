@@ -213,6 +213,13 @@ CREATE TABLE labels (
 	project_id TEXT
 );
 
+CREATE TABLE task_dependencies (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	task_id TEXT NOT NULL,
+	depends_on_id TEXT NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_labels (
 	task_id TEXT NOT NULL,
 	label_id TEXT NOT NULL,
