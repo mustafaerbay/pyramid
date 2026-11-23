@@ -861,6 +861,303 @@ paths:
                 $ref: "#/components/schemas/WikiRevisionList"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/test-plans:
+    get:
+      operationId: listTestPlans
+      tags: [tests]
+      summary: A project's test plans with their pass/fail counts from the latest run
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Plans
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestPlanList"
+    post:
+      operationId: createTestPlan
+      tags: [tests]
+      summary: Add a test plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestPlanInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/test-plans/{id}:
+    get:
+      operationId: getTestPlan
+      tags: [tests]
+      summary: A plan with its suites, cases and runs
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: The plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestPlanDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTestPlan
+      tags: [tests]
+      summary: Rename a plan or change its sprint
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestPlanInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTestPlan
+      tags: [tests]
+      summary: Delete a plan with its suites, cases and runs
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/test-suites:
+    post:
+      operationId: createTestSuite
+      tags: [tests]
+      summary: Add a suite to a plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestSuiteInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestSuite"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/test-suites/{id}:
+    patch:
+      operationId: updateTestSuite
+      tags: [tests]
+      summary: Change a suite (with its cases)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestSuiteInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestSuite"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTestSuite
+      tags: [tests]
+      summary: Delete a suite (with its cases)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/test-cases:
+    post:
+      operationId: createTestCase
+      tags: [tests]
+      summary: Add a test case to a suite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestCaseInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestCase"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/test-cases/{id}:
+    patch:
+      operationId: updateTestCase
+      tags: [tests]
+      summary: Change a test case
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestCaseInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestCase"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTestCase
+      tags: [tests]
+      summary: Delete a test case
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/test-runs:
+    post:
+      operationId: createTestRun
+      tags: [tests]
+      summary: Start a run of a plan (or one suite); every case starts as not run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planId]
+              properties:
+                planId:
+                  type: string
+                  format: uuid
+                suiteId:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                  maxLength: 100
+      responses:
+        "201":
+          description: Started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestRunDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/test-runs/{id}:
+    get:
+      operationId: getTestRun
+      tags: [tests]
+      summary: A run with its results
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: The run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestRunDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteTestRun
+      tags: [tests]
+      summary: Delete a run
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/test-results/{id}:
+    patch:
+      operationId: updateTestResult
+      tags: [tests]
+      summary: Record the outcome of a case in a run (per step and overall)
+      description: With step outcomes and no overall outcome, the overall one follows them (any failed → failed, any blocked → blocked, all passed → passed).
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestResultUpdate"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/test-results/{id}/bug:
+    post:
+      operationId: createBugFromResult
+      tags: [tests]
+      summary: File a bug from a failed result, with the steps to reproduce
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "201":
+          description: The bug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -5484,6 +5781,269 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/WikiRevision"
+
+    TestStep:
+      type: object
+      required: [action, expected]
+      properties:
+        action:
+          type: string
+          maxLength: 2000
+        expected:
+          type: string
+          maxLength: 2000
+
+    TestOutcome:
+      type: string
+      enum: [not_run, passed, failed, blocked]
+
+    TestPlan:
+      type: object
+      required: [id, projectId, name, sprintId, createdAt, caseCount, passed, failed, blocked, notRun]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        sprintId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        caseCount:
+          type: integer
+        passed:
+          type: integer
+          description: Latest run's counts.
+        failed:
+          type: integer
+        blocked:
+          type: integer
+        notRun:
+          type: integer
+
+    TestPlanInput:
+      type: object
+      required: [projectId, name]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        sprintId:
+          type: string
+          format: uuid
+          nullable: true
+
+    TestPlanList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestPlan"
+
+    TestSuite:
+      type: object
+      required: [id, planId, name, position, cases]
+      properties:
+        id:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        position:
+          type: number
+        cases:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestCase"
+
+    TestSuiteInput:
+      type: object
+      required: [planId, name]
+      properties:
+        planId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        position:
+          type: number
+
+    TestCase:
+      type: object
+      required: [id, suiteId, title, steps, taskId, position]
+      properties:
+        id:
+          type: string
+          format: uuid
+        suiteId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestStep"
+        taskId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The item (story) this case tests.
+        position:
+          type: number
+
+    TestCaseInput:
+      type: object
+      required: [suiteId, title]
+      properties:
+        suiteId:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        steps:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/TestStep"
+        taskId:
+          type: string
+          format: uuid
+          nullable: true
+        position:
+          type: number
+
+    TestRun:
+      type: object
+      required: [id, planId, name, createdAt, passed, failed, blocked, notRun]
+      properties:
+        id:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        passed:
+          type: integer
+        failed:
+          type: integer
+        blocked:
+          type: integer
+        notRun:
+          type: integer
+
+    TestResult:
+      type: object
+      required: [id, runId, caseId, title, steps, outcome, stepOutcomes, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        runId:
+          type: string
+          format: uuid
+        caseId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestStep"
+        outcome:
+          $ref: "#/components/schemas/TestOutcome"
+        stepOutcomes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestOutcome"
+        comment:
+          type: string
+          nullable: true
+        bugTaskId:
+          type: string
+          format: uuid
+          nullable: true
+        testedBy:
+          type: string
+          format: uuid
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+
+    TestResultUpdate:
+      type: object
+      properties:
+        outcome:
+          $ref: "#/components/schemas/TestOutcome"
+        stepOutcomes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestOutcome"
+        comment:
+          type: string
+          maxLength: 4000
+
+    TestRunDetail:
+      allOf:
+        - $ref: "#/components/schemas/TestRun"
+        - type: object
+          required: [results]
+          properties:
+            results:
+              type: array
+              items:
+                $ref: "#/components/schemas/TestResult"
+
+    TestPlanDetail:
+      allOf:
+        - $ref: "#/components/schemas/TestPlan"
+        - type: object
+          required: [suites, runs]
+          properties:
+            suites:
+              type: array
+              items:
+                $ref: "#/components/schemas/TestSuite"
+            runs:
+              type: array
+              items:
+                $ref: "#/components/schemas/TestRun"
 
     NotificationSettings:
       type: object

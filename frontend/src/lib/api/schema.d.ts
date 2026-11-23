@@ -575,6 +575,185 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/test-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's test plans with their pass/fail counts from the latest run */
+        get: operations["listTestPlans"];
+        put?: never;
+        /** Add a test plan */
+        post: operations["createTestPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/test-plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A plan with its suites, cases and runs */
+        get: operations["getTestPlan"];
+        put?: never;
+        post?: never;
+        /** Delete a plan with its suites, cases and runs */
+        delete: operations["deleteTestPlan"];
+        options?: never;
+        head?: never;
+        /** Rename a plan or change its sprint */
+        patch: operations["updateTestPlan"];
+        trace?: never;
+    };
+    "/api/v1/test-suites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a suite to a plan */
+        post: operations["createTestSuite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/test-suites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a suite (with its cases) */
+        delete: operations["deleteTestSuite"];
+        options?: never;
+        head?: never;
+        /** Change a suite (with its cases) */
+        patch: operations["updateTestSuite"];
+        trace?: never;
+    };
+    "/api/v1/test-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a test case to a suite */
+        post: operations["createTestCase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/test-cases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a test case */
+        delete: operations["deleteTestCase"];
+        options?: never;
+        head?: never;
+        /** Change a test case */
+        patch: operations["updateTestCase"];
+        trace?: never;
+    };
+    "/api/v1/test-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a run of a plan (or one suite); every case starts as not run */
+        post: operations["createTestRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/test-runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A run with its results */
+        get: operations["getTestRun"];
+        put?: never;
+        post?: never;
+        /** Delete a run */
+        delete: operations["deleteTestRun"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/test-results/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Record the outcome of a case in a run (per step and overall)
+         * @description With step outcomes and no overall outcome, the overall one follows them (any failed → failed, any blocked → blocked, all passed → passed).
+         */
+        patch: operations["updateTestResult"];
+        trace?: never;
+    };
+    "/api/v1/test-results/{id}/bug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** File a bug from a failed result, with the steps to reproduce */
+        post: operations["createBugFromResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -2818,6 +2997,125 @@ export interface components {
         WikiRevisionList: {
             data: components["schemas"]["WikiRevision"][];
         };
+        TestStep: {
+            action: string;
+            expected: string;
+        };
+        /** @enum {string} */
+        TestOutcome: "not_run" | "passed" | "failed" | "blocked";
+        TestPlan: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            /** Format: uuid */
+            sprintId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            caseCount: number;
+            /** @description Latest run's counts. */
+            passed: number;
+            failed: number;
+            blocked: number;
+            notRun: number;
+        };
+        TestPlanInput: {
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            /** Format: uuid */
+            sprintId?: string | null;
+        };
+        TestPlanList: {
+            data: components["schemas"]["TestPlan"][];
+        };
+        TestSuite: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            planId: string;
+            name: string;
+            position: number;
+            cases: components["schemas"]["TestCase"][];
+        };
+        TestSuiteInput: {
+            /** Format: uuid */
+            planId: string;
+            name: string;
+            position?: number;
+        };
+        TestCase: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            suiteId: string;
+            title: string;
+            steps: components["schemas"]["TestStep"][];
+            /**
+             * Format: uuid
+             * @description The item (story) this case tests.
+             */
+            taskId: string | null;
+            position: number;
+        };
+        TestCaseInput: {
+            /** Format: uuid */
+            suiteId: string;
+            title: string;
+            steps?: components["schemas"]["TestStep"][];
+            /** Format: uuid */
+            taskId?: string | null;
+            position?: number;
+        };
+        TestRun: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            planId: string;
+            name: string;
+            /** Format: uuid */
+            createdBy?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            completedAt?: string | null;
+            passed: number;
+            failed: number;
+            blocked: number;
+            notRun: number;
+        };
+        TestResult: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            runId: string;
+            /** Format: uuid */
+            caseId: string | null;
+            title: string;
+            steps: components["schemas"]["TestStep"][];
+            outcome: components["schemas"]["TestOutcome"];
+            stepOutcomes: components["schemas"]["TestOutcome"][];
+            comment?: string | null;
+            /** Format: uuid */
+            bugTaskId?: string | null;
+            /** Format: uuid */
+            testedBy?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        TestResultUpdate: {
+            outcome?: components["schemas"]["TestOutcome"];
+            stepOutcomes?: components["schemas"]["TestOutcome"][];
+            comment?: string;
+        };
+        TestRunDetail: components["schemas"]["TestRun"] & {
+            results: components["schemas"]["TestResult"][];
+        };
+        TestPlanDetail: components["schemas"]["TestPlan"] & {
+            suites: components["schemas"]["TestSuite"][];
+            runs: components["schemas"]["TestRun"][];
+        };
         NotificationSettings: {
             /** @description Per notification type; a missing type gets both. */
             types: {
@@ -4702,6 +5000,399 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WikiRevisionList"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTestPlans: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestPlanList"];
+                };
+            };
+        };
+    };
+    createTestPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestPlanInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestPlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getTestPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestPlanDetail"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTestPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTestPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestPlanInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestPlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTestSuite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestSuiteInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestSuite"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteTestSuite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTestSuite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestSuiteInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestSuite"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTestCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestCaseInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestCase"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteTestCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTestCase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestCaseInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestCase"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createTestRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    planId: string;
+                    /** Format: uuid */
+                    suiteId?: string;
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Started */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestRunDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getTestRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestRunDetail"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTestRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateTestResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestResultUpdate"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createBugFromResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bug */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
                 };
             };
             404: components["responses"]["NotFound"];

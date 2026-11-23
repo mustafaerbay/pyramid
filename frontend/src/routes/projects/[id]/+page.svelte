@@ -1623,6 +1623,7 @@
 						<a href="/projects/{projectId}/code" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Code →</a>
 						<a href="/projects/{projectId}/artifacts" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Artifacts →</a>
 						<a href="/projects/{projectId}/wiki" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Wiki →</a>
+						<a href="/projects/{projectId}/tests" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Tests →</a>
 						<a href="/projects/{projectId}/analytics" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Analytics →</a>
 						<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={exportTasks}>Export CSV</button>
 						<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={exportXlsx}>Excel</button>

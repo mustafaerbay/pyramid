@@ -53,7 +53,7 @@ Notes say what was built where it is simpler than ADO.
 ## 3. Other ADO areas
 
 - [x] **Wiki** — Markdown pages per project with a page tree and history
-- [ ] **Test Plans** — test plans, suites and cases with steps; test runs with
+- [x] **Test Plans** — test plans, suites and cases with steps; test runs with
       pass/fail per step; failing step → bug
 - [x] **Repos** — repositories linked to a project (GitHub / GitLab), with their
       recent commits and pull requests from the Git webhooks (Pyramid doesn't host Git)

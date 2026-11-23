@@ -202,6 +202,52 @@ CREATE TABLE wiki_revisions (
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE test_plans (
+    id         TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+    project_id TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    sprint_id  TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE test_suites (
+    id         TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+    plan_id    TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    position   REAL NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE test_cases (
+    id         TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+    suite_id   TEXT NOT NULL,
+    title      TEXT NOT NULL,
+    steps      TEXT NOT NULL DEFAULT '[]',
+    task_id    TEXT,
+    position   REAL NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE test_runs (
+    id           TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+    plan_id      TEXT NOT NULL,
+    name         TEXT NOT NULL,
+    created_by   TEXT,
+    created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME
+);
+CREATE TABLE test_results (
+    id          TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+    run_id      TEXT NOT NULL,
+    case_id     TEXT,
+    title       TEXT NOT NULL,
+    steps       TEXT NOT NULL DEFAULT '[]',
+    outcome     TEXT NOT NULL DEFAULT 'not_run',
+    step_outcomes TEXT NOT NULL DEFAULT '[]',
+    comment     TEXT,
+    bug_task_id TEXT,
+    tested_by   TEXT,
+    updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE api_tokens (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	user_id TEXT NOT NULL,

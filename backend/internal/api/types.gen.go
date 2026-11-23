@@ -1215,6 +1215,30 @@ func (e TaskType) Valid() bool {
 	}
 }
 
+// Defines values for TestOutcome.
+const (
+	TestOutcomeBlocked TestOutcome = "blocked"
+	TestOutcomeFailed  TestOutcome = "failed"
+	TestOutcomeNotRun  TestOutcome = "not_run"
+	TestOutcomePassed  TestOutcome = "passed"
+)
+
+// Valid indicates whether the value is a known member of the TestOutcome enum.
+func (e TestOutcome) Valid() bool {
+	switch e {
+	case TestOutcomeBlocked:
+		return true
+	case TestOutcomeFailed:
+		return true
+	case TestOutcomeNotRun:
+		return true
+	case TestOutcomePassed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VersionStatus.
 const (
 	VersionStatusCancelled  VersionStatus = "cancelled"
@@ -3119,6 +3143,149 @@ type TaskUpdate struct {
 	Type *TaskType `json:"type,omitempty"`
 }
 
+// TestCase defines model for TestCase.
+type TestCase struct {
+	Id       openapi_types.UUID `json:"id"`
+	Position float32            `json:"position"`
+	Steps    []TestStep         `json:"steps"`
+	SuiteId  openapi_types.UUID `json:"suiteId"`
+
+	// TaskId The item (story) this case tests.
+	TaskId *openapi_types.UUID `json:"taskId"`
+	Title  string              `json:"title"`
+}
+
+// TestCaseInput defines model for TestCaseInput.
+type TestCaseInput struct {
+	Position *float32            `json:"position,omitempty"`
+	Steps    *[]TestStep         `json:"steps,omitempty"`
+	SuiteId  openapi_types.UUID  `json:"suiteId"`
+	TaskId   *openapi_types.UUID `json:"taskId"`
+	Title    string              `json:"title"`
+}
+
+// TestOutcome defines model for TestOutcome.
+type TestOutcome string
+
+// TestPlan defines model for TestPlan.
+type TestPlan struct {
+	Blocked   int                `json:"blocked"`
+	CaseCount int                `json:"caseCount"`
+	CreatedAt time.Time          `json:"createdAt"`
+	Failed    int                `json:"failed"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	NotRun    int                `json:"notRun"`
+
+	// Passed Latest run's counts.
+	Passed    int                 `json:"passed"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	SprintId  *openapi_types.UUID `json:"sprintId"`
+}
+
+// TestPlanDetail defines model for TestPlanDetail.
+type TestPlanDetail struct {
+	Blocked   int                `json:"blocked"`
+	CaseCount int                `json:"caseCount"`
+	CreatedAt time.Time          `json:"createdAt"`
+	Failed    int                `json:"failed"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	NotRun    int                `json:"notRun"`
+
+	// Passed Latest run's counts.
+	Passed    int                 `json:"passed"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	Runs      []TestRun           `json:"runs"`
+	SprintId  *openapi_types.UUID `json:"sprintId"`
+	Suites    []TestSuite         `json:"suites"`
+}
+
+// TestPlanInput defines model for TestPlanInput.
+type TestPlanInput struct {
+	Name      string              `json:"name"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	SprintId  *openapi_types.UUID `json:"sprintId"`
+}
+
+// TestPlanList defines model for TestPlanList.
+type TestPlanList struct {
+	Data []TestPlan `json:"data"`
+}
+
+// TestResult defines model for TestResult.
+type TestResult struct {
+	BugTaskId    *openapi_types.UUID `json:"bugTaskId"`
+	CaseId       *openapi_types.UUID `json:"caseId"`
+	Comment      *string             `json:"comment"`
+	Id           openapi_types.UUID  `json:"id"`
+	Outcome      TestOutcome         `json:"outcome"`
+	RunId        openapi_types.UUID  `json:"runId"`
+	StepOutcomes []TestOutcome       `json:"stepOutcomes"`
+	Steps        []TestStep          `json:"steps"`
+	TestedBy     *openapi_types.UUID `json:"testedBy"`
+	Title        string              `json:"title"`
+	UpdatedAt    time.Time           `json:"updatedAt"`
+}
+
+// TestResultUpdate defines model for TestResultUpdate.
+type TestResultUpdate struct {
+	Comment      *string        `json:"comment,omitempty"`
+	Outcome      *TestOutcome   `json:"outcome,omitempty"`
+	StepOutcomes *[]TestOutcome `json:"stepOutcomes,omitempty"`
+}
+
+// TestRun defines model for TestRun.
+type TestRun struct {
+	Blocked     int                 `json:"blocked"`
+	CompletedAt *time.Time          `json:"completedAt"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	CreatedBy   *openapi_types.UUID `json:"createdBy"`
+	Failed      int                 `json:"failed"`
+	Id          openapi_types.UUID  `json:"id"`
+	Name        string              `json:"name"`
+	NotRun      int                 `json:"notRun"`
+	Passed      int                 `json:"passed"`
+	PlanId      openapi_types.UUID  `json:"planId"`
+}
+
+// TestRunDetail defines model for TestRunDetail.
+type TestRunDetail struct {
+	Blocked     int                 `json:"blocked"`
+	CompletedAt *time.Time          `json:"completedAt"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	CreatedBy   *openapi_types.UUID `json:"createdBy"`
+	Failed      int                 `json:"failed"`
+	Id          openapi_types.UUID  `json:"id"`
+	Name        string              `json:"name"`
+	NotRun      int                 `json:"notRun"`
+	Passed      int                 `json:"passed"`
+	PlanId      openapi_types.UUID  `json:"planId"`
+	Results     []TestResult        `json:"results"`
+}
+
+// TestStep defines model for TestStep.
+type TestStep struct {
+	Action   string `json:"action"`
+	Expected string `json:"expected"`
+}
+
+// TestSuite defines model for TestSuite.
+type TestSuite struct {
+	Cases    []TestCase         `json:"cases"`
+	Id       openapi_types.UUID `json:"id"`
+	Name     string             `json:"name"`
+	PlanId   openapi_types.UUID `json:"planId"`
+	Position float32            `json:"position"`
+}
+
+// TestSuiteInput defines model for TestSuiteInput.
+type TestSuiteInput struct {
+	Name     string             `json:"name"`
+	PlanId   openapi_types.UUID `json:"planId"`
+	Position *float32           `json:"position,omitempty"`
+}
+
 // User defines model for User.
 type User struct {
 	CreatedAt time.Time          `json:"createdAt"`
@@ -3519,6 +3686,18 @@ type TransferTaskJSONBody struct {
 	ProjectId openapi_types.UUID `json:"projectId"`
 }
 
+// ListTestPlansParams defines parameters for ListTestPlans.
+type ListTestPlansParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
+// CreateTestRunJSONBody defines body for CreateTestRun for application/json ContentType.
+type CreateTestRunJSONBody struct {
+	Name    *string             `json:"name,omitempty"`
+	PlanId  openapi_types.UUID  `json:"planId"`
+	SuiteId *openapi_types.UUID `json:"suiteId,omitempty"`
+}
+
 // ListVersionsParams defines parameters for ListVersions.
 type ListVersionsParams struct {
 	Page      *PageParam          `form:"page,omitempty" json:"page,omitempty"`
@@ -3696,6 +3875,30 @@ type MoveTaskJSONRequestBody = TaskMove
 
 // TransferTaskJSONRequestBody defines body for TransferTask for application/json ContentType.
 type TransferTaskJSONRequestBody TransferTaskJSONBody
+
+// CreateTestCaseJSONRequestBody defines body for CreateTestCase for application/json ContentType.
+type CreateTestCaseJSONRequestBody = TestCaseInput
+
+// UpdateTestCaseJSONRequestBody defines body for UpdateTestCase for application/json ContentType.
+type UpdateTestCaseJSONRequestBody = TestCaseInput
+
+// CreateTestPlanJSONRequestBody defines body for CreateTestPlan for application/json ContentType.
+type CreateTestPlanJSONRequestBody = TestPlanInput
+
+// UpdateTestPlanJSONRequestBody defines body for UpdateTestPlan for application/json ContentType.
+type UpdateTestPlanJSONRequestBody = TestPlanInput
+
+// UpdateTestResultJSONRequestBody defines body for UpdateTestResult for application/json ContentType.
+type UpdateTestResultJSONRequestBody = TestResultUpdate
+
+// CreateTestRunJSONRequestBody defines body for CreateTestRun for application/json ContentType.
+type CreateTestRunJSONRequestBody CreateTestRunJSONBody
+
+// CreateTestSuiteJSONRequestBody defines body for CreateTestSuite for application/json ContentType.
+type CreateTestSuiteJSONRequestBody = TestSuiteInput
+
+// UpdateTestSuiteJSONRequestBody defines body for UpdateTestSuite for application/json ContentType.
+type UpdateTestSuiteJSONRequestBody = TestSuiteInput
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserCreate
