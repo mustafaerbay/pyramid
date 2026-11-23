@@ -426,6 +426,33 @@ func (e ProjectStatus) Valid() bool {
 	}
 }
 
+// Defines values for QueryGroupBy.
+const (
+	QueryGroupByAssignee QueryGroupBy = "assignee"
+	QueryGroupByPriority QueryGroupBy = "priority"
+	QueryGroupByProject  QueryGroupBy = "project"
+	QueryGroupByStatus   QueryGroupBy = "status"
+	QueryGroupByType     QueryGroupBy = "type"
+)
+
+// Valid indicates whether the value is a known member of the QueryGroupBy enum.
+func (e QueryGroupBy) Valid() bool {
+	switch e {
+	case QueryGroupByAssignee:
+		return true
+	case QueryGroupByPriority:
+		return true
+	case QueryGroupByProject:
+		return true
+	case QueryGroupByStatus:
+		return true
+	case QueryGroupByType:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SeniorityLevel.
 const (
 	SeniorityLevelDirector  SeniorityLevel = "director"
@@ -1298,6 +1325,82 @@ type ProjectUpdate struct {
 	TurkeySe         *string             `json:"turkeySe"`
 }
 
+// QueryFilters Every list given must match (an item matches a list if it has any of its values). Empty or missing = any.
+type QueryFilters struct {
+	// AreaIds In any of these areas or their sub-areas.
+	AreaIds *[]openapi_types.UUID `json:"areaIds,omitempty"`
+
+	// AssigneeIds Assigned to any of these people.
+	AssigneeIds *[]openapi_types.UUID `json:"assigneeIds,omitempty"`
+
+	// DueAfter Due on or after this day.
+	DueAfter *openapi_types.Date `json:"dueAfter,omitempty"`
+
+	// DueBefore Due on or before this day.
+	DueBefore  *openapi_types.Date `json:"dueBefore,omitempty"`
+	Priorities *[]TaskPriority     `json:"priorities,omitempty"`
+
+	// ProjectIds Any of these projects.
+	ProjectIds *[]openapi_types.UUID `json:"projectIds,omitempty"`
+
+	// SprintIds In any of these sprints.
+	SprintIds *[]openapi_types.UUID `json:"sprintIds,omitempty"`
+	Statuses  *[]TaskStatus         `json:"statuses,omitempty"`
+
+	// Tags Has any of these tags (ignoring case).
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Text Title contains this (ignoring case).
+	Text  *string     `json:"text,omitempty"`
+	Types *[]TaskType `json:"types,omitempty"`
+
+	// Unassigned Only items with no one assigned.
+	Unassigned *bool `json:"unassigned,omitempty"`
+}
+
+// QueryGroupBy defines model for QueryGroupBy.
+type QueryGroupBy string
+
+// QueryResult defines model for QueryResult.
+type QueryResult struct {
+	Data  []Task `json:"data"`
+	Total int    `json:"total"`
+
+	// Truncated True when more than 500 items matched; only the first 500 are returned.
+	Truncated bool `json:"truncated"`
+}
+
+// SavedQuery defines model for SavedQuery.
+type SavedQuery struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Filters Every list given must match (an item matches a list if it has any of its values). Empty or missing = any.
+	Filters       QueryFilters        `json:"filters"`
+	GroupBy       QueryGroupBy        `json:"groupBy"`
+	Id            openapi_types.UUID  `json:"id"`
+	Mine          bool                `json:"mine"`
+	Name          string              `json:"name"`
+	OwnerPersonId *openapi_types.UUID `json:"ownerPersonId"`
+
+	// Shared Everyone can see and run it; only its owner can change it.
+	Shared    bool      `json:"shared"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// SavedQueryInput defines model for SavedQueryInput.
+type SavedQueryInput struct {
+	// Filters Every list given must match (an item matches a list if it has any of its values). Empty or missing = any.
+	Filters QueryFilters  `json:"filters"`
+	GroupBy *QueryGroupBy `json:"groupBy,omitempty"`
+	Name    string        `json:"name"`
+	Shared  *bool         `json:"shared,omitempty"`
+}
+
+// SavedQueryList defines model for SavedQueryList.
+type SavedQueryList struct {
+	Data []SavedQuery `json:"data"`
+}
+
 // SeniorityLevel defines model for SeniorityLevel.
 type SeniorityLevel string
 
@@ -1943,6 +2046,15 @@ type CreateProjectJSONRequestBody = ProjectCreate
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = ProjectUpdate
+
+// CreateSavedQueryJSONRequestBody defines body for CreateSavedQuery for application/json ContentType.
+type CreateSavedQueryJSONRequestBody = SavedQueryInput
+
+// RunQueryJSONRequestBody defines body for RunQuery for application/json ContentType.
+type RunQueryJSONRequestBody = QueryFilters
+
+// UpdateSavedQueryJSONRequestBody defines body for UpdateSavedQuery for application/json ContentType.
+type UpdateSavedQueryJSONRequestBody = SavedQueryInput
 
 // CreateSprintJSONRequestBody defines body for CreateSprint for application/json ContentType.
 type CreateSprintJSONRequestBody = SprintCreate

@@ -652,6 +652,59 @@ export interface paths {
         patch: operations["updateArea"];
         trace?: never;
     };
+    "/api/v1/queries/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find work items across projects (up to 500, by project then manual order) */
+        post: operations["runQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/queries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your saved queries and the shared ones */
+        get: operations["listSavedQueries"];
+        put?: never;
+        /** Save a query */
+        post: operations["createSavedQuery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/queries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete your saved query (admins can delete any) */
+        delete: operations["deleteSavedQuery"];
+        options?: never;
+        head?: never;
+        /** Change your saved query */
+        patch: operations["updateSavedQuery"];
+        trace?: never;
+    };
     "/api/v1/tags": {
         parameters: {
             query?: never;
@@ -1763,6 +1816,69 @@ export interface components {
         };
         AreaList: {
             data: components["schemas"]["Area"][];
+        };
+        /** @description Every list given must match (an item matches a list if it has any of its values). Empty or missing = any. */
+        QueryFilters: {
+            /** @description Any of these projects. */
+            projectIds?: string[];
+            types?: components["schemas"]["TaskType"][];
+            statuses?: components["schemas"]["TaskStatus"][];
+            priorities?: components["schemas"]["TaskPriority"][];
+            /** @description Assigned to any of these people. */
+            assigneeIds?: string[];
+            /** @description Only items with no one assigned. */
+            unassigned?: boolean;
+            /** @description Has any of these tags (ignoring case). */
+            tags?: string[];
+            /** @description In any of these sprints. */
+            sprintIds?: string[];
+            /** @description In any of these areas or their sub-areas. */
+            areaIds?: string[];
+            /** @description Title contains this (ignoring case). */
+            text?: string;
+            /**
+             * Format: date
+             * @description Due on or after this day.
+             */
+            dueAfter?: string;
+            /**
+             * Format: date
+             * @description Due on or before this day.
+             */
+            dueBefore?: string;
+        };
+        QueryResult: {
+            data: components["schemas"]["Task"][];
+            total: number;
+            /** @description True when more than 500 items matched; only the first 500 are returned. */
+            truncated: boolean;
+        };
+        /** @enum {string} */
+        QueryGroupBy: "status" | "assignee" | "type" | "priority" | "project";
+        SavedQuery: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            filters: components["schemas"]["QueryFilters"];
+            groupBy: components["schemas"]["QueryGroupBy"];
+            /** @description Everyone can see and run it; only its owner can change it. */
+            shared: boolean;
+            /** Format: uuid */
+            ownerPersonId: string | null;
+            mine: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SavedQueryInput: {
+            name: string;
+            filters: components["schemas"]["QueryFilters"];
+            groupBy?: components["schemas"]["QueryGroupBy"];
+            shared?: boolean;
+        };
+        SavedQueryList: {
+            data: components["schemas"]["SavedQuery"][];
         };
         TagList: {
             data: string[];
@@ -3673,6 +3789,142 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    runQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueryFilters"];
+            };
+        };
+        responses: {
+            /** @description Matching items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    listSavedQueries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved queries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedQueryList"];
+                };
+            };
+        };
+    };
+    createSavedQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedQueryInput"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedQuery"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteSavedQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not yours */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateSavedQuery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedQueryInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedQuery"];
+                };
+            };
+            /** @description Not yours */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

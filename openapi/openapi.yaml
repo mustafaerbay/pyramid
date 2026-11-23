@@ -1282,6 +1282,102 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/queries/run:
+    post:
+      operationId: runQuery
+      tags: [queries]
+      summary: Find work items across projects (up to 500, by project then manual order)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryFilters"
+      responses:
+        "200":
+          description: Matching items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/queries:
+    get:
+      operationId: listSavedQueries
+      tags: [queries]
+      summary: Your saved queries and the shared ones
+      responses:
+        "200":
+          description: Saved queries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedQueryList"
+    post:
+      operationId: createSavedQuery
+      tags: [queries]
+      summary: Save a query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedQueryInput"
+      responses:
+        "201":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedQuery"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/queries/{id}:
+    patch:
+      operationId: updateSavedQuery
+      tags: [queries]
+      summary: Change your saved query
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedQueryInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedQuery"
+        "403":
+          description: Not yours
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteSavedQuery
+      tags: [queries]
+      summary: Delete your saved query (admins can delete any)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not yours
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tags:
     get:
       operationId: listTags
@@ -3629,6 +3725,137 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Area"
+
+    QueryFilters:
+      type: object
+      description: Every list given must match (an item matches a list if it has any of its values). Empty or missing = any.
+      properties:
+        projectIds:
+          type: array
+          description: Any of these projects.
+          items:
+            type: string
+            format: uuid
+        types:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskType"
+        statuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskStatus"
+        priorities:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskPriority"
+        assigneeIds:
+          type: array
+          description: Assigned to any of these people.
+          items:
+            type: string
+            format: uuid
+        unassigned:
+          type: boolean
+          description: Only items with no one assigned.
+        tags:
+          type: array
+          description: Has any of these tags (ignoring case).
+          items:
+            type: string
+        sprintIds:
+          type: array
+          description: In any of these sprints.
+          items:
+            type: string
+            format: uuid
+        areaIds:
+          type: array
+          description: In any of these areas or their sub-areas.
+          items:
+            type: string
+            format: uuid
+        text:
+          type: string
+          description: Title contains this (ignoring case).
+        dueAfter:
+          type: string
+          format: date
+          description: Due on or after this day.
+        dueBefore:
+          type: string
+          format: date
+          description: Due on or before this day.
+
+    QueryResult:
+      type: object
+      required: [data, total, truncated]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        total:
+          type: integer
+        truncated:
+          type: boolean
+          description: True when more than 500 items matched; only the first 500 are returned.
+
+    QueryGroupBy:
+      type: string
+      enum: [status, assignee, type, priority, project]
+
+    SavedQuery:
+      type: object
+      required: [id, name, filters, groupBy, shared, ownerPersonId, mine, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        filters:
+          $ref: "#/components/schemas/QueryFilters"
+        groupBy:
+          $ref: "#/components/schemas/QueryGroupBy"
+        shared:
+          type: boolean
+          description: Everyone can see and run it; only its owner can change it.
+        ownerPersonId:
+          type: string
+          format: uuid
+          nullable: true
+        mine:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SavedQueryInput:
+      type: object
+      required: [name, filters]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        filters:
+          $ref: "#/components/schemas/QueryFilters"
+        groupBy:
+          $ref: "#/components/schemas/QueryGroupBy"
+        shared:
+          type: boolean
+
+    SavedQueryList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedQuery"
 
     TagList:
       type: object

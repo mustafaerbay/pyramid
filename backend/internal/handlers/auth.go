@@ -117,7 +117,7 @@ func (h *Handler) denyViewerWrites() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		m := c.Request.Method
 		p := c.FullPath()
-		if m == http.MethodGet || m == http.MethodHead || strings.HasPrefix(p, "/api/v1/auth/") || strings.HasPrefix(p, "/api/v1/notifications") {
+		if m == http.MethodGet || m == http.MethodHead || strings.HasPrefix(p, "/api/v1/auth/") || strings.HasPrefix(p, "/api/v1/notifications") || p == "/api/v1/queries/run" {
 			c.Next()
 			return
 		}

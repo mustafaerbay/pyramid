@@ -643,6 +643,18 @@ CREATE TABLE notifications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Saved work item queries (private to their owner, or shared)
+CREATE TABLE saved_queries (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    filters    JSONB NOT NULL DEFAULT '{}',
+    group_by   TEXT NOT NULL DEFAULT 'status',
+    shared     BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Audit / activity trail (polymorphic target + JSON diff)
 CREATE TABLE activity_log (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
