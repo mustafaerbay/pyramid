@@ -96,6 +96,11 @@
 	let priority = $state<TaskPriority>(initial?.priority ?? 'medium');
 	let startDate = $state(initial?.startDate ?? '');
 	let dueDate = $state(initial?.dueDate ?? '');
+	// Empty input = not set (bind:value on a number input gives null).
+	let storyPoints = $state<number | null>(initial?.storyPoints ?? null);
+	let remaining = $state<number | null>(initial?.remainingManDays ?? null);
+	let completed = $state<number | null>(initial?.completedManDays ?? null);
+	const num = (v: number | null | undefined | string) => (v === null || v === undefined || v === '' ? null : Number(v));
 	// Each assignee's share of the task, in man-days. Kept for unchecked
 	// people too, so toggling someone off and on doesn't lose their number.
 	let manDays = $state<Record<string, number>>(
@@ -194,6 +199,9 @@
 						// omitting the field entirely to leave it untouched.
 						assignments,
 						estimateManDays,
+						storyPoints: num(storyPoints),
+						remainingManDays: num(remaining),
+						completedManDays: num(completed),
 						status,
 						priority,
 						startDate: startDate || undefined,
@@ -218,6 +226,9 @@
 						description: description || undefined,
 						assignments,
 						estimateManDays,
+						storyPoints: num(storyPoints),
+						remainingManDays: num(remaining),
+						completedManDays: num(completed),
 						status,
 						priority,
 						startDate: startDate || undefined,
@@ -470,6 +481,21 @@
 			<p class="-mt-2 text-xs text-slate-500">
 				Man-days are spread over the working days between start and due date.
 			</p>
+
+			<div class="grid grid-cols-3 gap-3">
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Story points</span>
+					<input type="number" class="input" min="0" max="999" step="0.5" bind:value={storyPoints} />
+				</label>
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Remaining (md)</span>
+					<input type="number" class="input" min="0" max="9999" step="0.5" bind:value={remaining} />
+				</label>
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Completed (md)</span>
+					<input type="number" class="input" min="0" max="9999" step="0.5" bind:value={completed} />
+				</label>
+			</div>
 
 			<div class="grid grid-cols-2 gap-4">
 				<label class="block text-sm">

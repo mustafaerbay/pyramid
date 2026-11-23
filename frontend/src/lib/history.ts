@@ -21,6 +21,9 @@ const LABELS: Record<string, string> = {
 	startDate: 'Start date',
 	dueDate: 'Due date',
 	estimateManDays: 'Size',
+	storyPoints: 'Story points',
+	remainingManDays: 'Remaining',
+	completedManDays: 'Completed',
 	assignments: 'Assignees',
 	tags: 'Tags',
 	blockedByIds: 'Waiting on'
@@ -70,6 +73,10 @@ export function describeChange(field: string, change: Change, names: Names): str
 			return `${label}: ${none(from, names.milestone)} → ${none(to, names.milestone)}`;
 		case 'parentId':
 			return `${label}: ${none(from, names.task)} → ${none(to, names.task)}`;
+		case 'storyPoints':
+			return `${label}: ${none(from, (x) => formatManDays(Number(x)))} → ${none(to, (x) => formatManDays(Number(x)))}`;
+		case 'remainingManDays':
+		case 'completedManDays':
 		case 'estimateManDays':
 			return `${label}: ${none(from, (x) => formatManDays(Number(x)))} → ${none(to, (x) => formatManDays(Number(x)))} md`;
 		case 'tags':

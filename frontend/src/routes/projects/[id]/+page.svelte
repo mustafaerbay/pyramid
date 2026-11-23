@@ -1582,7 +1582,7 @@
 													<span class="mt-1 block"><TagChips tags={task.tags} /></span>
 												{/if}
 												<span class="mt-0.5 block text-xs text-slate-500">
-													{assigneesLabel(task.assigneeIds)}{shownManDays(task) > 0 ? ` · ${formatManDays(shownManDays(task))} md` : ''}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
+													{assigneesLabel(task.assigneeIds)}{shownManDays(task) > 0 ? ` · ${formatManDays(shownManDays(task))} md` : ''}{task.storyPoints != null ? ` · ${formatManDays(task.storyPoints)} pts` : ''}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
 												</span>
 												{#each fitWarnings(task) as warning (warning)}
 													<span class="mt-0.5 block text-xs font-medium text-red-700">⚠ {warning}</span>
@@ -1648,8 +1648,16 @@
 													{#if row.depth === 0 && row.parent}
 														<div class="text-xs text-slate-500">↳ subtask of {row.parent.title}</div>
 													{/if}
-													{#if subtaskLabel(task)}
-														<div class="text-xs text-slate-500">{subtaskLabel(task)}</div>
+													{#if subtaskLabel(task) || task.storyPoints != null || task.remainingManDays != null}
+														<div class="text-xs text-slate-500">
+															{[
+																subtaskLabel(task),
+																task.storyPoints != null ? `${formatManDays(task.storyPoints)} pts` : '',
+																task.remainingManDays != null ? `${formatManDays(task.remainingManDays)} md left` : ''
+															]
+																.filter(Boolean)
+																.join(' · ')}
+														</div>
 													{/if}
 													<DependencyNote {task} all={tasks} />
 													{#if task.tags.length}

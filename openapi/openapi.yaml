@@ -2650,6 +2650,21 @@ components:
             Total man-days: the sum of assignments when they carry any
             man-days, otherwise estimateManDays (0 when neither). Computed
             server-side.
+        storyPoints:
+          type: number
+          format: double
+          nullable: true
+          description: Relative size in points (0–999).
+        remainingManDays:
+          type: number
+          format: double
+          nullable: true
+          description: Work left, in man-days (0–9999). Set to 0 when the item is done.
+        completedManDays:
+          type: number
+          format: double
+          nullable: true
+          description: Work done so far, in man-days (0–9999).
         startDate:
           type: string
           format: date
@@ -2726,6 +2741,24 @@ components:
           format: double
           minimum: 0
           maximum: 9999
+        storyPoints:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 999
+        remainingManDays:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 9999
+        completedManDays:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 9999
         startDate:
           type: string
           format: date
@@ -2797,6 +2830,25 @@ components:
         estimateManDays:
           type: number
           format: double
+          minimum: 0
+          maximum: 9999
+        storyPoints:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 999
+          description: Send null to clear.
+        remainingManDays:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 9999
+        completedManDays:
+          type: number
+          format: double
+          nullable: true
           minimum: 0
           maximum: 9999
         startDate:

@@ -1249,6 +1249,21 @@ export interface components {
              */
             manDays: number;
             /**
+             * Format: double
+             * @description Relative size in points (0–999).
+             */
+            storyPoints?: number | null;
+            /**
+             * Format: double
+             * @description Work left, in man-days (0–9999). Set to 0 when the item is done.
+             */
+            remainingManDays?: number | null;
+            /**
+             * Format: double
+             * @description Work done so far, in man-days (0–9999).
+             */
+            completedManDays?: number | null;
+            /**
              * Format: date
              * @description Planned start; man-days are spread over the working days from startDate to dueDate.
              */
@@ -1287,6 +1302,12 @@ export interface components {
             assignments?: components["schemas"]["TaskAssignment"][];
             /** Format: double */
             estimateManDays?: number;
+            /** Format: double */
+            storyPoints?: number | null;
+            /** Format: double */
+            remainingManDays?: number | null;
+            /** Format: double */
+            completedManDays?: number | null;
             /** Format: date */
             startDate?: string;
             /** Format: date */
@@ -1315,6 +1336,15 @@ export interface components {
             assignments?: components["schemas"]["TaskAssignment"][];
             /** Format: double */
             estimateManDays?: number;
+            /**
+             * Format: double
+             * @description Send null to clear.
+             */
+            storyPoints?: number | null;
+            /** Format: double */
+            remainingManDays?: number | null;
+            /** Format: double */
+            completedManDays?: number | null;
             /** Format: date */
             startDate?: string;
             /** Format: date */

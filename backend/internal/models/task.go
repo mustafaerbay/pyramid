@@ -33,11 +33,14 @@ type Task struct {
 	StartDate   *time.Time       `gorm:"type:date"`
 	// EstimateManDays is the task's size as entered on the task itself;
 	// used as the total until assignments carry man-days.
-	EstimateManDays *float64   `gorm:"type:numeric(7,2)"`
-	DueDate         *time.Time `gorm:"type:date"`
-	CompletedAt     *time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	EstimateManDays  *float64   `gorm:"type:numeric(7,2)"`
+	StoryPoints      *float64   `gorm:"type:numeric(5,2)"`
+	RemainingManDays *float64   `gorm:"type:numeric(7,2)"`
+	CompletedManDays *float64   `gorm:"type:numeric(7,2)"`
+	DueDate          *time.Time `gorm:"type:date"`
+	CompletedAt      *time.Time
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 
 	// AssigneeIDs holds the task's assignees (see the task_assignees join
 	// table). It's not a column on this table — `gorm:"-"` keeps GORM from
@@ -113,23 +116,26 @@ func (t Task) ToAPI() api.Task {
 		total += md
 	}
 	out := api.Task{
-		Id:              t.ID,
-		ProjectId:       t.ProjectID,
-		Number:          t.Number,
-		Title:           t.Title,
-		Description:     t.Description,
-		Status:          t.Status,
-		Priority:        t.Priority,
-		AssigneeIds:     assigneeIDs,
-		Assignments:     assignments,
-		ManDays:         total,
-		EstimateManDays: t.EstimateManDays,
-		MilestoneId:     t.MilestoneID,
-		ParentId:        t.ParentID,
-		Type:            t.Type,
-		Tags:            t.Tags,
-		CreatedAt:       t.CreatedAt,
-		UpdatedAt:       t.UpdatedAt,
+		Id:               t.ID,
+		ProjectId:        t.ProjectID,
+		Number:           t.Number,
+		Title:            t.Title,
+		Description:      t.Description,
+		Status:           t.Status,
+		Priority:         t.Priority,
+		AssigneeIds:      assigneeIDs,
+		Assignments:      assignments,
+		ManDays:          total,
+		EstimateManDays:  t.EstimateManDays,
+		StoryPoints:      t.StoryPoints,
+		RemainingManDays: t.RemainingManDays,
+		CompletedManDays: t.CompletedManDays,
+		MilestoneId:      t.MilestoneID,
+		ParentId:         t.ParentID,
+		Type:             t.Type,
+		Tags:             t.Tags,
+		CreatedAt:        t.CreatedAt,
+		UpdatedAt:        t.UpdatedAt,
 	}
 	if out.Tags == nil {
 		out.Tags = []string{}
@@ -162,14 +168,17 @@ func (t Task) ToAPI() api.Task {
 // handler inserts the task_assignees rows after the Create call succeeds.
 func NewTaskFromCreate(in api.TaskCreate) Task {
 	t := Task{
-		ProjectID:   in.ProjectId,
-		MilestoneID: in.MilestoneId,
-		ParentID:    in.ParentId,
-		Type:        api.TaskTypeTask,
-		Title:       in.Title,
-		Description: in.Description,
-		Status:      api.TaskStatusBacklog,
-		Priority:    api.TaskPriorityMedium,
+		ProjectID:        in.ProjectId,
+		MilestoneID:      in.MilestoneId,
+		ParentID:         in.ParentId,
+		Type:             api.TaskTypeTask,
+		StoryPoints:      in.StoryPoints,
+		RemainingManDays: in.RemainingManDays,
+		CompletedManDays: in.CompletedManDays,
+		Title:            in.Title,
+		Description:      in.Description,
+		Status:           api.TaskStatusBacklog,
+		Priority:         api.TaskPriorityMedium,
 	}
 	if in.Status != nil {
 		t.Status = *in.Status
@@ -195,6 +204,10 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 	if t.Status == api.TaskStatusDone {
 		now := time.Now().UTC()
 		t.CompletedAt = &now
+		if t.RemainingManDays != nil {
+			zero := 0.0
+			t.RemainingManDays = &zero
+		}
 	}
 	return t
 }
@@ -218,6 +231,15 @@ func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 	}
 	if in.Type != nil {
 		t.Type = *in.Type
+	}
+	if in.StoryPoints != nil {
+		t.StoryPoints = in.StoryPoints
+	}
+	if in.RemainingManDays != nil {
+		t.RemainingManDays = in.RemainingManDays
+	}
+	if in.CompletedManDays != nil {
+		t.CompletedManDays = in.CompletedManDays
 	}
 	if in.Description != nil {
 		t.Description = in.Description
@@ -253,6 +275,11 @@ func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 			now := time.Now().UTC()
 			t.CompletedAt = &now
 		}
+		// Like ADO's Scrum process: nothing is left once it's done.
+		if t.Status == api.TaskStatusDone && t.RemainingManDays != nil {
+			zero := 0.0
+			t.RemainingManDays = &zero
+		}
 	}
 }
 
@@ -264,6 +291,14 @@ func (t Task) ValidateDates() error {
 	}
 	if t.EstimateManDays != nil && (*t.EstimateManDays < 0 || *t.EstimateManDays > MaxEstimateManDays) {
 		return fmt.Errorf("estimateManDays must be between 0 and %d", MaxEstimateManDays)
+	}
+	if t.StoryPoints != nil && (*t.StoryPoints < 0 || *t.StoryPoints > 999) {
+		return errors.New("storyPoints must be between 0 and 999")
+	}
+	for name, v := range map[string]*float64{"remainingManDays": t.RemainingManDays, "completedManDays": t.CompletedManDays} {
+		if v != nil && (*v < 0 || *v > MaxEstimateManDays) {
+			return fmt.Errorf("%s must be between 0 and %d", name, MaxEstimateManDays)
+		}
 	}
 	return nil
 }

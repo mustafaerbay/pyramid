@@ -348,6 +348,8 @@ CREATE TABLE tasks (
     estimate_hours NUMERIC(6,2),
     start_date    DATE,                                    -- planned start; man-days spread start..due
     estimate_man_days NUMERIC(7,2) CHECK (estimate_man_days >= 0 AND estimate_man_days <= 9999),  -- size before splitting across assignees
+    remaining_man_days NUMERIC(7,2) CHECK (remaining_man_days >= 0 AND remaining_man_days <= 9999),  -- work left
+    completed_man_days NUMERIC(7,2) CHECK (completed_man_days >= 0 AND completed_man_days <= 9999),  -- work done so far
     due_date      DATE,
     started_at    TIMESTAMPTZ,
     completed_at  TIMESTAMPTZ,

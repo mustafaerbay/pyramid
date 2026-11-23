@@ -357,6 +357,16 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	clearMilestone := isExplicitNull(raw, "milestoneId")
 
 	t.ApplyUpdate(in, clearMilestone)
+	// These three can be cleared with an explicit null.
+	if isExplicitNull(raw, "storyPoints") {
+		t.StoryPoints = nil
+	}
+	if isExplicitNull(raw, "remainingManDays") {
+		t.RemainingManDays = nil
+	}
+	if isExplicitNull(raw, "completedManDays") {
+		t.CompletedManDays = nil
+	}
 	_, parentSent := raw["parentId"]
 	if parentSent {
 		t.ParentID = nil

@@ -52,19 +52,22 @@ func taskSnapshot(t models.Task) map[string]any {
 		estimate = *t.EstimateManDays
 	}
 	return map[string]any{
-		"title":           t.Title,
-		"description":     str(t.Description),
-		"type":            string(t.Type),
-		"status":          string(t.Status),
-		"priority":        string(t.Priority),
-		"milestoneId":     id(t.MilestoneID),
-		"parentId":        id(t.ParentID),
-		"startDate":       dateOrNil(t.StartDate, t.StartDate == nil),
-		"dueDate":         dateOrNil(t.DueDate, t.DueDate == nil),
-		"estimateManDays": estimate,
-		"assignments":     assignments,
-		"tags":            tags,
-		"blockedByIds":    blockers,
+		"title":            t.Title,
+		"description":      str(t.Description),
+		"type":             string(t.Type),
+		"status":           string(t.Status),
+		"priority":         string(t.Priority),
+		"milestoneId":      id(t.MilestoneID),
+		"parentId":         id(t.ParentID),
+		"startDate":        dateOrNil(t.StartDate, t.StartDate == nil),
+		"dueDate":          dateOrNil(t.DueDate, t.DueDate == nil),
+		"estimateManDays":  estimate,
+		"storyPoints":      numOrNil(t.StoryPoints),
+		"remainingManDays": numOrNil(t.RemainingManDays),
+		"completedManDays": numOrNil(t.CompletedManDays),
+		"assignments":      assignments,
+		"tags":             tags,
+		"blockedByIds":     blockers,
 	}
 }
 
@@ -129,4 +132,11 @@ func (h *Handler) GetTaskHistory(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, api.TaskHistory{Data: out})
+}
+
+func numOrNil(p *float64) any {
+	if p == nil {
+		return nil
+	}
+	return *p
 }

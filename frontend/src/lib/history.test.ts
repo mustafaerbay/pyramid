@@ -13,6 +13,8 @@ describe('describeChange', () => {
 		expect(describeChange('status', { from: 'backlog', to: 'in_progress' }, names)).toBe('Status: backlog → in progress');
 		expect(describeChange('dueDate', { from: null, to: '2026-12-01' }, names)).toBe('Due date: none → 2026-12-01');
 		expect(describeChange('estimateManDays', { from: 2, to: 4.5 }, names)).toBe('Size: 2 → 4.5 md');
+		expect(describeChange('storyPoints', { from: null, to: 5 }, names)).toBe('Story points: none → 5');
+		expect(describeChange('remainingManDays', { from: 3, to: 0 }, names)).toBe('Remaining: 3 → 0 md');
 	});
 	it('names milestones, parents and blockers', () => {
 		expect(describeChange('milestoneId', { from: null, to: 'm1' }, names)).toBe('Milestone: none → M1');

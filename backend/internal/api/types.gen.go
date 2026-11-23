@@ -1203,9 +1203,12 @@ type Task struct {
 	// BlockedByIds Tasks that must be finished before this one can be (same project). Sorted by task number.
 	BlockedByIds []openapi_types.UUID `json:"blockedByIds"`
 	CompletedAt  *time.Time           `json:"completedAt"`
-	CreatedAt    time.Time            `json:"createdAt"`
-	Description  *string              `json:"description"`
-	DueDate      *openapi_types.Date  `json:"dueDate"`
+
+	// CompletedManDays Work done so far, in man-days (0–9999).
+	CompletedManDays *float64            `json:"completedManDays"`
+	CreatedAt        time.Time           `json:"createdAt"`
+	Description      *string             `json:"description"`
+	DueDate          *openapi_types.Date `json:"dueDate"`
 
 	// EstimateManDays The task's man-day size as entered on the task itself, before (or without) splitting it across assignees.
 	EstimateManDays *float64           `json:"estimateManDays"`
@@ -1223,9 +1226,15 @@ type Task struct {
 	Priority  TaskPriority        `json:"priority"`
 	ProjectId openapi_types.UUID  `json:"projectId"`
 
+	// RemainingManDays Work left, in man-days (0–9999). Set to 0 when the item is done.
+	RemainingManDays *float64 `json:"remainingManDays"`
+
 	// StartDate Planned start; man-days are spread over the working days from startDate to dueDate.
 	StartDate *openapi_types.Date `json:"startDate"`
 	Status    TaskStatus          `json:"status"`
+
+	// StoryPoints Relative size in points (0–999).
+	StoryPoints *float64 `json:"storyPoints"`
 
 	// Tags The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects.
 	Tags  []string `json:"tags"`
@@ -1274,18 +1283,21 @@ type TaskCreate struct {
 	Assignments *[]TaskAssignment `json:"assignments,omitempty"`
 
 	// BlockedByIds Tasks this one waits on. Every id must be another task in the same project, and the links may not form a loop.
-	BlockedByIds    *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
-	Description     *string               `json:"description,omitempty"`
-	DueDate         *openapi_types.Date   `json:"dueDate,omitempty"`
-	EstimateManDays *float64              `json:"estimateManDays,omitempty"`
-	MilestoneId     *openapi_types.UUID   `json:"milestoneId,omitempty"`
+	BlockedByIds     *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
+	CompletedManDays *float64              `json:"completedManDays"`
+	Description      *string               `json:"description,omitempty"`
+	DueDate          *openapi_types.Date   `json:"dueDate,omitempty"`
+	EstimateManDays  *float64              `json:"estimateManDays,omitempty"`
+	MilestoneId      *openapi_types.UUID   `json:"milestoneId,omitempty"`
 
 	// ParentId Put this under that work item (same project; see Task.parentId for the rules).
-	ParentId  *openapi_types.UUID `json:"parentId,omitempty"`
-	Priority  *TaskPriority       `json:"priority,omitempty"`
-	ProjectId openapi_types.UUID  `json:"projectId"`
-	StartDate *openapi_types.Date `json:"startDate,omitempty"`
-	Status    *TaskStatus         `json:"status,omitempty"`
+	ParentId         *openapi_types.UUID `json:"parentId,omitempty"`
+	Priority         *TaskPriority       `json:"priority,omitempty"`
+	ProjectId        openapi_types.UUID  `json:"projectId"`
+	RemainingManDays *float64            `json:"remainingManDays"`
+	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
+	Status           *TaskStatus         `json:"status,omitempty"`
+	StoryPoints      *float64            `json:"storyPoints"`
 
 	// Tags Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`
@@ -1349,17 +1361,22 @@ type TaskUpdate struct {
 	Assignments *[]TaskAssignment `json:"assignments,omitempty"`
 
 	// BlockedByIds Replaces the full set when present (empty array clears it); omit to leave unchanged. Every id must be another task in the same project, and the links may not form a loop.
-	BlockedByIds    *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
-	Description     *string               `json:"description,omitempty"`
-	DueDate         *openapi_types.Date   `json:"dueDate,omitempty"`
-	EstimateManDays *float64              `json:"estimateManDays,omitempty"`
-	MilestoneId     *openapi_types.UUID   `json:"milestoneId"`
+	BlockedByIds     *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
+	CompletedManDays *float64              `json:"completedManDays"`
+	Description      *string               `json:"description,omitempty"`
+	DueDate          *openapi_types.Date   `json:"dueDate,omitempty"`
+	EstimateManDays  *float64              `json:"estimateManDays,omitempty"`
+	MilestoneId      *openapi_types.UUID   `json:"milestoneId"`
 
 	// ParentId Set to put this under that work item (see Task.parentId for the rules), null to make it top-level again, or omit to leave unchanged.
-	ParentId  *openapi_types.UUID `json:"parentId"`
-	Priority  *TaskPriority       `json:"priority,omitempty"`
-	StartDate *openapi_types.Date `json:"startDate,omitempty"`
-	Status    *TaskStatus         `json:"status,omitempty"`
+	ParentId         *openapi_types.UUID `json:"parentId"`
+	Priority         *TaskPriority       `json:"priority,omitempty"`
+	RemainingManDays *float64            `json:"remainingManDays"`
+	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
+	Status           *TaskStatus         `json:"status,omitempty"`
+
+	// StoryPoints Send null to clear.
+	StoryPoints *float64 `json:"storyPoints"`
 
 	// Tags Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`

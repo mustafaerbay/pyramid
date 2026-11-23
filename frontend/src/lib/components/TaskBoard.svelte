@@ -55,6 +55,7 @@
 
 <div class="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0 lg:snap-none">
 	{#each columns as col (col.status)}
+		{@const pts = col.tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0)}
 		{@const md = col.tasks.reduce((s, t) => s + (allTasks.some((c) => c.parentId === t.id && c.status !== 'cancelled') ? 0 : t.manDays), 0)}
 		<section
 			class="flex w-[80vw] shrink-0 snap-start flex-col rounded-lg border bg-slate-50 sm:w-64 lg:w-auto lg:min-w-48 lg:flex-1 {overStatus ===
@@ -80,7 +81,7 @@
 					{label(col.status)}
 				</span>
 				<span class="text-xs text-slate-500 tabular-nums">
-					{col.tasks.length}{md > 0 ? ` · ${formatManDays(md)} md` : ''}
+					{col.tasks.length}{md > 0 ? ` · ${formatManDays(md)} md` : ''}{pts > 0 ? ` · ${formatManDays(pts)} pts` : ''}
 				</span>
 			</header>
 			<ul class="flex min-h-24 flex-1 flex-col gap-2 p-2">
@@ -128,7 +129,10 @@
 							<p class="mt-1 text-xs font-medium text-red-700">⚠ {w}</p>
 						{/each}
 						<div class="mt-2 flex flex-wrap items-center justify-between gap-1.5">
-							<Badge tone={priorityTone(task.priority)}>{task.priority}</Badge>
+							<span class="inline-flex items-center gap-1.5">
+								<Badge tone={priorityTone(task.priority)}>{task.priority}</Badge>
+								{#if task.storyPoints != null}<span class="rounded bg-slate-100 px-1.5 text-[11px] font-medium text-slate-600" title="Story points">{formatManDays(task.storyPoints)}</span>{/if}
+							</span>
 							<select
 								class="min-h-8 min-w-0 max-w-full rounded-md border-0 bg-slate-100 py-0 pl-2 pr-6 text-xs text-slate-600"
 								aria-label="Move {task.title} to"
