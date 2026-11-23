@@ -81,6 +81,7 @@ func (h *Handler) monthPlan(month time.Time) (monthPlan, error) {
 		Where("t.status <> ?", "cancelled").
 		Where("p.status <> ?", "cancelled").
 		Where("t.start_date IS NOT NULL OR t.due_date IS NOT NULL").
+		Where(countedWork).
 		Scan(&rows).Error
 	if err != nil {
 		return plan, err
@@ -193,6 +194,7 @@ func (h *Handler) GetPersonWorkload(c *gin.Context) {
 		Where("t.status <> ?", "cancelled").
 		Where("p.status <> ?", "cancelled").
 		Where("t.start_date IS NOT NULL OR t.due_date IS NOT NULL").
+		Where(countedWork).
 		Order("COALESCE(t.start_date, t.due_date)").
 		Scan(&rows).Error
 	if err != nil {
@@ -296,3 +298,7 @@ func (h *Handler) attachAvailability(tasks ...*models.Task) error {
 	}
 	return nil
 }
+
+// countedWork keeps tasks whose man-days count toward capacity: a task with
+// (non-cancelled) subtasks is just a container, its subtasks carry the work.
+const countedWork = "NOT EXISTS (SELECT 1 FROM tasks sub WHERE sub.parent_id = t.id AND sub.status <> 'cancelled')"

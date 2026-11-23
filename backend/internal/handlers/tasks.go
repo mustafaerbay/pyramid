@@ -213,6 +213,11 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		}
 	}
 
+	if err := h.validateParent(&t); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+
 	// Per-project sequential number (PYR-42 style), assigned here since it
 	// needs a DB read the model constructor shouldn't own.
 	var maxNumber int
@@ -314,6 +319,16 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	clearMilestone := isExplicitNull(raw, "milestoneId")
 
 	t.ApplyUpdate(in, clearMilestone)
+	if _, ok := raw["parentId"]; ok {
+		t.ParentID = nil
+		if !isExplicitNull(raw, "parentId") {
+			t.ParentID = in.ParentId
+		}
+		if err := h.validateParent(&t); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 	if err := t.ValidateDates(); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
@@ -395,4 +410,38 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+// validateParent checks t.ParentID: the parent must exist in the same
+// project and be top-level, and a task that has subtasks can't become one.
+func (h *Handler) validateParent(t *models.Task) error {
+	if t.ParentID == nil {
+		return nil
+	}
+	if *t.ParentID == t.ID {
+		return errors.New("a task can't be its own parent")
+	}
+	var parent models.Task
+	if err := h.db.First(&parent, "id = ?", *t.ParentID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("parent task not found")
+		}
+		return err
+	}
+	if parent.ProjectID != t.ProjectID {
+		return errors.New("parent task must be in the same project")
+	}
+	if parent.ParentID != nil {
+		return errors.New("subtasks can't have subtasks of their own")
+	}
+	if t.ID != uuid.Nil {
+		var children int64
+		if err := h.db.Model(&models.Task{}).Where("parent_id = ?", t.ID).Count(&children).Error; err != nil {
+			return err
+		}
+		if children > 0 {
+			return errors.New("a task with subtasks can't become a subtask")
+		}
+	}
+	return nil
 }

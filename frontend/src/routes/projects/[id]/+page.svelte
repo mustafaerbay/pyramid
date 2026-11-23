@@ -21,6 +21,7 @@
 	import TagChips from '$lib/components/TagChips.svelte';
 	import TaskBoard from '$lib/components/TaskBoard.svelte';
 	import { boardStatuses } from '$lib/board';
+	import { countsTowardTotals, nestTasks, subtaskSummary } from '$lib/subtasks';
 	import { hasAllTags, tagColor } from '$lib/tags';
 	import { fitText, formatManDays, shortfalls } from '$lib/capacity';
 	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
@@ -124,6 +125,7 @@
 	// Prefills the milestone picker when "+ Add task" is clicked from inside
 	// a specific milestone's group, rather than the section-level button.
 	let taskModalMilestoneId = $state<string | null>(null);
+	let taskModalParentId = $state<string | null>(null);
 
 	let removingTask = $state<Task | null>(null);
 	let removingTaskBusy = $state(false);
@@ -353,7 +355,7 @@
 		let manDays = 0;
 		let doneManDays = 0;
 		for (const t of list) {
-			if (t.status === 'cancelled') continue;
+			if (t.status === 'cancelled' || !countsTowardTotals(t, tasks)) continue;
 			manDays += t.manDays;
 			if (t.status === 'done') doneManDays += t.manDays;
 		}
@@ -464,13 +466,32 @@
 	function openEditTask(t: Task) {
 		editingTask = t;
 		taskModalMilestoneId = null;
+		taskModalParentId = null;
 		taskModalMode = 'edit';
+	}
+
+	function openAddSubtask(parent: Task) {
+		editingTask = null;
+		taskModalMilestoneId = parent.milestoneId ?? null;
+		taskModalParentId = parent.id;
+		taskModalMode = 'create';
 	}
 
 	function closeTaskModal() {
 		taskModalMode = null;
 		editingTask = null;
 		taskModalMilestoneId = null;
+		taskModalParentId = null;
+	}
+
+	// A task with subtasks shows their total; its own man-days aren't counted.
+	function shownManDays(task: Task): number {
+		const sub = subtaskSummary(task.id, tasks);
+		return sub.count > 0 ? sub.manDays : task.manDays;
+	}
+	function subtaskLabel(task: Task): string {
+		const sub = subtaskSummary(task.id, tasks);
+		return sub.count > 0 ? `${sub.done}/${sub.count} subtasks done` : '';
 	}
 
 	function handleTaskSaved(saved: Task) {
@@ -551,6 +572,7 @@
 	// "Name: 12 md in 5 available days" for each assignee whose share doesn't
 	// fit before the due date (approved leave taken out).
 	function fitWarnings(task: Task): string[] {
+		if (!countsTowardTotals(task, tasks)) return [];
 		return shortfalls(task.assignments).map(
 			(a) => `${personLabel(a.personId)}: ${fitText(a.manDays, a.availableDays ?? 0)}`
 		);
@@ -1476,6 +1498,7 @@
 				{#if taskView === 'board'}
 					<TaskBoard
 						tasks={tasks.filter(matchesTaskFilters)}
+						allTasks={tasks}
 						statuses={boardStatuses(taskStatusFilters)}
 						statusOptions={statusFilterOptions}
 						statusTone={taskStatusTone}
@@ -1512,19 +1535,28 @@
 								<p class="px-4 py-3 text-sm text-slate-400">No tasks match the current filters.</p>
 							{:else}
 								<ul class="divide-y divide-slate-100 md:hidden">
-									{#each group.tasks as task (task.id)}
-										<li class="space-y-2 px-4 py-3 text-sm">
+									{#each nestTasks(group.tasks, tasks) as row (row.task.id)}
+										{@const task = row.task}
+										<li class="space-y-2 py-3 pr-4 text-sm {row.depth ? 'pl-9' : 'pl-4'}">
 											<button
 												type="button"
 												class="block w-full text-left"
 												onclick={() => openEditTask(task)}
 											>
-												<span class="font-medium text-slate-800">{task.title}</span>
+												<span class="font-medium text-slate-800"
+													>{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}{task.title}</span
+												>
+												{#if row.depth === 0 && row.parent}
+													<span class="block text-xs text-slate-500">↳ subtask of {row.parent.title}</span>
+												{/if}
+												{#if subtaskLabel(task)}
+													<span class="block text-xs text-slate-500">{subtaskLabel(task)}</span>
+												{/if}
 												{#if task.tags.length}
 													<span class="mt-1 block"><TagChips tags={task.tags} /></span>
 												{/if}
 												<span class="mt-0.5 block text-xs text-slate-500">
-													{assigneesLabel(task.assigneeIds)}{task.manDays > 0 ? ` · ${formatManDays(task.manDays)} md` : ''}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
+													{assigneesLabel(task.assigneeIds)}{shownManDays(task) > 0 ? ` · ${formatManDays(shownManDays(task))} md` : ''}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
 												</span>
 												{#each fitWarnings(task) as warning (warning)}
 													<span class="mt-0.5 block text-xs font-medium text-red-700">⚠ {warning}</span>
@@ -1575,17 +1607,24 @@
 										</tr>
 									</thead>
 									<tbody class="divide-y divide-slate-100">
-										{#each group.tasks as task (task.id)}
+										{#each nestTasks(group.tasks, tasks) as row (row.task.id)}
+											{@const task = row.task}
 											{@const warnings = fitWarnings(task)}
 											<tr class="hover:bg-slate-50">
-												<td class="px-4 py-2.5">
-													<button
+												<td class="py-2.5 pr-4 {row.depth ? 'pl-10' : 'pl-4'}">
+													{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<button
 														type="button"
 														class="text-left font-medium text-slate-800 hover:underline"
 														onclick={() => openEditTask(task)}
 													>
 														{task.title}
 													</button>
+													{#if row.depth === 0 && row.parent}
+														<div class="text-xs text-slate-500">↳ subtask of {row.parent.title}</div>
+													{/if}
+													{#if subtaskLabel(task)}
+														<div class="text-xs text-slate-500">{subtaskLabel(task)}</div>
+													{/if}
 													{#if task.tags.length}
 														<div class="mt-1"><TagChips tags={task.tags} onSelect={addTagFilter} /></div>
 													{/if}
@@ -1599,7 +1638,7 @@
 														? `Doesn't fit before the due date — ${warnings.join('; ')}`
 														: task.assignments.map((a) => `${personLabel(a.personId)}: ${formatManDays(a.manDays)}`).join(', ')}
 												>
-													{#if warnings.length}<span aria-hidden="true">⚠ </span>{/if}{task.manDays > 0 ? formatManDays(task.manDays) : '—'}
+													{#if warnings.length}<span aria-hidden="true">⚠ </span>{/if}{shownManDays(task) > 0 ? formatManDays(shownManDays(task)) : '—'}
 													{#if warnings.length}<span class="sr-only">Doesn't fit before the due date: {warnings.join('; ')}</span>{/if}
 												</td>
 												<td class="px-4 py-2.5">
@@ -1833,16 +1872,21 @@
 />
 
 {#if taskModalMode}
+	{#key `${taskModalMode}:${editingTask?.id ?? taskModalParentId ?? ''}`}
 	<TaskFormModal
 		{projectId}
 		task={editingTask}
 		{milestoneOptions}
 		{assigneeOptions}
 		initialMilestoneId={taskModalMilestoneId}
+		projectTasks={tasks}
+		initialParentId={taskModalParentId}
+		onAddSubtask={openAddSubtask}
 		onClose={closeTaskModal}
 		onSaved={handleTaskSaved}
 		onDelete={editingTask ? () => askRemoveTask(editingTask!) : undefined}
 	/>
+	{/key}
 {/if}
 
 <ConfirmDialog

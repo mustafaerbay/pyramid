@@ -1068,9 +1068,12 @@ type Task struct {
 	MilestoneId *openapi_types.UUID `json:"milestoneId"`
 
 	// Number Per-project sequential number, e.g. 42 for "PYR-42".
-	Number    int                `json:"number"`
-	Priority  TaskPriority       `json:"priority"`
-	ProjectId openapi_types.UUID `json:"projectId"`
+	Number int `json:"number"`
+
+	// ParentId The task this one is a subtask of (same project, one level deep). A task that has subtasks doesn't count its own man-days toward capacity; its subtasks carry the work.
+	ParentId  *openapi_types.UUID `json:"parentId"`
+	Priority  TaskPriority        `json:"priority"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
 
 	// StartDate Planned start; man-days are spread over the working days from startDate to dueDate.
 	StartDate *openapi_types.Date `json:"startDate"`
@@ -1101,10 +1104,13 @@ type TaskCreate struct {
 	DueDate         *openapi_types.Date `json:"dueDate,omitempty"`
 	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
 	MilestoneId     *openapi_types.UUID `json:"milestoneId,omitempty"`
-	Priority        *TaskPriority       `json:"priority,omitempty"`
-	ProjectId       openapi_types.UUID  `json:"projectId"`
-	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
-	Status          *TaskStatus         `json:"status,omitempty"`
+
+	// ParentId Make this a subtask of that task (same project; the parent can't itself be a subtask).
+	ParentId  *openapi_types.UUID `json:"parentId,omitempty"`
+	Priority  *TaskPriority       `json:"priority,omitempty"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	StartDate *openapi_types.Date `json:"startDate,omitempty"`
+	Status    *TaskStatus         `json:"status,omitempty"`
 
 	// Tags Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`
@@ -1134,9 +1140,12 @@ type TaskUpdate struct {
 	DueDate         *openapi_types.Date `json:"dueDate,omitempty"`
 	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
 	MilestoneId     *openapi_types.UUID `json:"milestoneId"`
-	Priority        *TaskPriority       `json:"priority,omitempty"`
-	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
-	Status          *TaskStatus         `json:"status,omitempty"`
+
+	// ParentId Set to make this a subtask (same project; not allowed when the parent is a subtask or this task has subtasks), null to make it a top-level task again, or omit to leave unchanged.
+	ParentId  *openapi_types.UUID `json:"parentId"`
+	Priority  *TaskPriority       `json:"priority,omitempty"`
+	StartDate *openapi_types.Date `json:"startDate,omitempty"`
+	Status    *TaskStatus         `json:"status,omitempty"`
 
 	// Tags Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`

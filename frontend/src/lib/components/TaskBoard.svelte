@@ -5,12 +5,14 @@
 	import { badgeToneClass, type BadgeTone } from '$lib/badgeTones';
 	import { boardColumns, type BoardStatus } from '$lib/board';
 	import { formatManDays } from '$lib/capacity';
+	import { subtaskSummary } from '$lib/subtasks';
 
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
 
 	let {
 		tasks,
+		allTasks,
 		statuses,
 		statusOptions,
 		statusTone,
@@ -22,6 +24,8 @@
 		onTagSelect
 	}: {
 		tasks: Task[];
+		/** Every task in the project, for parent titles and subtask counts. */
+		allTasks: Task[];
 		statuses: BoardStatus[];
 		statusOptions: { value: TaskStatus; label: string }[];
 		statusTone: (s: TaskStatus) => BadgeTone;
@@ -49,7 +53,7 @@
 
 <div class="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:scroll-px-0 sm:px-0 lg:snap-none">
 	{#each columns as col (col.status)}
-		{@const md = col.tasks.reduce((s, t) => s + t.manDays, 0)}
+		{@const md = col.tasks.reduce((s, t) => s + (allTasks.some((c) => c.parentId === t.id && c.status !== 'cancelled') ? 0 : t.manDays), 0)}
 		<section
 			class="flex w-[80vw] shrink-0 snap-start flex-col rounded-lg border bg-slate-50 sm:w-64 lg:w-auto lg:min-w-48 lg:flex-1 {overStatus ===
 			col.status
@@ -80,6 +84,8 @@
 			<ul class="flex min-h-24 flex-1 flex-col gap-2 p-2">
 				{#each col.tasks as task (task.id)}
 					{@const warnings = fitWarnings(task)}
+					{@const parent = task.parentId ? allTasks.find((t) => t.id === task.parentId) : null}
+					{@const sub = subtaskSummary(task.id, allTasks)}
 					<li
 						class="cursor-grab rounded-md border border-slate-200 bg-white p-2.5 text-sm shadow-sm active:cursor-grabbing {draggingId ===
 						task.id
@@ -96,14 +102,22 @@
 							overStatus = null;
 						}}
 					>
+						{#if parent}
+							<p class="mb-0.5 truncate text-xs text-slate-500">↳ {parent.title}</p>
+						{/if}
 						<button type="button" class="block w-full text-left font-medium text-slate-800 hover:underline" onclick={() => onOpen(task)}>
 							{task.title}
 						</button>
+						{#if sub.count > 0}
+							<p class="mt-1 text-xs text-slate-500">{sub.done}/{sub.count} subtasks done</p>
+						{/if}
 						{#if task.tags.length}
 							<div class="mt-1.5"><TagChips tags={task.tags} onSelect={onTagSelect} /></div>
 						{/if}
 						<p class="mt-1.5 line-clamp-2 text-xs text-slate-500">
-							{assigneesLabel(task.assigneeIds)}{task.manDays > 0 ? ` · ${formatManDays(task.manDays)} md` : ''}{task.dueDate
+							{assigneesLabel(task.assigneeIds)}{(sub.count > 0 ? sub.manDays : task.manDays) > 0
+								? ` · ${formatManDays(sub.count > 0 ? sub.manDays : task.manDays)} md`
+								: ''}{task.dueDate
 								? ` · Due ${task.dueDate}`
 								: ''}
 						</p>

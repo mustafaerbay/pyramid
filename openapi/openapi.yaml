@@ -2330,6 +2330,14 @@ components:
           type: string
           format: uuid
           nullable: true
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >
+            The task this one is a subtask of (same project, one level deep).
+            A task that has subtasks doesn't count its own man-days toward
+            capacity; its subtasks carry the work.
         number:
           type: integer
           description: Per-project sequential number, e.g. 42 for "PYR-42".
@@ -2400,6 +2408,10 @@ components:
         milestoneId:
           type: string
           format: uuid
+        parentId:
+          type: string
+          format: uuid
+          description: Make this a subtask of that task (same project; the parent can't itself be a subtask).
         title:
           type: string
           minLength: 1
@@ -2452,6 +2464,14 @@ components:
           type: string
           format: uuid
           nullable: true
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >
+            Set to make this a subtask (same project; not allowed when the
+            parent is a subtask or this task has subtasks), null to make it a
+            top-level task again, or omit to leave unchanged.
         title:
           type: string
         description:

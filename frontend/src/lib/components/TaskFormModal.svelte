@@ -3,6 +3,7 @@
 	import type { components } from '$lib/api/schema';
 	import { formatManDays, splitEvenly } from '$lib/capacity';
 	import TagInput from './TagInput.svelte';
+	import { parentOptions, subtaskSummary } from '$lib/subtasks';
 
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
@@ -14,6 +15,9 @@
 		milestoneOptions = [],
 		assigneeOptions = [],
 		initialMilestoneId = null,
+		projectTasks = [],
+		initialParentId = null,
+		onAddSubtask,
 		onClose,
 		onSaved,
 		onDelete
@@ -29,6 +33,12 @@
 		// Prefills the milestone picker when creating a task from a specific
 		// milestone group's "+ Add task" button.
 		initialMilestoneId?: string | null;
+		// The project's tasks: parent choices and this task's subtasks.
+		projectTasks?: Task[];
+		// Prefills the parent when adding a subtask.
+		initialParentId?: string | null;
+		// Shown as "+ Add subtask" on a top-level task in edit mode.
+		onAddSubtask?: (parent: Task) => void;
 		onClose: () => void;
 		onSaved: (task: Task) => void;
 		// Shown as a "Delete task" link in edit mode only. The parent owns the
@@ -48,6 +58,20 @@
 	let tags = $state<string[]>([...(initial?.tags ?? [])]);
 	// svelte-ignore state_referenced_locally
 	let milestoneId = $state(initial?.milestoneId ?? initialMilestoneId ?? '');
+	// svelte-ignore state_referenced_locally
+	let parentId = $state(initial?.parentId ?? initialParentId ?? '');
+	// svelte-ignore state_referenced_locally
+	const parentChoices = parentOptions(projectTasks, initial?.id ?? null);
+	// svelte-ignore state_referenced_locally
+	const subtasks = initial ? projectTasks.filter((t) => t.parentId === initial.id) : [];
+	// svelte-ignore state_referenced_locally
+	const summary = initial ? subtaskSummary(initial.id, projectTasks) : null;
+	// A new subtask lands in its parent's milestone unless one is picked.
+	function pickParent(id: string) {
+		parentId = id;
+		const p = projectTasks.find((t) => t.id === id);
+		if (p?.milestoneId && !milestoneId) milestoneId = p.milestoneId;
+	}
 	// svelte-ignore state_referenced_locally
 	let assigneeIds = $state<string[]>(initial?.assigneeIds ?? []);
 	// Unlike milestones (always start "pending"), a task's initial status is
@@ -148,6 +172,7 @@
 						// Explicit null (not undefined) so the backend can tell
 						// "clear this" apart from "field wasn't touched".
 						milestoneId: milestoneId || null,
+						parentId: parentId || null,
 						// assigneeIds always replaces the full set — sending it
 						// (even as []) is how the backend knows to update it, vs.
 						// omitting the field entirely to leave it untouched.
@@ -170,6 +195,7 @@
 					body: {
 						projectId,
 						milestoneId: milestoneId || undefined,
+						parentId: parentId || undefined,
 						title,
 						description: description || undefined,
 						assignments,
@@ -250,6 +276,52 @@
 					{/each}
 				</select>
 			</label>
+
+			{#if parentChoices.length > 0 || parentId}
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Parent task</span>
+					<select class="input" value={parentId} onchange={(e) => pickParent(e.currentTarget.value)}>
+						<option value="">None (top-level task)</option>
+						{#each parentChoices as p (p.id)}
+							<option value={p.id}>#{p.number} {p.title}</option>
+						{/each}
+					</select>
+				</label>
+			{/if}
+
+			{#if isEdit && initial && !initial.parentId}
+				<div class="rounded-md border border-slate-200 p-3 text-sm">
+					<div class="flex items-center justify-between gap-2">
+						<span class="font-medium text-slate-700">
+							Subtasks{#if summary && summary.count > 0}<span class="ml-1 font-normal text-slate-500"
+									>{summary.done}/{summary.count} done · {formatManDays(summary.manDays)} md</span
+								>{/if}
+						</span>
+						{#if onAddSubtask}
+							<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => onAddSubtask(initial)}>
+								+ Add subtask
+							</button>
+						{/if}
+					</div>
+					{#if subtasks.length > 0}
+						<ul class="mt-2 space-y-1">
+							{#each subtasks as sub (sub.id)}
+								<li class="flex items-center justify-between gap-2 text-xs">
+									<span class="min-w-0 truncate {sub.status === 'done' || sub.status === 'cancelled' ? 'text-slate-400 line-through' : 'text-slate-700'}">
+										#{sub.number} {sub.title}
+									</span>
+									<span class="shrink-0 text-slate-500">{sub.status.replace('_', ' ')}</span>
+								</li>
+							{/each}
+						</ul>
+						{#if summary && summary.count > 0}
+							<p class="mt-2 text-xs text-slate-500">
+								This task's own man-days aren't counted in capacity; its subtasks carry the work.
+							</p>
+						{/if}
+					{/if}
+				</div>
+			{/if}
 
 			<div class="block text-sm">
 				<label class="mb-3 block">

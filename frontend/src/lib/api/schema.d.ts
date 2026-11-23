@@ -1007,6 +1007,11 @@ export interface components {
             projectId: string;
             /** Format: uuid */
             milestoneId?: string | null;
+            /**
+             * Format: uuid
+             * @description The task this one is a subtask of (same project, one level deep). A task that has subtasks doesn't count its own man-days toward capacity; its subtasks carry the work.
+             */
+            parentId?: string | null;
             /** @description Per-project sequential number, e.g. 42 for "PYR-42". */
             number: number;
             title: string;
@@ -1048,6 +1053,11 @@ export interface components {
             projectId: string;
             /** Format: uuid */
             milestoneId?: string;
+            /**
+             * Format: uuid
+             * @description Make this a subtask of that task (same project; the parent can't itself be a subtask).
+             */
+            parentId?: string;
             title: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1068,6 +1078,11 @@ export interface components {
         TaskUpdate: {
             /** Format: uuid */
             milestoneId?: string | null;
+            /**
+             * Format: uuid
+             * @description Set to make this a subtask (same project; not allowed when the parent is a subtask or this task has subtasks), null to make it a top-level task again, or omit to leave unchanged.
+             */
+            parentId?: string | null;
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];

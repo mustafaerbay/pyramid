@@ -21,7 +21,9 @@ type Task struct {
 	ProjectID uuid.UUID `gorm:"type:uuid;not null;index"`
 	// Number is the per-project sequential number (e.g. 42 for "PYR-42"),
 	// assigned by the handler — see handlers.nextTaskNumber.
-	Number      int              `gorm:"not null"`
+	Number int `gorm:"not null"`
+	// ParentID makes this a subtask (same project, one level deep).
+	ParentID    *uuid.UUID       `gorm:"type:uuid;index"`
 	MilestoneID *uuid.UUID       `gorm:"type:uuid;index"`
 	Title       string           `gorm:"not null"`
 	Description *string          `gorm:"type:text"`
@@ -111,6 +113,7 @@ func (t Task) ToAPI() api.Task {
 		ManDays:         total,
 		EstimateManDays: t.EstimateManDays,
 		MilestoneId:     t.MilestoneID,
+		ParentId:        t.ParentID,
 		Tags:            t.Tags,
 		CreatedAt:       t.CreatedAt,
 		UpdatedAt:       t.UpdatedAt,
@@ -146,6 +149,7 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 	t := Task{
 		ProjectID:   in.ProjectId,
 		MilestoneID: in.MilestoneId,
+		ParentID:    in.ParentId,
 		Title:       in.Title,
 		Description: in.Description,
 		Status:      api.TaskStatusBacklog,
