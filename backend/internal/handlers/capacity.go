@@ -25,7 +25,7 @@ type monthPlan struct {
 	byPerson  map[uuid.UUID]float64
 	byProject map[uuid.UUID]float64
 	total     float64
-	leave     map[uuid.UUID][]models.DateRange // approved leave touching the month
+	leave     map[uuid.UUID][]models.DateRange // everyone's approved leave
 }
 
 // capacity is p's capacity in the plan's month after approved leave, and
@@ -35,13 +35,17 @@ func (mp monthPlan) capacity(p models.Person) (float64, int) {
 	return models.MonthCapacity(p.Capacity(), models.WorkingDaysInMonth(mp.month), leave), leave
 }
 
-// approvedLeave returns every person's approved leave that overlaps
-// [from, to]. Pending, rejected and cancelled requests don't count.
-func (h *Handler) approvedLeave(from, to time.Time, personID *uuid.UUID) (map[uuid.UUID][]models.DateRange, error) {
-	q := h.db.Where("status = ?", api.LeaveStatusApproved).
-		Where("start_date <= ? AND end_date >= ?", to, from)
-	if personID != nil {
-		q = q.Where("person_id = ?", *personID)
+// approvedLeave returns the approved leave of the given people (everyone
+// when personIDs is nil), keyed by person. Pending, rejected and cancelled
+// requests don't count. A task can span months, so this isn't limited to
+// one month; leave_requests stays small.
+func (h *Handler) approvedLeave(personIDs []uuid.UUID) (map[uuid.UUID][]models.DateRange, error) {
+	q := h.db.Where("status = ?", api.LeaveStatusApproved)
+	if personIDs != nil {
+		if len(personIDs) == 0 {
+			return map[uuid.UUID][]models.DateRange{}, nil
+		}
+		q = q.Where("person_id IN ?", personIDs)
 	}
 	var rows []models.LeaveRequest
 	if err := q.Find(&rows).Error; err != nil {
@@ -57,7 +61,7 @@ func (h *Handler) approvedLeave(from, to time.Time, personID *uuid.UUID) (map[uu
 func (h *Handler) monthPlan(month time.Time) (monthPlan, error) {
 	month = models.MonthStart(month)
 	plan := monthPlan{month: month, byPerson: map[uuid.UUID]float64{}, byProject: map[uuid.UUID]float64{}}
-	leave, err := h.approvedLeave(month, month.AddDate(0, 1, -1), nil)
+	leave, err := h.approvedLeave(nil)
 	if err != nil {
 		return plan, err
 	}
@@ -82,7 +86,7 @@ func (h *Handler) monthPlan(month time.Time) (monthPlan, error) {
 		return plan, err
 	}
 	for _, r := range rows {
-		md := models.SpreadManDays(r.ManDays, r.StartDate, r.DueDate, month)
+		md := models.SpreadManDaysAroundLeave(r.ManDays, r.StartDate, r.DueDate, plan.leave[r.PersonID], month)
 		if md == 0 {
 			continue
 		}
@@ -196,8 +200,7 @@ func (h *Handler) GetPersonWorkload(c *gin.Context) {
 		return
 	}
 
-	jan := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
-	leave, err := h.approvedLeave(jan, jan.AddDate(1, 0, -1), &person.ID)
+	leave, err := h.approvedLeave([]uuid.UUID{person.ID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -230,7 +233,7 @@ func (h *Handler) GetPersonWorkload(c *gin.Context) {
 		}
 		byProject := map[uuid.UUID]float64{}
 		for _, r := range rows {
-			md := models.SpreadManDays(r.ManDays, r.StartDate, r.DueDate, month)
+			md := models.SpreadManDaysAroundLeave(r.ManDays, r.StartDate, r.DueDate, leave[person.ID], month)
 			if md == 0 {
 				continue
 			}
@@ -243,6 +246,7 @@ func (h *Handler) GetPersonWorkload(c *gin.Context) {
 				TaskId: r.TaskID, ProjectId: r.ProjectID, Title: r.Title, Status: r.Status,
 				ManDays: r.ManDays, MonthManDays: md,
 				StartDate: toDate(r.StartDate), DueDate: toDate(r.DueDate),
+				AvailableDays: availableDays(r.StartDate, r.DueDate, leave[person.ID]),
 			})
 		}
 		for j := range m.Projects {
@@ -252,4 +256,43 @@ func (h *Handler) GetPersonWorkload(c *gin.Context) {
 		out.Months[i] = m
 	}
 	c.JSON(http.StatusOK, out)
+}
+
+// availableDays is models.AvailableDays as an API value (nil without a
+// start and due date).
+func availableDays(start, due *time.Time, leave []models.DateRange) *int {
+	n, ok := models.AvailableDays(start, due, leave)
+	if !ok {
+		return nil
+	}
+	return &n
+}
+
+// attachAvailability fills each task's AvailableDays: per assignee, the
+// working days between start and due they aren't on approved leave.
+func (h *Handler) attachAvailability(tasks ...*models.Task) error {
+	var people []uuid.UUID
+	seen := map[uuid.UUID]bool{}
+	for _, t := range tasks {
+		for _, id := range t.AssigneeIDs {
+			if !seen[id] {
+				seen[id] = true
+				people = append(people, id)
+			}
+		}
+	}
+	if people == nil {
+		people = []uuid.UUID{}
+	}
+	leave, err := h.approvedLeave(people)
+	if err != nil {
+		return err
+	}
+	for _, t := range tasks {
+		t.AvailableDays = make(map[uuid.UUID]*int, len(t.AssigneeIDs))
+		for _, id := range t.AssigneeIDs {
+			t.AvailableDays[id] = availableDays(t.StartDate, t.DueDate, leave[id])
+		}
+	}
+	return nil
 }

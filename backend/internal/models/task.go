@@ -45,6 +45,9 @@ type Task struct {
 	// ManDays is each assignee's share of the task's man-days, keyed by
 	// person; loaded/written together with AssigneeIDs. Missing key = 0.
 	ManDays map[uuid.UUID]float64 `gorm:"-"`
+	// AvailableDays is each assignee's working days in [StartDate, DueDate]
+	// outside approved leave (nil without both dates). Filled by the handler.
+	AvailableDays map[uuid.UUID]*int `gorm:"-"`
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -70,7 +73,7 @@ func (t Task) ToAPI() api.Task {
 	for i, id := range t.AssigneeIDs {
 		assigneeIDs[i] = id
 		md := t.ManDays[id]
-		assignments[i] = api.TaskAssignment{PersonId: id, ManDays: md}
+		assignments[i] = api.TaskAssignment{PersonId: id, ManDays: md, AvailableDays: t.AvailableDays[id]}
 		total += md
 	}
 	out := api.Task{

@@ -2463,6 +2463,15 @@ components:
           format: double
           minimum: 0
           maximum: 999
+        availableDays:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: >
+            Working days (Mon–Fri, minus the person's approved leave) between
+            the task's start and due dates. Null when the task doesn't have
+            both dates. manDays above this means the share can't be done in
+            time. Ignored on input.
 
     CapacityReport:
       type: object
@@ -2593,7 +2602,9 @@ components:
         monthManDays:
           type: number
           format: double
-          description: The part of manDays that falls in this month.
+          description: >
+            The part of manDays that falls in this month. Spread over the
+            working days in the task's window the person isn't on leave.
         startDate:
           type: string
           format: date
@@ -2602,6 +2613,13 @@ components:
           type: string
           format: date
           nullable: true
+        availableDays:
+          type: integer
+          nullable: true
+          description: >
+            Working days the person isn't on leave between the task's start
+            and due dates (null without both dates). manDays above this
+            means the task can't be done in time.
 
     TaskList:
       type: object

@@ -18,7 +18,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
-	import { formatManDays } from '$lib/capacity';
+	import { fitText, formatManDays, shortfalls } from '$lib/capacity';
 	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
 	import { projectRoleLabel, projectRoleTone } from '$lib/projectRoles';
 	import { daysUntil } from '$lib/dateMath';
@@ -498,6 +498,14 @@
 	function personLabel(id: string): string {
 		const p = people[id];
 		return p ? `${p.firstName} ${p.lastName}` : 'Unknown person';
+	}
+
+	// "Name: 12 md in 5 available days" for each assignee whose share doesn't
+	// fit before the due date (approved leave taken out).
+	function fitWarnings(task: Task): string[] {
+		return shortfalls(task.assignments).map(
+			(a) => `${personLabel(a.personId)}: ${fitText(a.manDays, a.availableDays ?? 0)}`
+		);
 	}
 
 	function assigneesLabel(ids: string[]): string {
@@ -1402,6 +1410,9 @@
 												<span class="mt-0.5 block text-xs text-slate-500">
 													{assigneesLabel(task.assigneeIds)}{task.manDays > 0 ? ` · ${formatManDays(task.manDays)} md` : ''}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
 												</span>
+												{#each fitWarnings(task) as warning (warning)}
+													<span class="mt-0.5 block text-xs font-medium text-red-700">⚠ {warning}</span>
+												{/each}
 											</button>
 											<div class="flex items-center gap-2">
 												<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>
@@ -1449,6 +1460,7 @@
 									</thead>
 									<tbody class="divide-y divide-slate-100">
 										{#each group.tasks as task (task.id)}
+											{@const warnings = fitWarnings(task)}
 											<tr class="hover:bg-slate-50">
 												<td class="px-4 py-2.5">
 													<button
@@ -1463,10 +1475,13 @@
 													<span class="line-clamp-1">{assigneesLabel(task.assigneeIds)}</span>
 												</td>
 												<td
-													class="px-4 py-2.5 text-right text-slate-600 tabular-nums"
-													title={task.assignments.map((a) => `${personLabel(a.personId)}: ${formatManDays(a.manDays)}`).join(', ')}
+													class="px-4 py-2.5 text-right tabular-nums {warnings.length ? 'font-medium text-red-700' : 'text-slate-600'}"
+													title={warnings.length
+														? `Doesn't fit before the due date — ${warnings.join('; ')}`
+														: task.assignments.map((a) => `${personLabel(a.personId)}: ${formatManDays(a.manDays)}`).join(', ')}
 												>
-													{task.manDays > 0 ? formatManDays(task.manDays) : '—'}
+													{#if warnings.length}<span aria-hidden="true">⚠ </span>{/if}{task.manDays > 0 ? formatManDays(task.manDays) : '—'}
+													{#if warnings.length}<span class="sr-only">Doesn't fit before the due date: {warnings.join('; ')}</span>{/if}
 												</td>
 												<td class="px-4 py-2.5">
 													<Badge tone={taskPriorityTone(task.priority)}>{task.priority}</Badge>

@@ -125,3 +125,57 @@ func TestMonthCapacity(t *testing.T) {
 		}
 	}
 }
+
+func TestAvailableDays(t *testing.T) {
+	leave := []DateRange{{From: *d("2026-11-23"), To: *d("2026-11-30")}}
+	cases := []struct {
+		name       string
+		start, due *time.Time
+		leave      []DateRange
+		want       int
+		ok         bool
+	}{
+		// 2026-11-23 (Mon) .. 2026-12-07 (Mon): 11 weekdays, 6 of them on leave.
+		{"leave inside the window", d("2026-11-23"), d("2026-12-07"), leave, 5, true},
+		{"no leave", d("2026-11-23"), d("2026-12-07"), nil, 11, true},
+		{"all on leave", d("2026-11-23"), d("2026-11-27"), leave, 0, true},
+		{"one day", d("2026-12-01"), d("2026-12-01"), leave, 1, true},
+		{"due only: no window", nil, d("2026-12-07"), leave, 0, false},
+		{"start only: no window", d("2026-11-23"), nil, leave, 0, false},
+		{"no dates", nil, nil, nil, 0, false},
+	}
+	for _, c := range cases {
+		got, ok := AvailableDays(c.start, c.due, c.leave)
+		if got != c.want || ok != c.ok {
+			t.Errorf("%s: got %d,%v; want %d,%v", c.name, got, ok, c.want, c.ok)
+		}
+	}
+}
+
+func TestSpreadManDaysAroundLeave(t *testing.T) {
+	leave := []DateRange{{From: *d("2026-11-23"), To: *d("2026-11-30")}}
+	start, due := d("2026-11-23"), d("2026-12-07")
+	// Only Dec 1–4 and Dec 7 are free: everything lands in December.
+	if got := SpreadManDaysAroundLeave(12, start, due, leave, month("2026-11")); !near(got, 0) {
+		t.Errorf("nov = %v, want 0", got)
+	}
+	if got := SpreadManDaysAroundLeave(12, start, due, leave, month("2026-12")); !near(got, 12) {
+		t.Errorf("dec = %v, want 12", got)
+	}
+	// Without leave it matches SpreadManDays.
+	for _, m := range []string{"2026-11", "2026-12"} {
+		if got, want := SpreadManDaysAroundLeave(12, start, due, nil, month(m)), SpreadManDays(12, start, due, month(m)); !near(got, want) {
+			t.Errorf("%s no leave = %v, want %v", m, got, want)
+		}
+	}
+	// Leave covering the whole window: fall back to plain spreading so the
+	// work doesn't disappear.
+	all := []DateRange{{From: *d("2026-11-01"), To: *d("2026-12-31")}}
+	if got, want := SpreadManDaysAroundLeave(12, start, due, all, month("2026-11")), SpreadManDays(12, start, due, month("2026-11")); !near(got, want) {
+		t.Errorf("all leave nov = %v, want %v", got, want)
+	}
+	// One date only: unchanged.
+	if got := SpreadManDaysAroundLeave(4, nil, d("2026-11-25"), leave, month("2026-11")); !near(got, 4) {
+		t.Errorf("due only = %v, want 4", got)
+	}
+}

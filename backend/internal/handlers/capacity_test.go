@@ -348,3 +348,92 @@ func TestPeople_WorkloadPct_UsesCapacityAfterLeave(t *testing.T) {
 		t.Errorf("workloadPct = %v, want %v", one.WorkloadPct, want)
 	}
 }
+
+// A 12 man-day task over 2026-11-23..12-07 (11 working days) for someone on
+// leave 11-23..11-30 (6 of them): only 5 days are left, and the work can
+// only happen in December.
+func TestTaskAroundLeave_SpreadAndAvailableDays(t *testing.T) {
+	r, _ := newTestRouter(t)
+	var me, other api.Person
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "Me", LastName: "M", Email: "me@x.dev"}, &me)
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "O", LastName: "O", Email: "o@x.dev"}, &other)
+	var project api.Project
+	doJSON(t, r, http.MethodPost, "/api/v1/projects", api.ProjectCreate{Key: "A", Name: "A"}, &project)
+	addLeave(t, r, me.Id, "2026-11-23", "2026-11-30", api.LeaveStatusApproved)
+	addLeave(t, r, other.Id, "2026-11-23", "2026-11-30", api.LeaveStatusPending)
+
+	var created api.Task
+	doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: project.Id, Title: "New req", StartDate: mdDate("2026-11-23"), DueDate: mdDate("2026-12-07"),
+		Assignments: &[]api.TaskAssignment{{PersonId: me.Id, ManDays: 12}, {PersonId: other.Id, ManDays: 3}},
+	}, &created)
+	var undated api.Task
+	doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: project.Id, Title: "Due only", DueDate: mdDate("2026-12-07"),
+		Assignments: &[]api.TaskAssignment{{PersonId: me.Id, ManDays: 1}},
+	}, &undated)
+
+	avail := func(task api.Task, person uuid.UUID) *int {
+		for _, a := range task.Assignments {
+			if a.PersonId == person {
+				return a.AvailableDays
+			}
+		}
+		t.Fatalf("no assignment for %s", person)
+		return nil
+	}
+	check := func(where string, task api.Task) {
+		t.Helper()
+		if got := avail(task, me.Id); got == nil || *got != 5 {
+			t.Errorf("%s: my available days = %v, want 5", where, got)
+		}
+		if got := avail(task, other.Id); got == nil || *got != 11 {
+			t.Errorf("%s: other's available days = %v, want 11 (pending leave ignored)", where, got)
+		}
+	}
+	check("create", created)
+	var got api.Task
+	doJSON(t, r, http.MethodGet, "/api/v1/tasks/"+created.Id.String(), nil, &got)
+	check("get", got)
+	var list api.TaskList
+	doJSON(t, r, http.MethodGet, "/api/v1/tasks?projectId="+project.Id.String(), nil, &list)
+	for _, task := range list.Data {
+		if task.Id == created.Id {
+			check("list", task)
+		}
+		if task.Id == undated.Id && avail(task, me.Id) != nil {
+			t.Errorf("due-only task: available days = %v, want null", *avail(task, me.Id))
+		}
+	}
+	title := "Renamed"
+	var patched api.Task
+	doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+created.Id.String(), api.TaskUpdate{Title: &title}, &patched)
+	check("patch", patched)
+
+	var wl api.PersonWorkload
+	doJSON(t, r, http.MethodGet, "/api/v1/people/"+me.Id.String()+"/workload?year=2026", nil, &wl)
+	nov, dec := wl.Months[10], wl.Months[11]
+	if nov.PlannedManDays != 0 || dec.PlannedManDays != 13 {
+		t.Errorf("planned nov %v dec %v; want 0, 13 (12 + 1 due-only)", nov.PlannedManDays, dec.PlannedManDays)
+	}
+	for _, task := range dec.Tasks {
+		switch task.TaskId {
+		case created.Id:
+			if task.AvailableDays == nil || *task.AvailableDays != 5 || task.MonthManDays != 12 {
+				t.Errorf("workload task = %+v, want 12 in Dec, 5 available days", task)
+			}
+		case undated.Id:
+			if task.AvailableDays != nil {
+				t.Errorf("due-only workload task available = %v, want null", *task.AvailableDays)
+			}
+		}
+	}
+
+	var rep api.CapacityReport
+	doJSON(t, r, http.MethodGet, "/api/v1/capacity?month=2026-12", nil, &rep)
+	for _, p := range rep.People {
+		if p.PersonId == me.Id && p.PlannedManDays != 13 {
+			t.Errorf("capacity report Dec planned = %v, want 13", p.PlannedManDays)
+		}
+	}
+}

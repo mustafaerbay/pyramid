@@ -1064,6 +1064,8 @@ export interface components {
             personId: string;
             /** Format: double */
             manDays: number;
+            /** @description Working days (Mon–Fri, minus the person's approved leave) between the task's start and due dates. Null when the task doesn't have both dates. manDays above this means the share can't be done in time. Ignored on input. */
+            readonly availableDays?: number | null;
         };
         CapacityReport: {
             /**
@@ -1146,13 +1148,15 @@ export interface components {
             manDays: number;
             /**
              * Format: double
-             * @description The part of manDays that falls in this month.
+             * @description The part of manDays that falls in this month. Spread over the working days in the task's window the person isn't on leave.
              */
             monthManDays: number;
             /** Format: date */
             startDate?: string | null;
             /** Format: date */
             dueDate?: string | null;
+            /** @description Working days the person isn't on leave between the task's start and due dates (null without both dates). manDays above this means the task can't be done in time. */
+            availableDays?: number | null;
         };
         TaskList: {
             data: components["schemas"]["Task"][];

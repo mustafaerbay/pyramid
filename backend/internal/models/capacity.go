@@ -97,11 +97,8 @@ func LeaveDaysInMonth(ranges []DateRange, m time.Time) int {
 		if !isWeekday(day) {
 			continue
 		}
-		for _, r := range ranges {
-			if !day.Before(dateOnly(r.From)) && !day.After(dateOnly(r.To)) {
-				n++
-				break
-			}
+		if onLeave(day, ranges) {
+			n++
 		}
 	}
 	return n
@@ -115,4 +112,62 @@ func MonthCapacity(capacity float64, workingDays, leaveDays int) float64 {
 		return 0
 	}
 	return capacity * float64(workingDays-leaveDays) / float64(workingDays)
+}
+
+func onLeave(day time.Time, leave []DateRange) bool {
+	for _, r := range leave {
+		if !day.Before(dateOnly(r.From)) && !day.After(dateOnly(r.To)) {
+			return true
+		}
+	}
+	return false
+}
+
+// freeDaysBetween counts Mon–Fri days in [from, to] that aren't on leave.
+func freeDaysBetween(from, to time.Time, leave []DateRange) int {
+	n := 0
+	for day := dateOnly(from); !day.After(dateOnly(to)); day = day.AddDate(0, 0, 1) {
+		if isWeekday(day) && !onLeave(day, leave) {
+			n++
+		}
+	}
+	return n
+}
+
+// AvailableDays is how many working days (Mon–Fri, not on leave) a person
+// has between a task's start and due dates. ok is false when the task
+// doesn't have both dates, so there is no window to check against.
+func AvailableDays(start, due *time.Time, leave []DateRange) (days int, ok bool) {
+	if start == nil || due == nil {
+		return 0, false
+	}
+	return freeDaysBetween(*start, *due, leave), true
+}
+
+// SpreadManDaysAroundLeave is SpreadManDays for one person's share of a
+// task, skipping the days that person is on leave: the man-days are spread
+// over the working days in [start, due] they are actually there. When the
+// task has a single date, or every working day in its window is on leave,
+// it falls back to SpreadManDays so the work still shows up somewhere.
+func SpreadManDaysAroundLeave(manDays float64, start, due *time.Time, leave []DateRange, m time.Time) float64 {
+	if len(leave) == 0 || start == nil || due == nil || dateOnly(*start).Equal(dateOnly(*due)) {
+		return SpreadManDays(manDays, start, due, m)
+	}
+	total := freeDaysBetween(*start, *due, leave)
+	if manDays == 0 || total == 0 {
+		return SpreadManDays(manDays, start, due, m)
+	}
+	from, to := dateOnly(*start), dateOnly(*due)
+	first := MonthStart(m)
+	last := first.AddDate(0, 1, -1)
+	if from.After(last) || to.Before(first) {
+		return 0
+	}
+	if from.Before(first) {
+		from = first
+	}
+	if to.After(last) {
+		to = last
+	}
+	return manDays * float64(freeDaysBetween(from, to, leave)) / float64(total)
 }

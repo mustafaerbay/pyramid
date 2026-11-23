@@ -40,3 +40,22 @@ export function splitEvenly(total: number, count: number): number[] {
 	const extra = halves % count;
 	return Array.from({ length: count }, (_, i) => (base + (i < extra ? 1 : 0)) / 2);
 }
+
+type Fit = { personId: string; manDays: number; availableDays?: number | null };
+
+/**
+ * Assignments whose man-days don't fit in the working days the person has
+ * between the task's start and due dates (after approved leave). Tasks
+ * without both dates have no availableDays and are never listed.
+ */
+export function shortfalls<T extends Fit>(assignments: T[]): T[] {
+	return assignments.filter(
+		(a) => a.manDays > 0 && a.availableDays != null && a.manDays > a.availableDays
+	);
+}
+
+/** "12 md in 5 available days" — the warning shown for a shortfall. */
+export function fitText(manDays: number, availableDays: number): string {
+	if (availableDays === 0) return `${formatManDays(manDays)} md, no available days (on leave)`;
+	return `${formatManDays(manDays)} md in ${availableDays} available day${availableDays === 1 ? '' : 's'}`;
+}

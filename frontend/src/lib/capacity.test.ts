@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatManDays, loadBand, monthKey, monthLabel, shiftMonth, splitEvenly } from './capacity';
+import { formatManDays, loadBand, monthKey, monthLabel, shiftMonth, splitEvenly, shortfalls, fitText } from './capacity';
 
 describe('monthKey', () => {
 	it('formats a date as YYYY-MM', () => {
@@ -52,5 +52,29 @@ describe('splitEvenly', () => {
 	it('returns nothing for no people and zeros for no total', () => {
 		expect(splitEvenly(10, 0)).toEqual([]);
 		expect(splitEvenly(0, 2)).toEqual([0, 0]);
+	});
+});
+
+describe('shortfalls', () => {
+	it('lists assignments with more man-days than available days', () => {
+		const list = [
+			{ personId: 'a', manDays: 12, availableDays: 5 },
+			{ personId: 'b', manDays: 3, availableDays: 11 },
+			{ personId: 'c', manDays: 5, availableDays: 5 },
+			{ personId: 'd', manDays: 4, availableDays: null },
+			{ personId: 'e', manDays: 2 }
+		];
+		expect(shortfalls(list).map((a) => a.personId)).toEqual(['a']);
+	});
+	it('ignores assignments without man-days', () => {
+		expect(shortfalls([{ personId: 'a', manDays: 0, availableDays: 0 }])).toEqual([]);
+	});
+});
+
+describe('fitText', () => {
+	it('says how many days are left for the work', () => {
+		expect(fitText(12, 5)).toBe('12 md in 5 available days');
+		expect(fitText(2.5, 1)).toBe('2.5 md in 1 available day');
+		expect(fitText(3, 0)).toBe('3 md, no available days (on leave)');
 	});
 });

@@ -59,6 +59,15 @@ func (h *Handler) ListTasks(c *gin.Context) {
 		return
 	}
 
+	ptrs := make([]*models.Task, len(tasks))
+	for i := range tasks {
+		ptrs[i] = &tasks[i]
+	}
+	if err := h.attachAvailability(ptrs...); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
+		return
+	}
+
 	data := make([]api.Task, len(tasks))
 	for i := range tasks {
 		data[i] = tasks[i].ToAPI()
@@ -214,6 +223,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		}
 	}
 
+	if err := h.attachAvailability(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
+		return
+	}
 	c.JSON(http.StatusCreated, t.ToAPI())
 }
 
@@ -230,6 +243,10 @@ func (h *Handler) GetTask(c *gin.Context) {
 	}
 	if err := h.attachAssigneesOne(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task assignees", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.attachAvailability(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
 	}
 	c.JSON(http.StatusOK, t.ToAPI())
@@ -301,6 +318,10 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		}
 	} else if err := h.attachAssigneesOne(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task assignees", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.attachAvailability(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
 	}
 

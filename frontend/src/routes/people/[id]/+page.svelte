@@ -8,7 +8,7 @@
 	import PersonFormModal from '$lib/components/PersonFormModal.svelte';
 	import type { BadgeTone } from '$lib/badgeTones';
 	import { chartColors, type ChartColor } from '$lib/chartColors';
-	import { formatManDays, loadBand, monthKey, monthLabel } from '$lib/capacity';
+	import { fitText, formatManDays, loadBand, monthKey, monthLabel } from '$lib/capacity';
 
 	type Person = components['schemas']['Person'];
 	type PersonWorkload = components['schemas']['PersonWorkload'];
@@ -122,6 +122,12 @@
 		...(free > 0 ? [{ label: 'Free', value: Math.round(free * 10) / 10, color: freeColor }] : [])
 	]);
 
+	// Tasks this month whose man-days don't fit in the person's free working
+	// days between start and due (approved leave taken out).
+	const tight = (t: { manDays: number; availableDays?: number | null }) =>
+		t.availableDays != null && t.manDays > t.availableDays;
+	const tightCount = $derived((current?.tasks ?? []).filter(tight).length);
+
 	const yearTotal = $derived((workload?.months ?? []).reduce((s, m) => s + m.plannedManDays, 0));
 
 	function statusTone(status: Person['status']): BadgeTone {
@@ -233,6 +239,11 @@
 							{band.label} · {formatManDays(free)} man-days free
 						{/if}
 					</p>
+					{#if tightCount > 0}
+						<p class="mt-1 text-sm font-medium text-red-700">
+							⚠ {tightCount} task{tightCount === 1 ? '' : 's'} can't be done by the due date
+						</p>
+					{/if}
 				</div>
 
 				<div class="rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
@@ -263,6 +274,11 @@
 										{/if}
 										<span>{task.status.replace('_', ' ')}</span>
 									</div>
+									{#if tight(task)}
+										<p class="mt-1 text-xs font-medium text-red-700">
+											⚠ Doesn't fit: {fitText(task.manDays, task.availableDays ?? 0)} before the due date
+										</p>
+									{/if}
 								</li>
 							{/each}
 						</ul>

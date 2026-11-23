@@ -828,12 +828,14 @@ type PersonWorkloadMonth struct {
 
 // PersonWorkloadTask defines model for PersonWorkloadTask.
 type PersonWorkloadTask struct {
-	DueDate *openapi_types.Date `json:"dueDate"`
+	// AvailableDays Working days the person isn't on leave between the task's start and due dates (null without both dates). manDays above this means the task can't be done in time.
+	AvailableDays *int                `json:"availableDays"`
+	DueDate       *openapi_types.Date `json:"dueDate"`
 
 	// ManDays This person's man-days on the task (all months).
 	ManDays float64 `json:"manDays"`
 
-	// MonthManDays The part of manDays that falls in this month.
+	// MonthManDays The part of manDays that falls in this month. Spread over the working days in the task's window the person isn't on leave.
 	MonthManDays float64             `json:"monthManDays"`
 	ProjectId    openapi_types.UUID  `json:"projectId"`
 	StartDate    *openapi_types.Date `json:"startDate"`
@@ -1074,8 +1076,10 @@ type Task struct {
 
 // TaskAssignment defines model for TaskAssignment.
 type TaskAssignment struct {
-	ManDays  float64            `json:"manDays"`
-	PersonId openapi_types.UUID `json:"personId"`
+	// AvailableDays Working days (Mon–Fri, minus the person's approved leave) between the task's start and due dates. Null when the task doesn't have both dates. manDays above this means the share can't be done in time. Ignored on input.
+	AvailableDays *int               `json:"availableDays"`
+	ManDays       float64            `json:"manDays"`
+	PersonId      openapi_types.UUID `json:"personId"`
 }
 
 // TaskCreate defines model for TaskCreate.
