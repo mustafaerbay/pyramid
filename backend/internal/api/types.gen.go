@@ -1229,6 +1229,9 @@ type Task struct {
 	Priority  TaskPriority        `json:"priority"`
 	ProjectId openapi_types.UUID  `json:"projectId"`
 
+	// Rank Manual order within the project, lower first. Change it with POST /tasks/{id}/move.
+	Rank float64 `json:"rank"`
+
 	// RelatedIds Tasks linked as related (both ways, same project), by task number.
 	RelatedIds []openapi_types.UUID `json:"relatedIds"`
 
@@ -1353,6 +1356,12 @@ type TaskHistoryEntryAction string
 type TaskList struct {
 	Data       []Task     `json:"data"`
 	Pagination Pagination `json:"pagination"`
+}
+
+// TaskMove defines model for TaskMove.
+type TaskMove struct {
+	// AfterId Place right after this task (same project); null puts it first.
+	AfterId *openapi_types.UUID `json:"afterId"`
 }
 
 // TaskPriority defines model for TaskPriority.
@@ -1707,6 +1716,9 @@ type UpdateTaskJSONRequestBody = TaskUpdate
 
 // CreateTaskCommentJSONRequestBody defines body for CreateTaskComment for application/json ContentType.
 type CreateTaskCommentJSONRequestBody = TaskCommentInput
+
+// MoveTaskJSONRequestBody defines body for MoveTask for application/json ContentType.
+type MoveTaskJSONRequestBody = TaskMove
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserCreate

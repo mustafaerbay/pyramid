@@ -54,7 +54,7 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	}
 
 	var tasks []models.Task
-	if err := q.Order("number ASC").
+	if err := q.Order("rank ASC, number ASC").
 		Limit(pageSize).
 		Offset((page - 1) * pageSize).
 		Find(&tasks).Error; err != nil {
@@ -254,6 +254,14 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		return
 	}
 	t.Number = maxNumber + 1
+	// New items go to the bottom of the project's order.
+	var maxRank float64
+	if err := h.db.Model(&models.Task{}).Where("project_id = ?", in.ProjectId).
+		Select("COALESCE(MAX(rank), 0)").Scan(&maxRank).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to place task", Details: strptr(err.Error())})
+		return
+	}
+	t.Rank = maxRank + rankStep
 
 	if err := h.db.Create(&t).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to create task", Details: strptr(err.Error())})

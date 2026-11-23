@@ -335,6 +335,7 @@ CREATE TABLE tasks (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id    UUID NOT NULL REFERENCES projects(id)   ON DELETE CASCADE,
     number        INTEGER NOT NULL,                        -- per-project sequential (PYR-42)
+    rank          DOUBLE PRECISION NOT NULL DEFAULT 0,     -- manual backlog order, lower first
     parent_id     UUID REFERENCES tasks(id)      ON DELETE SET NULL,  -- subtasks / epic children
     duplicate_of_id UUID REFERENCES tasks(id)    ON DELETE SET NULL,  -- this is a copy of that task
     milestone_id  UUID REFERENCES milestones(id) ON DELETE SET NULL,

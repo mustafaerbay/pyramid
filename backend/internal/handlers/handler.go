@@ -91,6 +91,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.GET("/capacity", h.GetCapacity)
 		v1.GET("/people/:id/workload", h.GetPersonWorkload)
 		v1.GET("/tags", h.ListTags)
+		v1.POST("/tasks/:id/move", h.MoveTask)
 		v1.GET("/tasks/:id/comments", h.ListTaskComments)
 		v1.POST("/tasks/:id/comments", h.CreateTaskComment)
 		v1.PATCH("/task-comments/:id", h.UpdateTaskComment)

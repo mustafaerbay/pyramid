@@ -198,6 +198,7 @@ CREATE TABLE tasks (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	project_id TEXT NOT NULL,
 	number INTEGER NOT NULL,
+	rank REAL NOT NULL DEFAULT 0,
 	parent_id TEXT,
 	duplicate_of_id TEXT,
 	milestone_id TEXT,

@@ -23,6 +23,7 @@
 		fitWarnings,
 		onOpen,
 		onMove,
+		onPlaceBefore,
 		onTagSelect
 	}: {
 		tasks: Task[];
@@ -36,6 +37,8 @@
 		fitWarnings: (t: Task) => string[];
 		onOpen: (t: Task) => void;
 		onMove: (t: Task, status: TaskStatus) => void;
+		/** Dropped on a card: goes just before it in the manual order. */
+		onPlaceBefore: (t: Task, targetId: string) => void;
 		onTagSelect: (tag: string) => void;
 	} = $props();
 
@@ -103,6 +106,19 @@
 						ondragend={() => {
 							draggingId = null;
 							overStatus = null;
+						}}
+						ondragover={(e) => {
+							if (draggingId && draggingId !== task.id) e.preventDefault();
+						}}
+						ondrop={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							const moving = tasks.find((t) => t.id === draggingId);
+							draggingId = null;
+							overStatus = null;
+							if (!moving || moving.id === task.id) return;
+							if (moving.status !== col.status) onMove(moving, col.status);
+							onPlaceBefore(moving, task.id);
 						}}
 					>
 						{#if parent}

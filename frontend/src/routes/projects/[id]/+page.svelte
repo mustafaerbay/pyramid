@@ -23,7 +23,7 @@
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import { TYPE_OPTIONS, childType, type WorkItemType } from '$lib/workItems';
-	import { boardStatuses } from '$lib/board';
+	import { afterIdToPlaceBefore, boardStatuses } from '$lib/board';
 	import { countsTowardTotals, nestTasks, subtaskSummary } from '$lib/subtasks';
 	import { hasAllTags, tagColor } from '$lib/tags';
 	import { fitText, formatManDays, shortfalls } from '$lib/capacity';
@@ -519,6 +519,34 @@
 		flash('success', wasEdit ? `Updated "${saved.title}".` : `Added task "${saved.title}".`);
 		loadTasks();
 	}
+
+	// Manual order: put `task` after `afterId` (null = first).
+	async function placeTask(task: Task, afterId: string | null) {
+		const { data, error: err } = await api.POST('/api/v1/tasks/{id}/move', {
+			params: { path: { id: task.id } },
+			body: { afterId }
+		});
+		if (err || !data) {
+			flash('error', err?.message ?? 'Failed to reorder task.');
+			return;
+		}
+		// Only the rank: a status change sent at the same time (board drop)
+		// must not be overwritten by this response.
+		tasks = tasks
+			.map((t) => (t.id === data.id ? { ...t, rank: data.rank } : t))
+			.sort((a, b) => a.rank - b.rank || a.number - b.number);
+	}
+	function placeBefore(task: Task, targetId: string) {
+		if (task.id !== targetId) placeTask(task, afterIdToPlaceBefore(tasks, task.id, targetId));
+	}
+	// ↑/↓ on phones: swap with the neighbour in the visible list.
+	function shift(task: Task, siblings: Task[], dir: -1 | 1) {
+		const j = siblings.findIndex((x) => x.id === task.id) + dir;
+		if (j < 0 || j >= siblings.length) return;
+		if (dir < 0) placeBefore(task, siblings[j].id);
+		else placeTask(task, siblings[j].id);
+	}
+	let draggingRow = $state<string | null>(null);
 
 	// Board moves update the card at once and put it back if saving fails.
 	async function moveTask(task: Task, status: TaskStatus) {
@@ -1532,6 +1560,7 @@
 						{fitWarnings}
 						onOpen={openEditTask}
 						onMove={moveTask}
+						onPlaceBefore={placeBefore}
 						onTagSelect={addTagFilter}
 					/>
 				{:else}
@@ -1560,8 +1589,9 @@
 								<p class="px-4 py-3 text-sm text-slate-400">No tasks match the current filters.</p>
 							{:else}
 								<ul class="divide-y divide-slate-100 md:hidden">
-									{#each nestTasks(group.tasks, tasks) as row (row.task.id)}
+									{#each nestTasks(group.tasks, tasks) as row, i (row.task.id)}
 										{@const task = row.task}
+										{@const siblings = nestTasks(group.tasks, tasks).map((r) => r.task)}
 										<li class="space-y-2 py-3 pr-4 text-sm" style="padding-left: {1 + row.depth * 1.25}rem">
 											<button
 												type="button"
@@ -1608,6 +1638,20 @@
 												</select>
 											</div>
 											<div class="flex gap-2">
+												<button
+													type="button"
+													class="btn-secondary px-3"
+													aria-label="Move {task.title} up"
+													disabled={i === 0}
+													onclick={() => shift(task, siblings, -1)}>↑</button
+												>
+												<button
+													type="button"
+													class="btn-secondary px-3"
+													aria-label="Move {task.title} down"
+													disabled={i === siblings.length - 1}
+													onclick={() => shift(task, siblings, 1)}>↓</button
+												>
 												<button type="button" class="btn-secondary flex-1" onclick={() => openEditTask(task)}>Edit</button>
 												<button
 													type="button"
@@ -1636,7 +1680,25 @@
 										{#each nestTasks(group.tasks, tasks) as row (row.task.id)}
 											{@const task = row.task}
 											{@const warnings = fitWarnings(task)}
-											<tr class="hover:bg-slate-50">
+											<tr
+												class="hover:bg-slate-50 {draggingRow === task.id ? 'opacity-50' : ''}"
+												draggable="true"
+												title="Drag to reorder"
+												ondragstart={(e) => {
+													draggingRow = task.id;
+													if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+												}}
+												ondragend={() => (draggingRow = null)}
+												ondragover={(e) => {
+													if (draggingRow && draggingRow !== task.id) e.preventDefault();
+												}}
+												ondrop={(e) => {
+													e.preventDefault();
+													const moving = tasks.find((x) => x.id === draggingRow);
+													draggingRow = null;
+													if (moving) placeBefore(moving, task.id);
+												}}
+											>
 												<td class="py-2.5 pr-4" style="padding-left: {1 + row.depth * 1.5}rem">
 													{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} /> <button
 														type="button"

@@ -22,6 +22,8 @@ type Task struct {
 	// Number is the per-project sequential number (e.g. 42 for "PYR-42"),
 	// assigned by the handler — see handlers.nextTaskNumber.
 	Number int `gorm:"not null"`
+	// Rank is the manual order in the project, lower first.
+	Rank float64 `gorm:"not null;default:0"`
 	// ParentID puts this work item under another (same project).
 	ParentID *uuid.UUID   `gorm:"type:uuid;index"`
 	Type     api.TaskType `gorm:"type:task_type;not null;default:task"`
@@ -123,6 +125,7 @@ func (t Task) ToAPI() api.Task {
 		Id:               t.ID,
 		ProjectId:        t.ProjectID,
 		Number:           t.Number,
+		Rank:             t.Rank,
 		Title:            t.Title,
 		Description:      t.Description,
 		Status:           t.Status,

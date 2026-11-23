@@ -979,6 +979,30 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
 
+  /api/v1/tasks/{id}/move:
+    post:
+      operationId: moveTask
+      tags: [tasks]
+      summary: Put a task at a new place in its project's order
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskMove"
+      responses:
+        "200":
+          description: The moved task with its new rank
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tasks/{id}/comments:
     get:
       operationId: listTaskComments
@@ -1101,7 +1125,7 @@ paths:
       summary: List tasks
       description: >
         The breakdown of a project's (and optionally a milestone's) work into
-        assignable units. Filter by projectId to see a single project's
+        assignable units, in manual order (rank). Filter by projectId to see a single project's
         tasks — the usual case, the project dashboard's Tasks section.
       parameters:
         - $ref: "#/components/parameters/PageParam"
@@ -2592,7 +2616,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, createdAt, updatedAt]
+      required: [id, projectId, rank, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -2613,6 +2637,10 @@ components:
             never a loop, never under a lower-level type).
             A task that has subtasks doesn't count its own man-days toward
             capacity; its subtasks carry the work.
+        rank:
+          type: number
+          format: double
+          description: Manual order within the project, lower first. Change it with POST /tasks/{id}/move.
         number:
           type: integer
           description: Per-project sequential number, e.g. 42 for "PYR-42".
@@ -3142,6 +3170,16 @@ components:
             $ref: "#/components/schemas/Notification"
         unreadCount:
           type: integer
+
+    TaskMove:
+      type: object
+      required: [afterId]
+      properties:
+        afterId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Place right after this task (same project); null puts it first.
 
     TagList:
       type: object

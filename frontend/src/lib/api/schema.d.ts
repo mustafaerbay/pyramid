@@ -492,6 +492,23 @@ export interface paths {
         patch: operations["updateWeeklySummary"];
         trace?: never;
     };
+    "/api/v1/tasks/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put a task at a new place in its project's order */
+        post: operations["moveTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tasks/{id}/comments": {
         parameters: {
             query?: never;
@@ -574,7 +591,7 @@ export interface paths {
         };
         /**
          * List tasks
-         * @description The breakdown of a project's (and optionally a milestone's) work into assignable units. Filter by projectId to see a single project's tasks — the usual case, the project dashboard's Tasks section.
+         * @description The breakdown of a project's (and optionally a milestone's) work into assignable units, in manual order (rank). Filter by projectId to see a single project's tasks — the usual case, the project dashboard's Tasks section.
          */
         get: operations["listTasks"];
         put?: never;
@@ -1227,6 +1244,11 @@ export interface components {
              * @description The work item this one sits under (same project, up to 5 levels, never a loop, never under a lower-level type). A task that has subtasks doesn't count its own man-days toward capacity; its subtasks carry the work.
              */
             parentId?: string | null;
+            /**
+             * Format: double
+             * @description Manual order within the project, lower first. Change it with POST /tasks/{id}/move.
+             */
+            rank: number;
             /** @description Per-project sequential number, e.g. 42 for "PYR-42". */
             number: number;
             type: components["schemas"]["TaskType"];
@@ -1490,6 +1512,13 @@ export interface components {
         NotificationList: {
             data: components["schemas"]["Notification"][];
             unreadCount: number;
+        };
+        TaskMove: {
+            /**
+             * Format: uuid
+             * @description Place right after this task (same project); null puts it first.
+             */
+            afterId: string | null;
         };
         TagList: {
             data: string[];
@@ -2994,6 +3023,34 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             default: components["responses"]["DefaultError"];
+        };
+    };
+    moveTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskMove"];
+            };
+        };
+        responses: {
+            /** @description The moved task with its new rank */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     listTaskComments: {
