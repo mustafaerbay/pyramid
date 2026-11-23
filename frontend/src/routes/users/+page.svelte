@@ -132,6 +132,16 @@
 								</button>
 								<button
 									type="button"
+									class="btn-secondary"
+									title="Turn off two-factor sign-in (when they lost their phone)"
+									onclick={async () => {
+										if (!confirm(`Turn off two-factor sign-in for ${p.firstName}?`)) return;
+										const { error: err } = await api.POST('/api/v1/users/{id}/reset-2fa', { params: { path: { id: u.id } } });
+										flash(err ? 'error' : 'success', err ? (err.message ?? 'Could not reset.') : `${p.firstName} can sign in with just a password now.`);
+									}}>Reset 2FA</button
+								>
+								<button
+									type="button"
 									class="btn-secondary {u.isActive ? 'text-red-600 hover:bg-red-50' : ''}"
 									onclick={() =>
 										update(u, { isActive: !u.isActive }, u.isActive ? `${p.firstName} can no longer sign in.` : `${p.firstName} can sign in again.`)}

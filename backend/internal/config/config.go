@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 // Config holds runtime configuration, sourced from environment variables.
@@ -29,11 +30,15 @@ type Config struct {
 	// Email for notifications; off unless SMTP_HOST and SMTP_FROM are set.
 	SMTPHost string
 	// ArtiURL is the default arti server for linking artifact packages.
-	ArtiURL      string
-	SMTPPort     string
-	SMTPUser     string
-	SMTPPassword string
-	SMTPFrom     string
+	ArtiURL string
+	// Single sign-on (OpenID Connect); on when OIDC_ISSUER, OIDC_CLIENT_ID
+	// and OIDC_CLIENT_SECRET are set. OIDC_REDIRECT_URL defaults to this
+	// API's /api/v1/auth/oidc/callback.
+	OIDCIssuer, OIDCClientID, OIDCClientSecret, OIDCLabel, OIDCRedirectURL string
+	SMTPPort                                                               string
+	SMTPUser                                                               string
+	SMTPPassword                                                           string
+	SMTPFrom                                                               string
 	// PublicURL makes links in emails absolute (PUBLIC_URL).
 	PublicURL string
 	// UploadDir is where attached files are kept (UPLOAD_DIR).
@@ -54,14 +59,19 @@ func Load() Config {
 		AdminEmail:    os.Getenv("ADMIN_EMAIL"),
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
 
-		SMTPHost:     os.Getenv("SMTP_HOST"),
-		ArtiURL:      os.Getenv("ARTI_URL"),
-		SMTPPort:     getenv("SMTP_PORT", "587"),
-		SMTPUser:     os.Getenv("SMTP_USER"),
-		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
-		SMTPFrom:     os.Getenv("SMTP_FROM"),
-		PublicURL:    os.Getenv("PUBLIC_URL"),
-		UploadDir:    getenv("UPLOAD_DIR", "./uploads"),
+		SMTPHost:         os.Getenv("SMTP_HOST"),
+		ArtiURL:          os.Getenv("ARTI_URL"),
+		OIDCIssuer:       strings.TrimRight(os.Getenv("OIDC_ISSUER"), "/"),
+		OIDCClientID:     os.Getenv("OIDC_CLIENT_ID"),
+		OIDCClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
+		OIDCLabel:        os.Getenv("OIDC_LABEL"),
+		OIDCRedirectURL:  os.Getenv("OIDC_REDIRECT_URL"),
+		SMTPPort:         getenv("SMTP_PORT", "587"),
+		SMTPUser:         os.Getenv("SMTP_USER"),
+		SMTPPassword:     os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:         os.Getenv("SMTP_FROM"),
+		PublicURL:        os.Getenv("PUBLIC_URL"),
+		UploadDir:        getenv("UPLOAD_DIR", "./uploads"),
 	}
 }
 

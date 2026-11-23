@@ -4,6 +4,7 @@
 	import { ROLE_OPTIONS } from '$lib/roles';
 	import NotificationSettings from '$lib/components/NotificationSettings.svelte';
 	import ApiTokens from '$lib/components/ApiTokens.svelte';
+	import TwoFactorSettings from '$lib/components/TwoFactorSettings.svelte';
 
 	let current = $state('');
 	let next = $state('');
@@ -50,6 +51,8 @@
 			</div>
 		</div>
 	{/if}
+
+	<TwoFactorSettings />
 
 	<NotificationSettings />
 

@@ -39,7 +39,15 @@ func hashToken(t string) string {
 
 // GetAuthOptions implements GET /api/v1/auth/options.
 func (h *Handler) GetAuthOptions(c *gin.Context) {
-	c.JSON(http.StatusOK, api.AuthOptions{EmailReset: h.mail != nil})
+	out := api.AuthOptions{EmailReset: h.mail != nil}
+	if h.oidcOn() {
+		on, label := true, h.cfg.OIDCLabel
+		if label == "" {
+			label = "Sign in with single sign-on"
+		}
+		out.Sso, out.SsoLabel = &on, &label
+	}
+	c.JSON(http.StatusOK, out)
 }
 
 // ForgotPassword implements POST /api/v1/auth/forgot. It answers the same

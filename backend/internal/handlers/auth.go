@@ -260,6 +260,18 @@ func (h *Handler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, api.Error{Message: "wrong email or password"})
 		return
 	}
+	if h.totpOf(u.ID).Enabled {
+		if in.Code == nil || strings.TrimSpace(*in.Code) == "" {
+			c.JSON(http.StatusUnauthorized, api.Error{Message: "enter the code from your authenticator app", Details: strptr("totp_required")})
+			return
+		}
+		if !h.secondFactor(u, *in.Code) {
+			h.logins.fail(key)
+			h.audit(c, &u, u.Email, "failed sign in (code)", "session", nil, nil)
+			c.JSON(http.StatusUnauthorized, api.Error{Message: "that code doesn't match", Details: strptr("totp_required")})
+			return
+		}
+	}
 	h.logins.reset(key)
 	now := time.Now().UTC()
 	u.LastLoginAt = &now

@@ -136,6 +136,10 @@ CREATE TABLE users (
     is_active      BOOLEAN NOT NULL DEFAULT true,
     last_login_at  TIMESTAMPTZ,
     notification_prefs JSONB NOT NULL DEFAULT '{}', -- per notification type: {inApp, email}
+    totp_secret    TEXT,                          -- base32; set up but maybe not enabled yet
+    totp_enabled   BOOLEAN NOT NULL DEFAULT false,
+    totp_recovery  JSONB NOT NULL DEFAULT '[]',   -- SHA-256 hashes of unused recovery codes
+    totp_last_step BIGINT NOT NULL DEFAULT 0,      -- last accepted 30 s step (no code reuse)
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -124,6 +124,10 @@ CREATE TABLE users (
 	is_active BOOLEAN NOT NULL DEFAULT 1,
 	last_login_at DATETIME,
 	notification_prefs TEXT NOT NULL DEFAULT '{}',
+	totp_secret TEXT,
+	totp_enabled BOOLEAN NOT NULL DEFAULT 0,
+	totp_recovery TEXT NOT NULL DEFAULT '[]',
+	totp_last_step INTEGER NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

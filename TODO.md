@@ -44,7 +44,7 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Webhooks** — outgoing service hooks on item / sprint / comment events
 - [x] **Git linking** — GitHub / GitLab webhooks link commits and PRs that mention
       an item (`CAD-12`, `#12` in a project's repo) and show them on the item
-- [ ] **Two-factor sign-in and SSO** — TOTP 2FA; OpenID Connect sign-in
+- [x] **Two-factor sign-in and SSO** — TOTP 2FA; OpenID Connect sign-in
       (Entra ID, Google, Keycloak …) when configured
 - [x] **Audit log** — who changed what across the app (accounts, projects,
       settings), for admins

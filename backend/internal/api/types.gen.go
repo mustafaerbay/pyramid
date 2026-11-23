@@ -1471,6 +1471,12 @@ type AuthMe struct {
 type AuthOptions struct {
 	// EmailReset Whether "forgot password" can email a link (SMTP is set up).
 	EmailReset bool `json:"emailReset"`
+
+	// Sso Single sign-on (OpenID Connect) is set up; start it at /api/v1/auth/oidc/start.
+	Sso *bool `json:"sso,omitempty"`
+
+	// SsoLabel What the sign-in button says, e.g. "Sign in with Microsoft".
+	SsoLabel *string `json:"ssoLabel,omitempty"`
 }
 
 // BoardSettings defines model for BoardSettings.
@@ -1942,8 +1948,10 @@ type LeaveType string
 
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	// Code The 6-digit code from the authenticator app, or a recovery code, when the account has two-factor sign-in. Without it such an account gets 401 with details "totp_required".
+	Code     *string `json:"code,omitempty"`
+	Email    string  `json:"email"`
+	Password string  `json:"password"`
 }
 
 // Milestone defines model for Milestone.
@@ -3286,6 +3294,25 @@ type TestSuiteInput struct {
 	Position *float32           `json:"position,omitempty"`
 }
 
+// TwoFactorRecovery defines model for TwoFactorRecovery.
+type TwoFactorRecovery struct {
+	RecoveryCodes []string `json:"recoveryCodes"`
+}
+
+// TwoFactorSetup defines model for TwoFactorSetup.
+type TwoFactorSetup struct {
+	OtpauthUrl string `json:"otpauthUrl"`
+
+	// Secret Base32, to type into the app.
+	Secret string `json:"secret"`
+}
+
+// TwoFactorStatus defines model for TwoFactorStatus.
+type TwoFactorStatus struct {
+	Enabled           bool `json:"enabled"`
+	RecoveryCodesLeft int  `json:"recoveryCodesLeft"`
+}
+
 // User defines model for User.
 type User struct {
 	CreatedAt time.Time          `json:"createdAt"`
@@ -3518,6 +3545,22 @@ type ListAuditParams struct {
 	PageSize *PageSizeParam `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 }
 
+// DisableTwoFactorJSONBody defines body for DisableTwoFactor for application/json ContentType.
+type DisableTwoFactorJSONBody struct {
+	Password string `json:"password"`
+}
+
+// EnableTwoFactorJSONBody defines body for EnableTwoFactor for application/json ContentType.
+type EnableTwoFactorJSONBody struct {
+	Code string `json:"code"`
+}
+
+// OidcCallbackParams defines parameters for OidcCallback.
+type OidcCallbackParams struct {
+	Code  *string `form:"code,omitempty" json:"code,omitempty"`
+	State *string `form:"state,omitempty" json:"state,omitempty"`
+}
+
 // GetCapacityParams defines parameters for GetCapacity.
 type GetCapacityParams struct {
 	// Month YYYY-MM; defaults to the current month.
@@ -3722,6 +3765,12 @@ type CreateAreaJSONRequestBody = AreaCreate
 
 // UpdateAreaJSONRequestBody defines body for UpdateArea for application/json ContentType.
 type UpdateAreaJSONRequestBody = AreaUpdate
+
+// DisableTwoFactorJSONRequestBody defines body for DisableTwoFactor for application/json ContentType.
+type DisableTwoFactorJSONRequestBody DisableTwoFactorJSONBody
+
+// EnableTwoFactorJSONRequestBody defines body for EnableTwoFactor for application/json ContentType.
+type EnableTwoFactorJSONRequestBody EnableTwoFactorJSONBody
 
 // ForgotPasswordJSONRequestBody defines body for ForgotPassword for application/json ContentType.
 type ForgotPasswordJSONRequestBody = ForgotPassword
