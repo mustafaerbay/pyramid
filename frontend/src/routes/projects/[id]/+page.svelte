@@ -1658,13 +1658,21 @@
 						{/each}
 					</select>
 					{#if can('member')}
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingAreas = true)}>Areas…</button>
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingFields = true)}>Fields…</button>
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingWorkflow = true)}>Workflow…</button>
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTypes = true)}>Types…</button>
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTeams = true)}>Teams…</button>
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingRules = true)}>Rules…</button>
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingProcess = true)}>Process…</button>
+						<details class="relative">
+							<summary class="btn-ghost cursor-pointer list-none px-2 py-1 text-xs">Settings ▾</summary>
+							<div class="absolute right-0 z-30 mt-1 w-44 rounded-md border border-slate-200 bg-white py-1 text-sm shadow-lg">
+								{#each [['Workflow', () => (managingWorkflow = true)], ['Work item types', () => (managingTypes = true)], ['Custom fields', () => (managingFields = true)], ['Rules', () => (managingRules = true)], ['Areas', () => (managingAreas = true)], ['Teams', () => (managingTeams = true)], ['Process templates', () => (managingProcess = true)]] as [label, open] (label)}
+									<button
+										type="button"
+										class="block w-full px-3 py-1.5 text-left hover:bg-slate-50"
+										onclick={(e) => {
+											(e.currentTarget.closest('details') as HTMLDetailsElement).open = false;
+											(open as () => void)();
+										}}>{label}</button
+									>
+								{/each}
+							</div>
+						</details>
 					{/if}
 					{#if can('manager') && project}
 						<label class="flex items-center gap-1 text-xs text-slate-600" title="Only project members with write access (and managers) can change a restricted project">
