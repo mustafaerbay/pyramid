@@ -5,8 +5,11 @@
 	import { can, loadMe, session, signOut } from '$lib/auth.svelte';
 	import NotificationBell from '$lib/components/NotificationBell.svelte';
 	import SearchBox from '$lib/components/SearchBox.svelte';
+	import { i18n, setLocale, watchTranslations } from '$lib/i18n.svelte';
+	import { onMount } from 'svelte';
 
 	let { children } = $props();
+	onMount(() => watchTranslations());
 
 	// One entry per module. New modules get a tab here as they're built.
 	const baseNav = [
@@ -78,6 +81,12 @@
 				<span class="text-sm text-slate-500 sm:hidden">{currentLabel}</span>
 				<div class="ml-auto flex items-center gap-2"><SearchBox /><NotificationBell /></div>
 				<div class="hidden items-center gap-3 text-sm md:flex">
+					<button
+						type="button"
+						class="rounded px-1.5 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
+						title={i18n.locale === 'tr' ? 'Switch to English' : 'Türkçe’ye geç'}
+						onclick={() => setLocale(i18n.locale === 'tr' ? 'en' : 'tr')}>{i18n.locale === 'tr' ? 'EN' : 'TR'}</button
+					>
 					<a href="/account" class="font-medium text-slate-700 hover:underline" title="Your account">{firstName}</a>
 					<button type="button" class="text-slate-500 hover:text-slate-800 hover:underline" onclick={doSignOut}>Sign out</button>
 				</div>
@@ -112,6 +121,11 @@
 					<div class="mt-2 border-t border-slate-100 pt-2">
 						<a href="/account" class="flex min-h-11 items-center rounded-md px-3 text-base font-medium text-slate-600 hover:bg-slate-50"
 							>Your account ({firstName})</a
+						>
+						<button
+							type="button"
+							class="flex min-h-11 w-full items-center rounded-md px-3 text-left text-base font-medium text-slate-600 hover:bg-slate-50"
+							onclick={() => setLocale(i18n.locale === 'tr' ? 'en' : 'tr')}>{i18n.locale === 'tr' ? 'English' : 'Türkçe'}</button
 						>
 						<button
 							type="button"

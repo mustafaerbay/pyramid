@@ -48,7 +48,8 @@ Notes say what was built where it is simpler than ADO.
       (Entra ID, Google, Keycloak …) when configured
 - [x] **Audit log** — who changed what across the app (accounts, projects,
       settings), for admins
-- [ ] **Turkish interface** — Türkçe / English switch
+- [x] **Turkish interface** — Türkçe / English switch (TR/EN in the header; the
+      common screens are translated, rarer texts and server messages are still English)
 
 ## 3. Other ADO areas
 
