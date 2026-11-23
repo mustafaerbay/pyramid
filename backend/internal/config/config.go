@@ -27,7 +27,9 @@ type Config struct {
 	AuthOff bool
 
 	// Email for notifications; off unless SMTP_HOST and SMTP_FROM are set.
-	SMTPHost     string
+	SMTPHost string
+	// ArtiURL is the default arti server for linking artifact packages.
+	ArtiURL      string
 	SMTPPort     string
 	SMTPUser     string
 	SMTPPassword string
@@ -53,6 +55,7 @@ func Load() Config {
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
 
 		SMTPHost:     os.Getenv("SMTP_HOST"),
+		ArtiURL:      os.Getenv("ARTI_URL"),
 		SMTPPort:     getenv("SMTP_PORT", "587"),
 		SMTPUser:     os.Getenv("SMTP_USER"),
 		SMTPPassword: os.Getenv("SMTP_PASSWORD"),

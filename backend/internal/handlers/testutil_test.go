@@ -165,6 +165,22 @@ CREATE TABLE git_events (
 	UNIQUE (repo_id, kind, external_id)
 );
 
+CREATE TABLE project_packages (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	server_url TEXT NOT NULL,
+	package TEXT NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	UNIQUE (project_id, server_url, package)
+);
+
+CREATE TABLE artifact_links (
+	package_id TEXT NOT NULL,
+	artifact_version TEXT NOT NULL,
+	version_id TEXT NOT NULL,
+	PRIMARY KEY (package_id, artifact_version)
+);
+
 CREATE TABLE api_tokens (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	user_id TEXT NOT NULL,

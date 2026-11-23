@@ -800,6 +800,21 @@ CREATE TABLE git_events (
 );
 CREATE INDEX git_events_project ON git_events(project_id, occurred_at DESC);
 
+-- arti packages linked to projects (Artifacts), and which arti version shipped which Pyramid version
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    server_url TEXT NOT NULL,
+    package    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (project_id, server_url, package)
+);
+CREATE TABLE artifact_links (
+    package_id       UUID NOT NULL REFERENCES project_packages(id) ON DELETE CASCADE,
+    artifact_version TEXT NOT NULL,
+    version_id       UUID NOT NULL REFERENCES project_versions(id) ON DELETE CASCADE,
+    PRIMARY KEY (package_id, artifact_version)
+);
+
 -- Personal access tokens (only a SHA-256 hash is kept; scope read or write)
 CREATE TABLE api_tokens (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

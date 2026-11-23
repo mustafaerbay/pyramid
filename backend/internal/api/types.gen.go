@@ -1355,6 +1355,41 @@ type AreaUpdate struct {
 	Path string `json:"path"`
 }
 
+// ArtifactVersion defines model for ArtifactVersion.
+type ArtifactVersion struct {
+	Created time.Time `json:"created"`
+	Files   []struct {
+		Name   string  `json:"name"`
+		Sha256 *string `json:"sha256,omitempty"`
+		Size   int64   `json:"size"`
+		Url    string  `json:"url"`
+	} `json:"files"`
+
+	// Items Finished items of that Pyramid version (through its milestones).
+	Items []struct {
+		Id     openapi_types.UUID `json:"id"`
+		Number int                `json:"number"`
+		Title  string             `json:"title"`
+
+		// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+		Type TaskType `json:"type"`
+	} `json:"items"`
+	Locked bool `json:"locked"`
+
+	// Notes Release notes (Markdown), empty when none.
+	Notes   string `json:"notes"`
+	Version string `json:"version"`
+
+	// VersionId The Pyramid version this shipped.
+	VersionId   *openapi_types.UUID `json:"versionId"`
+	VersionName *string             `json:"versionName"`
+}
+
+// ArtifactVersionList defines model for ArtifactVersionList.
+type ArtifactVersionList struct {
+	Data []ArtifactVersion `json:"data"`
+}
+
 // Attachment defines model for Attachment.
 type Attachment struct {
 	CreatedAt time.Time          `json:"createdAt"`
@@ -2389,6 +2424,38 @@ type ProjectMemberUpdate struct {
 // ProjectMemberUpdateAccess In a restricted project, read members can't change anything.
 type ProjectMemberUpdateAccess string
 
+// ProjectPackage defines model for ProjectPackage.
+type ProjectPackage struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// Package e.g. WMG/Desktop/SmartDock
+	Package   string             `json:"package"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+	ServerUrl string             `json:"serverUrl"`
+
+	// UpdateUrl arti's update-check URL for desktop apps.
+	UpdateUrl string `json:"updateUrl"`
+
+	// WebUrl The package's page in arti.
+	WebUrl string `json:"webUrl"`
+}
+
+// ProjectPackageInput defines model for ProjectPackageInput.
+type ProjectPackageInput struct {
+	Package   string             `json:"package"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+
+	// ServerUrl Missing = the server's ARTI_URL.
+	ServerUrl *string `json:"serverUrl,omitempty"`
+}
+
+// ProjectPackageList defines model for ProjectPackageList.
+type ProjectPackageList struct {
+	Data             []ProjectPackage `json:"data"`
+	DefaultServerUrl *string          `json:"defaultServerUrl"`
+}
+
 // ProjectPriority defines model for ProjectPriority.
 type ProjectPriority string
 
@@ -3326,6 +3393,17 @@ type ListProjectMembersParams struct {
 	Role      *ProjectRole        `form:"role,omitempty" json:"role,omitempty"`
 }
 
+// ListProjectPackagesParams defines parameters for ListProjectPackages.
+type ListProjectPackagesParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
+// LinkArtifactVersionJSONBody defines body for LinkArtifactVersion for application/json ContentType.
+type LinkArtifactVersionJSONBody struct {
+	ArtifactVersion string              `json:"artifactVersion"`
+	VersionId       *openapi_types.UUID `json:"versionId"`
+}
+
 // ListProjectReposParams defines parameters for ListProjectRepos.
 type ListProjectReposParams struct {
 	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
@@ -3499,6 +3577,12 @@ type CreateProjectMemberJSONRequestBody = ProjectMemberCreate
 
 // UpdateProjectMemberJSONRequestBody defines body for UpdateProjectMember for application/json ContentType.
 type UpdateProjectMemberJSONRequestBody = ProjectMemberUpdate
+
+// CreateProjectPackageJSONRequestBody defines body for CreateProjectPackage for application/json ContentType.
+type CreateProjectPackageJSONRequestBody = ProjectPackageInput
+
+// LinkArtifactVersionJSONRequestBody defines body for LinkArtifactVersion for application/json ContentType.
+type LinkArtifactVersionJSONRequestBody LinkArtifactVersionJSONBody
 
 // CreateProjectRepoJSONRequestBody defines body for CreateProjectRepo for application/json ContentType.
 type CreateProjectRepoJSONRequestBody = ProjectRepoInput

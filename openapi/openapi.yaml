@@ -651,6 +651,106 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/project-packages:
+    get:
+      operationId: listProjectPackages
+      tags: [artifacts]
+      summary: The arti packages linked to a project
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Packages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectPackageList"
+    post:
+      operationId: createProjectPackage
+      tags: [artifacts]
+      summary: Link an arti package to a project (managers)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectPackageInput"
+      responses:
+        "201":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectPackage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/project-packages/{id}:
+    delete:
+      operationId: deleteProjectPackage
+      tags: [artifacts]
+      summary: Unlink an arti package (managers)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Unlinked
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/project-packages/{id}/versions:
+    get:
+      operationId: listPackageVersions
+      tags: [artifacts]
+      summary: The package's versions from arti, with release notes, files and the Pyramid version each one shipped
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactVersionList"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          description: arti didn't answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/project-packages/{id}/links:
+    put:
+      operationId: linkArtifactVersion
+      tags: [artifacts]
+      summary: Say which Pyramid version an arti version shipped (versionId null to unlink)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [artifactVersion]
+              properties:
+                artifactVersion:
+                  type: string
+                versionId:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        "204":
+          description: Saved
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -5052,6 +5152,119 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GitEvent"
+
+    ProjectPackage:
+      type: object
+      required: [id, projectId, serverUrl, package, webUrl, updateUrl, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        serverUrl:
+          type: string
+        package:
+          type: string
+          description: e.g. WMG/Desktop/SmartDock
+        webUrl:
+          type: string
+          description: The package's page in arti.
+        updateUrl:
+          type: string
+          description: arti's update-check URL for desktop apps.
+        createdAt:
+          type: string
+          format: date-time
+
+    ProjectPackageInput:
+      type: object
+      required: [projectId, package]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        serverUrl:
+          type: string
+          description: Missing = the server's ARTI_URL.
+        package:
+          type: string
+
+    ProjectPackageList:
+      type: object
+      required: [data, defaultServerUrl]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectPackage"
+        defaultServerUrl:
+          type: string
+          nullable: true
+
+    ArtifactVersion:
+      type: object
+      required: [version, created, files, notes, locked, items]
+      properties:
+        version:
+          type: string
+        created:
+          type: string
+          format: date-time
+        files:
+          type: array
+          items:
+            type: object
+            required: [name, size, url]
+            properties:
+              name:
+                type: string
+              size:
+                type: integer
+                format: int64
+              sha256:
+                type: string
+              url:
+                type: string
+        notes:
+          type: string
+          description: Release notes (Markdown), empty when none.
+        locked:
+          type: boolean
+        versionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The Pyramid version this shipped.
+        versionName:
+          type: string
+          nullable: true
+        items:
+          type: array
+          description: Finished items of that Pyramid version (through its milestones).
+          items:
+            type: object
+            required: [id, number, title, type]
+            properties:
+              id:
+                type: string
+                format: uuid
+              number:
+                type: integer
+              title:
+                type: string
+              type:
+                $ref: "#/components/schemas/TaskType"
+
+    ArtifactVersionList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtifactVersion"
 
     NotificationSettings:
       type: object

@@ -452,6 +452,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/project-packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The arti packages linked to a project */
+        get: operations["listProjectPackages"];
+        put?: never;
+        /** Link an arti package to a project (managers) */
+        post: operations["createProjectPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-packages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink an arti package (managers) */
+        delete: operations["deleteProjectPackage"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-packages/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The package's versions from arti, with release notes, files and the Pyramid version each one shipped */
+        get: operations["listPackageVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-packages/{id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Say which Pyramid version an arti version shipped (versionId null to unlink) */
+        put: operations["linkArtifactVersion"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -2583,6 +2652,64 @@ export interface components {
         GitEventList: {
             data: components["schemas"]["GitEvent"][];
         };
+        ProjectPackage: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            serverUrl: string;
+            /** @description e.g. WMG/Desktop/SmartDock */
+            package: string;
+            /** @description The package's page in arti. */
+            webUrl: string;
+            /** @description arti's update-check URL for desktop apps. */
+            updateUrl: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ProjectPackageInput: {
+            /** Format: uuid */
+            projectId: string;
+            /** @description Missing = the server's ARTI_URL. */
+            serverUrl?: string;
+            package: string;
+        };
+        ProjectPackageList: {
+            data: components["schemas"]["ProjectPackage"][];
+            defaultServerUrl: string | null;
+        };
+        ArtifactVersion: {
+            version: string;
+            /** Format: date-time */
+            created: string;
+            files: {
+                name: string;
+                /** Format: int64 */
+                size: number;
+                sha256?: string;
+                url: string;
+            }[];
+            /** @description Release notes (Markdown), empty when none. */
+            notes: string;
+            locked: boolean;
+            /**
+             * Format: uuid
+             * @description The Pyramid version this shipped.
+             */
+            versionId?: string | null;
+            versionName?: string | null;
+            /** @description Finished items of that Pyramid version (through its milestones). */
+            items: {
+                /** Format: uuid */
+                id: string;
+                number: number;
+                title: string;
+                type: components["schemas"]["TaskType"];
+            }[];
+        };
+        ArtifactVersionList: {
+            data: components["schemas"]["ArtifactVersion"][];
+        };
         NotificationSettings: {
             /** @description Per notification type; a missing type gets both. */
             types: {
@@ -4188,6 +4315,136 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjectPackages: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Packages */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectPackageList"];
+                };
+            };
+        };
+    };
+    createProjectPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectPackageInput"];
+            };
+        };
+        responses: {
+            /** @description Linked */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectPackage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteProjectPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unlinked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPackageVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactVersionList"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description arti didn't answer */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    linkArtifactVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    artifactVersion: string;
+                    /** Format: uuid */
+                    versionId?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };

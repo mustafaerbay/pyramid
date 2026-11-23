@@ -59,6 +59,6 @@ Notes say what was built where it is simpler than ADO.
       recent commits and pull requests from the Git webhooks (Pyramid doesn't host Git)
 - [x] **Pipelines** — CI/CD run status per project from GitHub Actions / GitLab CI
       webhooks, linked to items and commits (Pyramid doesn't run builds)
-- [ ] **Artifacts** — with the [arti](../arti) artifact repository: link a project
+- [x] **Artifacts** — with the [arti](../arti) artifact repository: link a project
       to its arti packages, show versions and release notes, tie Pyramid versions
       to arti versions and list the items shipped in each
