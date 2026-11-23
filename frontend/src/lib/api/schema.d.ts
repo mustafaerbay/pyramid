@@ -843,6 +843,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/delivery-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your delivery plans and the shared ones */
+        get: operations["listDeliveryPlans"];
+        put?: never;
+        /** Save a delivery plan */
+        post: operations["createDeliveryPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete your delivery plan (admins can delete any) */
+        delete: operations["deleteDeliveryPlan"];
+        options?: never;
+        head?: never;
+        /** Change your delivery plan */
+        patch: operations["updateDeliveryPlan"];
+        trace?: never;
+    };
     "/api/v1/dashboards": {
         parameters: {
             query?: never;
@@ -2355,6 +2391,46 @@ export interface components {
         };
         /** @enum {string} */
         QueryGroupBy: "status" | "assignee" | "type" | "priority" | "project";
+        DeliveryPlan: components["schemas"]["DeliveryPlanConfig"] & {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            shared: boolean;
+            mine: boolean;
+            /** Format: uuid */
+            ownerPersonId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        DeliveryPlanConfig: {
+            lanes: components["schemas"]["DeliveryPlanLane"][];
+            types: components["schemas"]["TaskType"][];
+            /** @enum {integer} */
+            months: 3 | 6 | 12;
+            markers: components["schemas"]["DeliveryPlanMarker"][];
+        };
+        /** @description A project, or one team in it. */
+        DeliveryPlanLane: {
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            teamId?: string | null;
+        };
+        DeliveryPlanMarker: {
+            /** Format: date */
+            date: string;
+            label: string;
+            color: components["schemas"]["WorkItemTypeColor"];
+        };
+        DeliveryPlanList: {
+            data: components["schemas"]["DeliveryPlan"][];
+        };
+        DeliveryPlanInput: components["schemas"]["DeliveryPlanConfig"] & {
+            name: string;
+            shared?: boolean;
+        };
         Dashboard: {
             /** Format: uuid */
             id: string;
@@ -4749,6 +4825,118 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    listDeliveryPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryPlanList"];
+                };
+            };
+        };
+    };
+    createDeliveryPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryPlanInput"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryPlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteDeliveryPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not yours */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateDeliveryPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryPlanInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryPlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Not yours */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listDashboards: {

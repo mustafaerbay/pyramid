@@ -27,7 +27,7 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Charts and dashboards** — pie, stacked bar and trend-over-time charts for
       queries; dashboards with widgets (query chart, burndown, velocity, CFD,
       capacity, notes), personal and shared
-- [ ] **Delivery plans** — saved plans, dependency lines, markers, team lanes
+- [x] **Delivery plans** — saved plans, dependency lines, markers, team lanes
 - [ ] **Rich text and @mentions** — Markdown in descriptions and comments,
       person suggestions while typing @
 - [ ] **Follow items** — follow any item and get notified of its changes

@@ -1544,6 +1544,84 @@ paths:
                 $ref: "#/components/schemas/SavedQuery"
         "400":
           $ref: "#/components/responses/BadRequest"
+  /api/v1/delivery-plans:
+    get:
+      operationId: listDeliveryPlans
+      tags: [plans]
+      summary: Your delivery plans and the shared ones
+      responses:
+        "200":
+          description: Plans
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryPlanList"
+    post:
+      operationId: createDeliveryPlan
+      tags: [plans]
+      summary: Save a delivery plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryPlanInput"
+      responses:
+        "201":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/delivery-plans/{id}:
+    patch:
+      operationId: updateDeliveryPlan
+      tags: [plans]
+      summary: Change your delivery plan
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryPlanInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: Not yours
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteDeliveryPlan
+      tags: [plans]
+      summary: Delete your delivery plan (admins can delete any)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not yours
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/dashboards:
     get:
       operationId: listDashboards
@@ -4720,6 +4798,103 @@ components:
     QueryGroupBy:
       type: string
       enum: [status, assignee, type, priority, project]
+
+    DeliveryPlan:
+      allOf:
+        - $ref: "#/components/schemas/DeliveryPlanConfig"
+        - type: object
+          required: [id, name, shared, mine, ownerPersonId, createdAt, updatedAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            shared:
+              type: boolean
+            mine:
+              type: boolean
+            ownerPersonId:
+              type: string
+              format: uuid
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    DeliveryPlanConfig:
+      type: object
+      required: [lanes, types, months, markers]
+      properties:
+        lanes:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/DeliveryPlanLane"
+        types:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskType"
+        months:
+          type: integer
+          enum: [3, 6, 12]
+        markers:
+          type: array
+          maxItems: 30
+          items:
+            $ref: "#/components/schemas/DeliveryPlanMarker"
+
+    DeliveryPlanLane:
+      type: object
+      description: A project, or one team in it.
+      required: [projectId]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+
+    DeliveryPlanMarker:
+      type: object
+      required: [date, label, color]
+      properties:
+        date:
+          type: string
+          format: date
+        label:
+          type: string
+          minLength: 1
+          maxLength: 60
+        color:
+          $ref: "#/components/schemas/WorkItemTypeColor"
+
+    DeliveryPlanList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryPlan"
+
+    DeliveryPlanInput:
+      allOf:
+        - $ref: "#/components/schemas/DeliveryPlanConfig"
+        - type: object
+          required: [name]
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 100
+            shared:
+              type: boolean
 
     Dashboard:
       type: object

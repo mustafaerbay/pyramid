@@ -228,6 +228,69 @@ func (e DashboardWidgetSize) Valid() bool {
 	}
 }
 
+// Defines values for DeliveryPlanMonths.
+const (
+	DeliveryPlanMonthsN12 DeliveryPlanMonths = 12
+	DeliveryPlanMonthsN3  DeliveryPlanMonths = 3
+	DeliveryPlanMonthsN6  DeliveryPlanMonths = 6
+)
+
+// Valid indicates whether the value is a known member of the DeliveryPlanMonths enum.
+func (e DeliveryPlanMonths) Valid() bool {
+	switch e {
+	case DeliveryPlanMonthsN12:
+		return true
+	case DeliveryPlanMonthsN3:
+		return true
+	case DeliveryPlanMonthsN6:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeliveryPlanConfigMonths.
+const (
+	DeliveryPlanConfigMonthsN12 DeliveryPlanConfigMonths = 12
+	DeliveryPlanConfigMonthsN3  DeliveryPlanConfigMonths = 3
+	DeliveryPlanConfigMonthsN6  DeliveryPlanConfigMonths = 6
+)
+
+// Valid indicates whether the value is a known member of the DeliveryPlanConfigMonths enum.
+func (e DeliveryPlanConfigMonths) Valid() bool {
+	switch e {
+	case DeliveryPlanConfigMonthsN12:
+		return true
+	case DeliveryPlanConfigMonthsN3:
+		return true
+	case DeliveryPlanConfigMonthsN6:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeliveryPlanInputMonths.
+const (
+	DeliveryPlanInputMonthsN12 DeliveryPlanInputMonths = 12
+	DeliveryPlanInputMonthsN3  DeliveryPlanInputMonths = 3
+	DeliveryPlanInputMonthsN6  DeliveryPlanInputMonths = 6
+)
+
+// Valid indicates whether the value is a known member of the DeliveryPlanInputMonths enum.
+func (e DeliveryPlanInputMonths) Valid() bool {
+	switch e {
+	case DeliveryPlanInputMonthsN12:
+		return true
+	case DeliveryPlanInputMonthsN3:
+		return true
+	case DeliveryPlanInputMonthsN6:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EmploymentType.
 const (
 	EmploymentTypeContractor EmploymentType = "contractor"
@@ -1217,6 +1280,66 @@ type DashboardWidgetKind string
 
 // DashboardWidgetSize defines model for DashboardWidget.Size.
 type DashboardWidgetSize string
+
+// DeliveryPlan defines model for DeliveryPlan.
+type DeliveryPlan struct {
+	CreatedAt     time.Time            `json:"createdAt"`
+	Id            openapi_types.UUID   `json:"id"`
+	Lanes         []DeliveryPlanLane   `json:"lanes"`
+	Markers       []DeliveryPlanMarker `json:"markers"`
+	Mine          bool                 `json:"mine"`
+	Months        DeliveryPlanMonths   `json:"months"`
+	Name          string               `json:"name"`
+	OwnerPersonId *openapi_types.UUID  `json:"ownerPersonId"`
+	Shared        bool                 `json:"shared"`
+	Types         []TaskType           `json:"types"`
+	UpdatedAt     time.Time            `json:"updatedAt"`
+}
+
+// DeliveryPlanMonths defines model for DeliveryPlan.Months.
+type DeliveryPlanMonths int
+
+// DeliveryPlanConfig defines model for DeliveryPlanConfig.
+type DeliveryPlanConfig struct {
+	Lanes   []DeliveryPlanLane       `json:"lanes"`
+	Markers []DeliveryPlanMarker     `json:"markers"`
+	Months  DeliveryPlanConfigMonths `json:"months"`
+	Types   []TaskType               `json:"types"`
+}
+
+// DeliveryPlanConfigMonths defines model for DeliveryPlanConfig.Months.
+type DeliveryPlanConfigMonths int
+
+// DeliveryPlanInput defines model for DeliveryPlanInput.
+type DeliveryPlanInput struct {
+	Lanes   []DeliveryPlanLane      `json:"lanes"`
+	Markers []DeliveryPlanMarker    `json:"markers"`
+	Months  DeliveryPlanInputMonths `json:"months"`
+	Name    string                  `json:"name"`
+	Shared  *bool                   `json:"shared,omitempty"`
+	Types   []TaskType              `json:"types"`
+}
+
+// DeliveryPlanInputMonths defines model for DeliveryPlanInput.Months.
+type DeliveryPlanInputMonths int
+
+// DeliveryPlanLane A project, or one team in it.
+type DeliveryPlanLane struct {
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	TeamId    *openapi_types.UUID `json:"teamId"`
+}
+
+// DeliveryPlanList defines model for DeliveryPlanList.
+type DeliveryPlanList struct {
+	Data []DeliveryPlan `json:"data"`
+}
+
+// DeliveryPlanMarker defines model for DeliveryPlanMarker.
+type DeliveryPlanMarker struct {
+	Color WorkItemTypeColor  `json:"color"`
+	Date  openapi_types.Date `json:"date"`
+	Label string             `json:"label"`
+}
 
 // EmploymentType defines model for EmploymentType.
 type EmploymentType string
@@ -2748,6 +2871,12 @@ type CreateDashboardJSONRequestBody = DashboardInput
 
 // UpdateDashboardJSONRequestBody defines body for UpdateDashboard for application/json ContentType.
 type UpdateDashboardJSONRequestBody = DashboardInput
+
+// CreateDeliveryPlanJSONRequestBody defines body for CreateDeliveryPlan for application/json ContentType.
+type CreateDeliveryPlanJSONRequestBody = DeliveryPlanInput
+
+// UpdateDeliveryPlanJSONRequestBody defines body for UpdateDeliveryPlan for application/json ContentType.
+type UpdateDeliveryPlanJSONRequestBody = DeliveryPlanInput
 
 // CreateGoalJSONRequestBody defines body for CreateGoal for application/json ContentType.
 type CreateGoalJSONRequestBody = GoalCreate

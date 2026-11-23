@@ -723,6 +723,17 @@ CREATE TABLE dashboards (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Delivery plans: lanes (a project, or a team in it), item types, time span, markers
+CREATE TABLE delivery_plans (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    shared     BOOLEAN NOT NULL DEFAULT false,
+    config     JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Audit / activity trail (polymorphic target + JSON diff)
 CREATE TABLE activity_log (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -93,6 +93,10 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.DELETE("/versions/:id", h.DeleteVersion)
 
 		v1.POST("/queries/run", h.RunQuery)
+		v1.GET("/delivery-plans", h.ListDeliveryPlans)
+		v1.POST("/delivery-plans", h.CreateDeliveryPlan)
+		v1.PATCH("/delivery-plans/:id", h.UpdateDeliveryPlan)
+		v1.DELETE("/delivery-plans/:id", h.DeleteDeliveryPlan)
 		v1.GET("/dashboards", h.ListDashboards)
 		v1.POST("/dashboards", h.CreateDashboard)
 		v1.GET("/dashboards/:id", h.GetDashboard)
