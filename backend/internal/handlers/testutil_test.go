@@ -67,7 +67,8 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	h := New(db, config.Config{CORSOrigin: "*"})
+	// Handler tests run signed out; auth_test.go covers sign-in itself.
+	h := New(db, config.Config{CORSOrigin: "*", AuthOff: true})
 	h.RegisterRoutes(r)
 	return r, db
 }
@@ -110,6 +111,18 @@ CREATE TABLE people (
 	termination_date TEXT,
 	weekly_capacity_hours REAL,
 	monthly_capacity_man_days REAL NOT NULL DEFAULT 20,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE users (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	person_id TEXT NOT NULL UNIQUE,
+	email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	password_hash TEXT,
+	system_role TEXT NOT NULL DEFAULT 'member',
+	is_active BOOLEAN NOT NULL DEFAULT 1,
+	last_login_at DATETIME,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

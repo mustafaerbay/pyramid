@@ -384,6 +384,30 @@ func (e SeniorityLevel) Valid() bool {
 	}
 }
 
+// Defines values for SystemRole.
+const (
+	SystemRoleAdmin   SystemRole = "admin"
+	SystemRoleManager SystemRole = "manager"
+	SystemRoleMember  SystemRole = "member"
+	SystemRoleViewer  SystemRole = "viewer"
+)
+
+// Valid indicates whether the value is a known member of the SystemRole enum.
+func (e SystemRole) Valid() bool {
+	switch e {
+	case SystemRoleAdmin:
+		return true
+	case SystemRoleManager:
+		return true
+	case SystemRoleMember:
+		return true
+	case SystemRoleViewer:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TaskPriority.
 const (
 	TaskPriorityHigh   TaskPriority = "high"
@@ -463,6 +487,12 @@ func (e VersionStatus) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// AuthMe defines model for AuthMe.
+type AuthMe struct {
+	Person Person `json:"person"`
+	User   User   `json:"user"`
 }
 
 // CapacityReport defines model for CapacityReport.
@@ -657,6 +687,12 @@ type LeaveStatus string
 // LeaveType defines model for LeaveType.
 type LeaveType string
 
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 // Milestone defines model for Milestone.
 type Milestone struct {
 	CompletedAt *openapi_types.Date `json:"completedAt"`
@@ -713,6 +749,12 @@ type Pagination struct {
 	Page     int   `json:"page"`
 	PageSize int   `json:"pageSize"`
 	Total    int64 `json:"total"`
+}
+
+// PasswordChange defines model for PasswordChange.
+type PasswordChange struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
 }
 
 // Person defines model for Person.
@@ -1042,6 +1084,9 @@ type ProjectUpdate struct {
 // SeniorityLevel defines model for SeniorityLevel.
 type SeniorityLevel string
 
+// SystemRole admin: everything, including accounts. manager: everything but accounts. member: can't change people or approve leave. viewer: read-only.
+type SystemRole string
+
 // TagList defines model for TagList.
 type TagList struct {
 	Data []string `json:"data"`
@@ -1159,6 +1204,50 @@ type TaskUpdate struct {
 	// Tags Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`
 	Title *string   `json:"title,omitempty"`
+}
+
+// User defines model for User.
+type User struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	Email     string             `json:"email"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// IsActive False means the account can't sign in.
+	IsActive    bool               `json:"isActive"`
+	LastLoginAt *time.Time         `json:"lastLoginAt"`
+	PersonId    openapi_types.UUID `json:"personId"`
+
+	// Role admin: everything, including accounts. manager: everything but accounts. member: can't change people or approve leave. viewer: read-only.
+	Role SystemRole `json:"role"`
+}
+
+// UserCreate defines model for UserCreate.
+type UserCreate struct {
+	// Email Sign-in email; defaults to the person's email.
+	Email *string `json:"email,omitempty"`
+
+	// Password First password; the person can change it after signing in.
+	Password string             `json:"password"`
+	PersonId openapi_types.UUID `json:"personId"`
+
+	// Role admin: everything, including accounts. manager: everything but accounts. member: can't change people or approve leave. viewer: read-only.
+	Role *SystemRole `json:"role,omitempty"`
+}
+
+// UserList defines model for UserList.
+type UserList struct {
+	Data []User `json:"data"`
+}
+
+// UserUpdate defines model for UserUpdate.
+type UserUpdate struct {
+	IsActive *bool `json:"isActive,omitempty"`
+
+	// Password Sets a new password (e.g. when someone forgot theirs).
+	Password *string `json:"password,omitempty"`
+
+	// Role admin: everything, including accounts. manager: everything but accounts. member: can't change people or approve leave. viewer: read-only.
+	Role *SystemRole `json:"role,omitempty"`
 }
 
 // Version defines model for Version.
@@ -1355,6 +1444,12 @@ type ListWeeklySummariesParams struct {
 	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
 }
 
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
+// ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
+type ChangePasswordJSONRequestBody = PasswordChange
+
 // CreateContributionJSONRequestBody defines body for CreateContribution for application/json ContentType.
 type CreateContributionJSONRequestBody = ContributionCreate
 
@@ -1408,6 +1503,12 @@ type CreateTaskJSONRequestBody = TaskCreate
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody = TaskUpdate
+
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody = UserCreate
+
+// UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
+type UpdateUserJSONRequestBody = UserUpdate
 
 // CreateVersionJSONRequestBody defines body for CreateVersion for application/json ContentType.
 type CreateVersionJSONRequestBody = VersionCreate

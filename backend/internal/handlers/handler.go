@@ -4,19 +4,21 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mustafaerbay/pyramid/backend/internal/api"
 	"github.com/mustafaerbay/pyramid/backend/internal/config"
 	"gorm.io/gorm"
 )
 
 // Handler carries shared dependencies for all HTTP handlers.
 type Handler struct {
-	db  *gorm.DB
-	cfg config.Config
+	db     *gorm.DB
+	cfg    config.Config
+	logins *loginLimiter
 }
 
 // New builds a Handler.
 func New(db *gorm.DB, cfg config.Config) *Handler {
-	return &Handler{db: db, cfg: cfg}
+	return &Handler{db: db, cfg: cfg, logins: newLoginLimiter()}
 }
 
 // RegisterRoutes wires every route. Route paths mirror openapi/openapi.yaml.
@@ -25,13 +27,25 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 
 	r.GET("/health", h.GetHealth)
 
-	v1 := r.Group("/api/v1")
+	// Signing in is the one API call that needs no session.
+	r.POST("/api/v1/auth/login", h.Login)
+
+	v1 := r.Group("/api/v1", h.requireAuth(), h.denyViewerWrites())
+	manager := h.requireRole(api.SystemRoleManager)
+	admin := h.requireRole(api.SystemRoleAdmin)
 	{
+		v1.POST("/auth/logout", h.Logout)
+		v1.GET("/auth/me", h.GetMe)
+		v1.POST("/auth/password", h.ChangePassword)
+		v1.GET("/users", admin, h.ListUsers)
+		v1.POST("/users", admin, h.CreateUser)
+		v1.PATCH("/users/:id", admin, h.UpdateUser)
+
 		v1.GET("/people", h.ListPeople)
-		v1.POST("/people", h.CreatePerson)
+		v1.POST("/people", manager, h.CreatePerson)
 		v1.GET("/people/:id", h.GetPerson)
-		v1.PATCH("/people/:id", h.UpdatePerson)
-		v1.DELETE("/people/:id", h.DeletePerson)
+		v1.PATCH("/people/:id", manager, h.UpdatePerson)
+		v1.DELETE("/people/:id", manager, h.DeletePerson)
 
 		v1.GET("/projects", h.ListProjects)
 		v1.POST("/projects", h.CreateProject)
@@ -104,6 +118,11 @@ func (h *Handler) cors() gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Origin", h.cfg.CORSOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		// The session cookie only travels cross-origin (local dev: :3000 →
+		// :8080) when credentials are allowed for that exact origin.
+		if h.cfg.CORSOrigin != "*" {
+			c.Header("Access-Control-Allow-Credentials", "true")
+		}
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return

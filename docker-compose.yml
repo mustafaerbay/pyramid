@@ -39,6 +39,12 @@ services:
       DB_NAME: pyramid
       DB_SSLMODE: disable
       CORS_ORIGIN: http://localhost:3000
+      # From a local, git-ignored .env: SESSION_SECRET (32+ chars) keeps you
+      # signed in across restarts; ADMIN_EMAIL + ADMIN_PASSWORD make the first
+      # admin account on start if it doesn't exist.
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     ports:
       - "8080:8080"
     depends_on:

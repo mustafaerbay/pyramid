@@ -109,6 +109,11 @@ func (h *Handler) UpdateLeaveRequest(c *gin.Context) {
 		return
 	}
 
+	if in.Status != nil && (*in.Status == api.LeaveStatusApproved || *in.Status == api.LeaveStatusRejected) &&
+		!h.hasRole(c, api.SystemRoleManager) {
+		c.JSON(http.StatusForbidden, api.Error{Message: "only managers and admins can approve or reject leave"})
+		return
+	}
 	l.ApplyUpdate(in)
 	if err := h.db.Save(&l).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update leave request", Details: strptr(err.Error())})

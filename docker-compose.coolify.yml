@@ -7,9 +7,9 @@
 # Required environment variables (set in Coolify; deploy is blocked if empty):
 #   POSTGRES_PASSWORD     database password
 #   PUBLIC_URL            e.g. https://pyramid.kimlerdensin.com
-#   BASIC_AUTH_USER       demo login name
-#   BASIC_AUTH_HASH_B64   base64 of a bcrypt hash:
-#                         docker run --rm caddy:2-alpine caddy hash-password --plaintext '<pw>' | base64
+#   SESSION_SECRET        32+ random characters; signs sign-in cookies
+# Optional (first start only): ADMIN_EMAIL + ADMIN_PASSWORD create the first
+# admin account if no account has that email yet.
 
 services:
   db:
@@ -41,6 +41,10 @@ services:
       DB_NAME: pyramid
       DB_SSLMODE: disable
       CORS_ORIGIN: ${PUBLIC_URL:?}
+      SESSION_SECRET: ${SESSION_SECRET:?}
+      COOKIE_SECURE: "true"
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
@@ -64,9 +68,6 @@ services:
   router:
     build:
       context: ./deploy/router
-    environment:
-      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?}
-      BASIC_AUTH_HASH_B64: ${BASIC_AUTH_HASH_B64:?}
     depends_on:
       - frontend
       - backend

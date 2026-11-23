@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
+	import { session } from '$lib/auth.svelte';
 	import type { components } from '$lib/api/schema';
 	import PersonSelect from '$lib/components/PersonSelect.svelte';
 	import Badge from '$lib/components/Badge.svelte';
@@ -11,11 +12,9 @@
 	type Project = components['schemas']['Project'];
 	type Milestone = components['schemas']['Milestone'];
 
-	// Pyramid has no auth/session system yet, so there's no notion of "the
-	// current user" to derive this view from — the viewer picks who they are
-	// each time. This mirrors how PersonSelect is used elsewhere (e.g. a
-	// project's Lead field) rather than inventing a new pattern.
-	let viewingAsId = $state('');
+	// Starts on the signed-in person; the picker still lets you look at
+	// someone else's tasks.
+	let viewingAsId = $state(session.me?.person.id ?? '');
 
 	let tasks = $state<Task[]>([]);
 	let loading = $state(false);
@@ -147,7 +146,10 @@
 		}
 	}
 
-	onMount(loadLookups);
+	onMount(() => {
+		loadLookups();
+		if (viewingAsId) loadTasks();
+	});
 </script>
 
 <section class="space-y-4">
@@ -170,7 +172,7 @@
 		<PersonSelect
 			bind:value={viewingAsId}
 			label="Viewing as"
-			emptyLabel="Select who you are…"
+			emptyLabel="Select a person…"
 			onchange={handleViewingAsChange}
 		/>
 	</div>

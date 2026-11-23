@@ -1,11 +1,13 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { can, loadMe, session, signOut } from '$lib/auth.svelte';
 
 	let { children } = $props();
 
 	// One entry per module. New modules get a tab here as they're built.
-	const navItems = [
+	const baseNav = [
 		{ href: '/', label: 'Dashboard' },
 		{ href: '/me', label: 'My Tasks' },
 		{ href: '/people', label: 'People' },
@@ -14,6 +16,25 @@
 		{ href: '/goals', label: 'Growth' },
 		{ href: '/time-off', label: 'Time Off' }
 	];
+	const navItems = $derived(can('admin') ? [...baseNav, { href: '/users', label: 'Accounts' }] : baseNav);
+
+	// Every page but /login needs a signed-in account.
+	const onLogin = $derived(page.url.pathname === '/login');
+	$effect(() => {
+		if (onLogin || session.checked) return;
+		loadMe().then((me) => {
+			if (!me) goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
+		});
+	});
+	$effect(() => {
+		if (!onLogin && session.checked && !session.me) goto('/login', { replaceState: true });
+	});
+
+	async function doSignOut() {
+		await signOut();
+		goto('/login', { replaceState: true });
+	}
+	const firstName = $derived(session.me?.person.firstName ?? '');
 
 	function isActive(href: string): boolean {
 		if (href === '/') return page.url.pathname === '/';
@@ -30,6 +51,13 @@
 	const currentLabel = $derived(navItems.find((i) => isActive(i.href))?.label ?? '');
 </script>
 
+<svelte:head><title>{onLogin ? 'Sign in · Pyramid' : 'Pyramid'}</title></svelte:head>
+
+{#if onLogin}
+	<div class="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">{@render children()}</div>
+{:else if !session.me}
+	<div class="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Loading…</div>
+{:else}
 <div class="min-h-screen bg-slate-50 text-slate-900">
 	<header class="border-b border-slate-200 bg-white">
 		<div class="mx-auto max-w-6xl px-4 sm:px-6">
@@ -37,6 +65,10 @@
 				<span class="text-lg font-semibold tracking-tight">▲ Pyramid</span>
 				<span class="hidden text-sm text-slate-500 sm:inline">Software Department Management</span>
 				<span class="text-sm text-slate-500 sm:hidden">{currentLabel}</span>
+				<div class="ml-auto hidden items-center gap-3 text-sm md:flex">
+					<a href="/account" class="font-medium text-slate-700 hover:underline" title="Your account">{firstName}</a>
+					<button type="button" class="text-slate-500 hover:text-slate-800 hover:underline" onclick={doSignOut}>Sign out</button>
+				</div>
 				<button
 					type="button"
 					class="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 md:hidden"
@@ -65,6 +97,16 @@
 							{item.label}
 						</a>
 					{/each}
+					<div class="mt-2 border-t border-slate-100 pt-2">
+						<a href="/account" class="flex min-h-11 items-center rounded-md px-3 text-base font-medium text-slate-600 hover:bg-slate-50"
+							>Your account ({firstName})</a
+						>
+						<button
+							type="button"
+							class="flex min-h-11 w-full items-center rounded-md px-3 text-left text-base font-medium text-slate-600 hover:bg-slate-50"
+							onclick={doSignOut}>Sign out</button
+						>
+					</div>
 				</nav>
 			{/if}
 			<nav class="-mb-px hidden gap-1 md:flex" aria-label="Primary">
@@ -88,3 +130,4 @@
 		{@render children()}
 	</main>
 </div>
+{/if}
