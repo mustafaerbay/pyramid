@@ -25,6 +25,7 @@
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import AreaManager from '$lib/components/AreaManager.svelte';
 	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
+	import CustomFieldsManager from '$lib/components/CustomFieldsManager.svelte';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
 	import { areaIdsUnder, areaLabel } from '$lib/areas';
@@ -314,12 +315,22 @@
 	let taskAreaFilter = $state('');
 	let managingAreas = $state(false);
 	let importing = $state(false);
+	let managingFields = $state(false);
+	async function saveFields(customFields: components['schemas']['CustomField'][]): Promise<string | null> {
+		if (!project) return 'No project';
+		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { customFields } });
+		if (err || !data) return err?.message ?? 'Could not save the fields.';
+		project = data;
+		flash('success', 'Custom fields saved.');
+		return null;
+	}
 	const csvLookups = $derived<Lookups>({
 		people: Object.values(people).map((p) => ({ id: p.id, name: `${p.firstName} ${p.lastName}`, email: p.email })),
 		tasks: tasks.map((t) => ({ id: t.id, number: t.number, title: t.title })),
 		milestones: milestones.map((m) => ({ id: m.id, name: m.name })),
 		sprints: sprints.map((s) => ({ id: s.id, name: s.name })),
-		areas
+		areas,
+		customFields: project?.customFields ?? []
 	});
 	function exportTasks() {
 		download(
@@ -1581,6 +1592,7 @@
 					</select>
 					{#if can('member')}
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingAreas = true)}>Areas…</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingFields = true)}>Fields…</button>
 					{/if}
 					<select class="input w-auto" aria-label="Filter by type" bind:value={taskTypeFilter}>
 						<option value="">All types</option>
@@ -2058,6 +2070,7 @@
 		task={editingTask}
 		{milestoneOptions}
 		areaOptions={areas}
+		customFields={project?.customFields ?? []}
 		sprintOptions={sprints.filter((sp) => sp.status !== 'completed' && sp.status !== 'cancelled').map((sp) => ({ id: sp.id, name: sp.name }))}
 		{assigneeOptions}
 		initialMilestoneId={taskModalMilestoneId}
@@ -2145,4 +2158,8 @@
 			loadTasks();
 		}}
 	/>
+{/if}
+
+{#if managingFields && project}
+	<CustomFieldsManager fields={project.customFields} onSave={saveFields} onClose={() => (managingFields = false)} />
 {/if}

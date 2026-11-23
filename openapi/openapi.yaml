@@ -2283,15 +2283,44 @@ components:
           enum: [none, type, priority]
           description: Colour the edge of each card by this field.
 
+    CustomField:
+      type: object
+      required: [key, label, type, required]
+      properties:
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{0,39}$"
+          description: Stable id of the field, used in Task.customValues.
+        label:
+          type: string
+          minLength: 1
+          maxLength: 60
+        type:
+          type: string
+          enum: [text, number, date, select]
+        options:
+          type: array
+          description: Choices of a select field (1–50, unique).
+          items:
+            type: string
+        required:
+          type: boolean
+
     Project:
       type: object
-      required: [boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
+      required: [customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
       properties:
         id:
           type: string
           format: uuid
         key:
           type: string
+        customFields:
+          type: array
+          description: Extra fields every work item in this project has (up to 20).
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/CustomField"
         boardSettings:
           $ref: "#/components/schemas/BoardSettings"
         name:
@@ -2399,6 +2428,12 @@ components:
       properties:
         key:
           type: string
+        customFields:
+          type: array
+          description: Extra fields every work item in this project has (up to 20).
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/CustomField"
         boardSettings:
           $ref: "#/components/schemas/BoardSettings"
         name:
@@ -3034,7 +3069,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, rank, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, createdAt, updatedAt]
+      required: [id, projectId, rank, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, customValues, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -3074,6 +3109,10 @@ components:
           format: uuid
           nullable: true
           description: The area path this item belongs to (same project).
+        customValues:
+          type: object
+          description: Values of the project's custom fields, by key (text, number or YYYY-MM-DD; a select's option).
+          additionalProperties: {}
         title:
           type: string
         description:
@@ -3187,6 +3226,9 @@ components:
         areaId:
           type: string
           format: uuid
+        customValues:
+          type: object
+          additionalProperties: {}
         title:
           type: string
           minLength: 1
@@ -3298,6 +3340,10 @@ components:
           format: uuid
           nullable: true
           description: Set the area; null clears it.
+        customValues:
+          type: object
+          description: Replaces all custom values when present.
+          additionalProperties: {}
         title:
           type: string
         description:

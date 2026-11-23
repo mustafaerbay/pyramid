@@ -8,6 +8,8 @@ export type Lookups = {
 	milestones: { id: string; name: string }[];
 	sprints: { id: string; name: string }[];
 	areas: { id: string; path: string }[];
+	/** The project's custom fields; columns named like their labels fill them. */
+	customFields?: { key: string; label: string; type: 'text' | 'number' | 'date' | 'select'; required: boolean; options?: string[] }[];
 };
 
 const TYPES = ['epic', 'feature', 'story', 'task', 'bug'];
@@ -59,6 +61,9 @@ export function rowsToTasks(
 		if (i >= 0) col[key] = i;
 	}
 	if (col.title === undefined) return { ok, errors: [{ line: 1, message: 'No "Title" column' }] };
+	const customCols = (lk.customFields ?? [])
+		.map((f) => ({ f, i: header.findIndex((h) => h === f.label.trim().toLowerCase() || h === f.key) }))
+		.filter((c) => c.i >= 0);
 
 	rows.slice(1).forEach((r, idx) => {
 		const line = idx + 2;
@@ -122,6 +127,24 @@ export function rowsToTasks(
 			named('area', lk.areas.map((a) => ({ id: a.id, name: a.path })), 'areaId', 'area');
 			const description = get('description');
 			if (description) body.description = description;
+			const values: Record<string, unknown> = {};
+			for (const { f, i } of customCols) {
+				const v = (r[i] ?? '').trim();
+				if (!v) continue;
+				if (f.type === 'number') {
+					const n = Number(v.replace(',', '.'));
+					if (!Number.isFinite(n)) throw new Error(`${f.label} must be a number`);
+					values[f.key] = n;
+				} else if (f.type === 'select') {
+					const o = (f.options ?? []).find((x) => same(x, v));
+					if (!o) throw new Error(`${f.label} must be one of: ${(f.options ?? []).join(', ')}`);
+					values[f.key] = o;
+				} else if (f.type === 'date') {
+					if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new Error(`${f.label} must look like 2026-12-31`);
+					values[f.key] = v;
+				} else values[f.key] = v;
+			}
+			if (Object.keys(values).length) body.customValues = values;
 			ok.push({ line, body });
 		} catch (e) {
 			errors.push({ line, message: (e as Error).message });
@@ -148,6 +171,7 @@ type ExportTask = {
 	areaId?: string | null;
 	description?: string | null;
 	projectId: string;
+	customValues?: Record<string, unknown>;
 };
 
 export const EXPORT_HEADER = ['Project', '#', 'Title', 'Type', 'Status', 'Priority', 'Assignees', 'Man-days', 'Story points', 'Start', 'Due', 'Tags', 'Parent', 'Milestone', 'Sprint', 'Area', 'Description'];
@@ -155,8 +179,9 @@ export const EXPORT_HEADER = ['Project', '#', 'Title', 'Type', 'Status', 'Priori
 export function tasksToCsv(tasks: readonly ExportTask[], lk: Lookups & { project: (id: string) => string }): string {
 	const name = <T extends { id: string }>(items: T[], id: string | null | undefined, pick: (x: T) => string) =>
 		id ? (items.find((x) => x.id === id) ? pick(items.find((x) => x.id === id)!) : '') : '';
+	const extra = lk.customFields ?? [];
 	return toCsv([
-		EXPORT_HEADER,
+		[...EXPORT_HEADER, ...extra.map((f) => f.label)],
 		...tasks.map((t) => [
 			lk.project(t.projectId),
 			t.number,
@@ -174,7 +199,11 @@ export function tasksToCsv(tasks: readonly ExportTask[], lk: Lookups & { project
 			name(lk.milestones, t.milestoneId, (x) => x.name),
 			name(lk.sprints, t.sprintId, (x) => x.name),
 			name(lk.areas, t.areaId, (x) => x.path),
-			t.description ?? ''
+			t.description ?? '',
+			...extra.map((f) => {
+				const v = t.customValues?.[f.key];
+				return v == null ? '' : String(v);
+			})
 		])
 	]);
 }

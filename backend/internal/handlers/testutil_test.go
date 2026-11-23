@@ -153,6 +153,7 @@ CREATE TABLE projects (
 	team_size_actual INTEGER,
 	team_size_planned INTEGER,
 	board_settings TEXT,
+	custom_fields TEXT,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -203,6 +204,7 @@ CREATE TABLE tasks (
 	parent_id TEXT,
 	sprint_id TEXT,
 	area_id TEXT,
+	custom_values TEXT,
 	duplicate_of_id TEXT,
 	milestone_id TEXT,
 	type TEXT NOT NULL DEFAULT 'task',

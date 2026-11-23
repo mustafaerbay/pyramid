@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,6 +50,8 @@ type Project struct {
 
 	// BoardSettings is JSON (api.BoardSettings); nil means the defaults.
 	BoardSettings *string `gorm:"type:jsonb"`
+	// CustomFields is JSON ([]api.CustomField): extra fields on its items.
+	CustomFields *string `gorm:"type:jsonb"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -55,6 +59,53 @@ type Project struct {
 
 // TableName pins the model to the existing pluralized table.
 func (Project) TableName() string { return "projects" }
+
+// Fields returns the project's custom field definitions ([] when none).
+func (p Project) Fields() []api.CustomField {
+	out := []api.CustomField{}
+	if p.CustomFields != nil {
+		_ = json.Unmarshal([]byte(*p.CustomFields), &out)
+	}
+	return out
+}
+
+var fieldKey = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
+
+// ValidateFields checks custom field definitions.
+func ValidateFields(fields []api.CustomField) error {
+	if len(fields) > 20 {
+		return errors.New("a project can have at most 20 custom fields")
+	}
+	seen := map[string]bool{}
+	for _, f := range fields {
+		if !fieldKey.MatchString(f.Key) {
+			return fmt.Errorf("field key %q must be lowercase letters, digits or _ (starting with a letter)", f.Key)
+		}
+		if seen[f.Key] {
+			return fmt.Errorf("two fields use the key %q", f.Key)
+		}
+		seen[f.Key] = true
+		if l := strings.TrimSpace(f.Label); l == "" || len([]rune(l)) > 60 {
+			return errors.New("every field needs a label of 1–60 characters")
+		}
+		if !f.Type.Valid() {
+			return fmt.Errorf("unknown field type %q", f.Type)
+		}
+		if f.Type == api.CustomFieldTypeSelect {
+			if f.Options == nil || len(*f.Options) == 0 || len(*f.Options) > 50 {
+				return fmt.Errorf("select field %q needs 1–50 options", f.Label)
+			}
+			opts := map[string]bool{}
+			for _, o := range *f.Options {
+				if strings.TrimSpace(o) == "" || opts[o] {
+					return fmt.Errorf("select field %q has an empty or repeated option", f.Label)
+				}
+				opts[o] = true
+			}
+		}
+	}
+	return nil
+}
 
 // Board returns the project's board settings, with defaults filled in.
 func (p Project) Board() api.BoardSettings {
@@ -96,6 +147,7 @@ func ValidateBoard(b api.BoardSettings) error {
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {
 	out := api.Project{
+		CustomFields:     p.Fields(),
 		BoardSettings:    p.Board(),
 		Id:               p.ID,
 		Key:              p.Key,
@@ -159,6 +211,12 @@ func NewProjectFromCreate(in api.ProjectCreate) Project {
 
 // ApplyUpdate mutates the model in place with the non-nil fields of a patch.
 func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
+	if in.CustomFields != nil {
+		if b, err := json.Marshal(*in.CustomFields); err == nil {
+			v := string(b)
+			p.CustomFields = &v
+		}
+	}
 	if in.BoardSettings != nil {
 		if b, err := json.Marshal(in.BoardSettings); err == nil {
 			v := string(b)

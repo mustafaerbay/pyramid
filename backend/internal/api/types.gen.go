@@ -96,6 +96,30 @@ func (e ContributionType) Valid() bool {
 	}
 }
 
+// Defines values for CustomFieldType.
+const (
+	CustomFieldTypeDate   CustomFieldType = "date"
+	CustomFieldTypeNumber CustomFieldType = "number"
+	CustomFieldTypeSelect CustomFieldType = "select"
+	CustomFieldTypeText   CustomFieldType = "text"
+)
+
+// Valid indicates whether the value is a known member of the CustomFieldType enum.
+func (e CustomFieldType) Valid() bool {
+	switch e {
+	case CustomFieldTypeDate:
+		return true
+	case CustomFieldTypeNumber:
+		return true
+	case CustomFieldTypeSelect:
+		return true
+	case CustomFieldTypeText:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EmploymentType.
 const (
 	EmploymentTypeContractor EmploymentType = "contractor"
@@ -800,6 +824,21 @@ type ContributionUpdate struct {
 	Weight     *float64            `json:"weight,omitempty"`
 }
 
+// CustomField defines model for CustomField.
+type CustomField struct {
+	// Key Stable id of the field, used in Task.customValues.
+	Key   string `json:"key"`
+	Label string `json:"label"`
+
+	// Options Choices of a select field (1–50, unique).
+	Options  *[]string       `json:"options,omitempty"`
+	Required bool            `json:"required"`
+	Type     CustomFieldType `json:"type"`
+}
+
+// CustomFieldType defines model for CustomField.Type.
+type CustomFieldType string
+
 // EmploymentType defines model for EmploymentType.
 type EmploymentType string
 
@@ -1176,33 +1215,36 @@ type PersonWorkloadTask struct {
 
 // Project defines model for Project.
 type Project struct {
-	AccountName      *string             `json:"accountName"`
-	BoardSettings    BoardSettings       `json:"boardSettings"`
-	ChineseInterface *string             `json:"chineseInterface"`
-	CreatedAt        time.Time           `json:"createdAt"`
-	Description      *string             `json:"description"`
-	Health           ProjectHealth       `json:"health"`
-	HqInterface      *string             `json:"hqInterface"`
-	HqPm             *string             `json:"hqPm"`
-	HqSe             *string             `json:"hqSe"`
-	Id               openapi_types.UUID  `json:"id"`
-	Key              string              `json:"key"`
-	LeadId           *openapi_types.UUID `json:"leadId"`
-	Name             string              `json:"name"`
-	Priority         ProjectPriority     `json:"priority"`
-	ProjectCode      *string             `json:"projectCode"`
-	ProjectDirector  *string             `json:"projectDirector"`
-	ReportPeriod     *string             `json:"reportPeriod"`
-	Sponsor          *string             `json:"sponsor"`
-	StartDate        *openapi_types.Date `json:"startDate"`
-	Status           ProjectStatus       `json:"status"`
-	TargetDate       *openapi_types.Date `json:"targetDate"`
-	TeamSizeActual   *int                `json:"teamSizeActual"`
-	TeamSizePlanned  *int                `json:"teamSizePlanned"`
-	TurkeyPm         *string             `json:"turkeyPm"`
-	TurkeyQa         *string             `json:"turkeyQa"`
-	TurkeySe         *string             `json:"turkeySe"`
-	UpdatedAt        time.Time           `json:"updatedAt"`
+	AccountName      *string       `json:"accountName"`
+	BoardSettings    BoardSettings `json:"boardSettings"`
+	ChineseInterface *string       `json:"chineseInterface"`
+	CreatedAt        time.Time     `json:"createdAt"`
+
+	// CustomFields Extra fields every work item in this project has (up to 20).
+	CustomFields    []CustomField       `json:"customFields"`
+	Description     *string             `json:"description"`
+	Health          ProjectHealth       `json:"health"`
+	HqInterface     *string             `json:"hqInterface"`
+	HqPm            *string             `json:"hqPm"`
+	HqSe            *string             `json:"hqSe"`
+	Id              openapi_types.UUID  `json:"id"`
+	Key             string              `json:"key"`
+	LeadId          *openapi_types.UUID `json:"leadId"`
+	Name            string              `json:"name"`
+	Priority        ProjectPriority     `json:"priority"`
+	ProjectCode     *string             `json:"projectCode"`
+	ProjectDirector *string             `json:"projectDirector"`
+	ReportPeriod    *string             `json:"reportPeriod"`
+	Sponsor         *string             `json:"sponsor"`
+	StartDate       *openapi_types.Date `json:"startDate"`
+	Status          ProjectStatus       `json:"status"`
+	TargetDate      *openapi_types.Date `json:"targetDate"`
+	TeamSizeActual  *int                `json:"teamSizeActual"`
+	TeamSizePlanned *int                `json:"teamSizePlanned"`
+	TurkeyPm        *string             `json:"turkeyPm"`
+	TurkeyQa        *string             `json:"turkeyQa"`
+	TurkeySe        *string             `json:"turkeySe"`
+	UpdatedAt       time.Time           `json:"updatedAt"`
 }
 
 // ProjectCreate defines model for ProjectCreate.
@@ -1352,30 +1394,33 @@ type ProjectStatus string
 
 // ProjectUpdate defines model for ProjectUpdate.
 type ProjectUpdate struct {
-	AccountName      *string             `json:"accountName"`
-	BoardSettings    *BoardSettings      `json:"boardSettings,omitempty"`
-	ChineseInterface *string             `json:"chineseInterface"`
-	Description      *string             `json:"description,omitempty"`
-	Health           *ProjectHealth      `json:"health,omitempty"`
-	HqInterface      *string             `json:"hqInterface"`
-	HqPm             *string             `json:"hqPm"`
-	HqSe             *string             `json:"hqSe"`
-	Key              *string             `json:"key,omitempty"`
-	LeadId           *openapi_types.UUID `json:"leadId,omitempty"`
-	Name             *string             `json:"name,omitempty"`
-	Priority         *ProjectPriority    `json:"priority,omitempty"`
-	ProjectCode      *string             `json:"projectCode"`
-	ProjectDirector  *string             `json:"projectDirector"`
-	ReportPeriod     *string             `json:"reportPeriod"`
-	Sponsor          *string             `json:"sponsor"`
-	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
-	Status           *ProjectStatus      `json:"status,omitempty"`
-	TargetDate       *openapi_types.Date `json:"targetDate,omitempty"`
-	TeamSizeActual   *int                `json:"teamSizeActual"`
-	TeamSizePlanned  *int                `json:"teamSizePlanned"`
-	TurkeyPm         *string             `json:"turkeyPm"`
-	TurkeyQa         *string             `json:"turkeyQa"`
-	TurkeySe         *string             `json:"turkeySe"`
+	AccountName      *string        `json:"accountName"`
+	BoardSettings    *BoardSettings `json:"boardSettings,omitempty"`
+	ChineseInterface *string        `json:"chineseInterface"`
+
+	// CustomFields Extra fields every work item in this project has (up to 20).
+	CustomFields    *[]CustomField      `json:"customFields,omitempty"`
+	Description     *string             `json:"description,omitempty"`
+	Health          *ProjectHealth      `json:"health,omitempty"`
+	HqInterface     *string             `json:"hqInterface"`
+	HqPm            *string             `json:"hqPm"`
+	HqSe            *string             `json:"hqSe"`
+	Key             *string             `json:"key,omitempty"`
+	LeadId          *openapi_types.UUID `json:"leadId,omitempty"`
+	Name            *string             `json:"name,omitempty"`
+	Priority        *ProjectPriority    `json:"priority,omitempty"`
+	ProjectCode     *string             `json:"projectCode"`
+	ProjectDirector *string             `json:"projectDirector"`
+	ReportPeriod    *string             `json:"reportPeriod"`
+	Sponsor         *string             `json:"sponsor"`
+	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
+	Status          *ProjectStatus      `json:"status,omitempty"`
+	TargetDate      *openapi_types.Date `json:"targetDate,omitempty"`
+	TeamSizeActual  *int                `json:"teamSizeActual"`
+	TeamSizePlanned *int                `json:"teamSizePlanned"`
+	TurkeyPm        *string             `json:"turkeyPm"`
+	TurkeyQa        *string             `json:"turkeyQa"`
+	TurkeySe        *string             `json:"turkeySe"`
 }
 
 // QueryFilters Every list given must match (an item matches a list if it has any of its values). Empty or missing = any.
@@ -1566,10 +1611,13 @@ type Task struct {
 	CompletedAt  *time.Time           `json:"completedAt"`
 
 	// CompletedManDays Work done so far, in man-days (0–9999).
-	CompletedManDays *float64            `json:"completedManDays"`
-	CreatedAt        time.Time           `json:"createdAt"`
-	Description      *string             `json:"description"`
-	DueDate          *openapi_types.Date `json:"dueDate"`
+	CompletedManDays *float64  `json:"completedManDays"`
+	CreatedAt        time.Time `json:"createdAt"`
+
+	// CustomValues Values of the project's custom fields, by key (text, number or YYYY-MM-DD; a select's option).
+	CustomValues map[string]any      `json:"customValues"`
+	Description  *string             `json:"description"`
+	DueDate      *openapi_types.Date `json:"dueDate"`
 
 	// DuplicateOfId The task this one is a copy of (same project).
 	DuplicateOfId *openapi_types.UUID `json:"duplicateOfId"`
@@ -1660,6 +1708,7 @@ type TaskCreate struct {
 	// BlockedByIds Tasks this one waits on. Every id must be another task in the same project, and the links may not form a loop.
 	BlockedByIds     *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
 	CompletedManDays *float64              `json:"completedManDays"`
+	CustomValues     *map[string]any       `json:"customValues,omitempty"`
 	Description      *string               `json:"description,omitempty"`
 	DueDate          *openapi_types.Date   `json:"dueDate,omitempty"`
 
@@ -1754,8 +1803,11 @@ type TaskUpdate struct {
 	// BlockedByIds Replaces the full set when present (empty array clears it); omit to leave unchanged. Every id must be another task in the same project, and the links may not form a loop.
 	BlockedByIds     *[]openapi_types.UUID `json:"blockedByIds,omitempty"`
 	CompletedManDays *float64              `json:"completedManDays"`
-	Description      *string               `json:"description,omitempty"`
-	DueDate          *openapi_types.Date   `json:"dueDate,omitempty"`
+
+	// CustomValues Replaces all custom values when present.
+	CustomValues *map[string]any     `json:"customValues,omitempty"`
+	Description  *string             `json:"description,omitempty"`
+	DueDate      *openapi_types.Date `json:"dueDate,omitempty"`
 
 	// DuplicateOfId Mark as a copy of that task; null clears.
 	DuplicateOfId   *openapi_types.UUID `json:"duplicateOfId"`

@@ -80,6 +80,22 @@ describe('rowsToTasks', () => {
 	});
 });
 
+describe('rowsToTasks with custom fields', () => {
+	it('reads columns named like the fields, by label', () => {
+		const lk = {
+			...lookups,
+			customFields: [
+				{ key: 'customer', label: 'Customer', type: 'text' as const, required: true },
+				{ key: 'risk', label: 'Risk', type: 'select' as const, required: false, options: ['Low', 'High'] },
+				{ key: 'budget', label: 'Budget', type: 'number' as const, required: false }
+			]
+		};
+		const { ok, errors } = rowsToTasks([['Title', 'customer', 'Risk', 'Budget'], ['A', 'ACME', 'high', '1200,5'], ['B', 'X', 'Huge', '']], 'p', lk);
+		expect(ok[0].body.customValues).toEqual({ customer: 'ACME', risk: 'High', budget: 1200.5 });
+		expect(errors).toEqual([{ line: 3, message: 'Risk must be one of: Low, High' }]);
+	});
+});
+
 describe('tasksToCsv', () => {
 	it('writes readable columns', () => {
 		const csv = tasksToCsv(
@@ -112,5 +128,18 @@ describe('runLimited', () => {
 		});
 		expect(peak).toBeLessThanOrEqual(3);
 		expect(out.map((r) => (r.ok ? r.value : 'err'))).toEqual([2, 4, 6, 'err', 10, 12, 14]);
+	});
+});
+
+describe('tasksToCsv with custom fields', () => {
+	it('adds a column per field', () => {
+		const [head, row] = parseCsv(
+			tasksToCsv(
+				[{ number: 1, title: 'T', type: 'task', status: 'todo', priority: 'low', assigneeIds: [], manDays: 0, tags: [], projectId: 'x', customValues: { risk: 'High' } }],
+				{ ...lookups, project: () => 'P', customFields: [{ key: 'risk', label: 'Risk', type: 'select', required: false, options: ['High'] }] }
+			)
+		);
+		expect(head.at(-1)).toBe('Risk');
+		expect(row.at(-1)).toBe('High');
 	});
 });

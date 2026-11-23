@@ -32,7 +32,8 @@ const LABELS: Record<string, string> = {
 	relatedIds: 'Related',
 	duplicateOfId: 'Duplicate of',
 	sprintId: 'Sprint',
-	areaId: 'Area'
+	areaId: 'Area',
+	customValues: 'Custom fields'
 };
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
@@ -69,6 +70,12 @@ export function describeChange(field: string, change: Change, names: Names): str
 	switch (field) {
 		case 'description':
 			return 'Description edited';
+		case 'customValues': {
+			const a = (from ?? {}) as Record<string, unknown>;
+			const b = (to ?? {}) as Record<string, unknown>;
+			const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+			return `${label}: ${keys.map((k) => `${k} ${a[k] ?? 'none'} → ${b[k] ?? 'none'}`).join('; ')}`;
+		}
 		case 'title':
 			return `${label}: “${from ?? ''}” → “${to ?? ''}”`;
 		case 'type':

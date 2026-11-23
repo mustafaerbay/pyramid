@@ -1106,10 +1106,22 @@ export interface components {
              */
             cardColor: "none" | "type" | "priority";
         };
+        CustomField: {
+            /** @description Stable id of the field, used in Task.customValues. */
+            key: string;
+            label: string;
+            /** @enum {string} */
+            type: "text" | "number" | "date" | "select";
+            /** @description Choices of a select field (1–50, unique). */
+            options?: string[];
+            required: boolean;
+        };
         Project: {
             /** Format: uuid */
             id: string;
             key: string;
+            /** @description Extra fields every work item in this project has (up to 20). */
+            customFields: components["schemas"]["CustomField"][];
             boardSettings: components["schemas"]["BoardSettings"];
             name: string;
             description?: string | null;
@@ -1155,6 +1167,8 @@ export interface components {
         };
         ProjectUpdate: {
             key?: string;
+            /** @description Extra fields every work item in this project has (up to 20). */
+            customFields?: components["schemas"]["CustomField"][];
             boardSettings?: components["schemas"]["BoardSettings"];
             name?: string;
             description?: string;
@@ -1492,6 +1506,10 @@ export interface components {
              * @description The area path this item belongs to (same project).
              */
             areaId?: string | null;
+            /** @description Values of the project's custom fields, by key (text, number or YYYY-MM-DD; a select's option). */
+            customValues: {
+                [key: string]: unknown;
+            };
             title: string;
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -1565,6 +1583,9 @@ export interface components {
             sprintId?: string;
             /** Format: uuid */
             areaId?: string;
+            customValues?: {
+                [key: string]: unknown;
+            };
             title: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1616,6 +1637,10 @@ export interface components {
              * @description Set the area; null clears it.
              */
             areaId?: string | null;
+            /** @description Replaces all custom values when present. */
+            customValues?: {
+                [key: string]: unknown;
+            };
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];

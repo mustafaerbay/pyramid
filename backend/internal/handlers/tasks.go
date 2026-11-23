@@ -96,6 +96,7 @@ func (h *Handler) ListTasks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load links", Details: strptr(err.Error())})
 		return
 	}
+	_ = h.attachCustom(ptrs...)
 	if err := h.attachAvailability(ptrs...); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -263,6 +264,17 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
 	}
+	in0 := map[string]any{}
+	if in.CustomValues != nil {
+		in0 = *in.CustomValues
+	}
+	values, err := checkCustomValues(h.projectFields(t.ProjectID), in0)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	t.CustomValues = encodeValues(values)
+	t.Values = values
 
 	// Per-project sequential number (PYR-42 style), assigned here since it
 	// needs a DB read the model constructor shouldn't own.
@@ -350,6 +362,7 @@ func (h *Handler) GetTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load links", Details: strptr(err.Error())})
 		return
 	}
+	_ = h.attachCustom(&t)
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -386,6 +399,7 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load links", Details: strptr(err.Error())})
 		return
 	}
+	_ = h.attachCustom(&t)
 	before := taskSnapshot(t)
 
 	body, err := io.ReadAll(c.Request.Body)
@@ -472,6 +486,15 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	if err := h.validateLinks(&t, related); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
+	}
+	if in.CustomValues != nil {
+		values, err := checkCustomValues(h.projectFields(t.ProjectID), *in.CustomValues)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+		t.CustomValues = encodeValues(values)
+		t.Values = values
 	}
 	if _, ok := raw["areaId"]; ok {
 		t.AreaID = nil

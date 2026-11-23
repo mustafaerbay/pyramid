@@ -27,6 +27,8 @@ type Task struct {
 	// ParentID puts this work item under another (same project).
 	ParentID *uuid.UUID   `gorm:"type:uuid;index"`
 	Type     api.TaskType `gorm:"type:task_type;not null;default:task"`
+	// CustomValues is JSON: the project custom field values, by key.
+	CustomValues *string `gorm:"type:jsonb"`
 	// AreaID is the area path the item belongs to.
 	AreaID *uuid.UUID `gorm:"type:uuid;index"`
 	// SprintID is the sprint the item is planned in.
@@ -69,6 +71,9 @@ type Task struct {
 	BlockedByIDs []uuid.UUID `gorm:"-"`
 	// RelatedIDs are the tasks linked as related, either way (task_related).
 	RelatedIDs []uuid.UUID `gorm:"-"`
+	// Values are CustomValues filtered to the project\'s current fields
+	// (filled by the handler).
+	Values map[string]any `gorm:"-"`
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -158,6 +163,10 @@ func (t Task) ToAPI() api.Task {
 	out.DuplicateOfId = t.DuplicateOfID
 	out.SprintId = t.SprintID
 	out.AreaId = t.AreaID
+	out.CustomValues = t.Values
+	if out.CustomValues == nil {
+		out.CustomValues = map[string]any{}
+	}
 	if total == 0 && t.EstimateManDays != nil {
 		out.ManDays = *t.EstimateManDays
 	}

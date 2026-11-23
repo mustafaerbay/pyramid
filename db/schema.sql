@@ -234,6 +234,7 @@ CREATE TABLE projects (
     team_size_actual   INTEGER,
     team_size_planned  INTEGER,
     board_settings JSONB,                                  -- board WIP limits, swimlanes, card colours
+    custom_fields  JSONB,                                  -- this project's extra task fields
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -349,6 +350,7 @@ CREATE TABLE tasks (
     parent_id     UUID REFERENCES tasks(id)      ON DELETE SET NULL,  -- subtasks / epic children
     duplicate_of_id UUID REFERENCES tasks(id)    ON DELETE SET NULL,  -- this is a copy of that task
     area_id       UUID REFERENCES areas(id)      ON DELETE SET NULL,  -- area path
+    custom_values JSONB,                                   -- values of the project's custom fields
     milestone_id  UUID REFERENCES milestones(id) ON DELETE SET NULL,
     sprint_id     UUID REFERENCES sprints(id)    ON DELETE SET NULL,
     title         TEXT NOT NULL,

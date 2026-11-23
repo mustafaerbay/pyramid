@@ -26,7 +26,7 @@ func (h *Handler) enrichTasks(tasks []models.Task) error {
 	for i := range tasks {
 		ptrs[i] = &tasks[i]
 	}
-	for _, f := range []func(...*models.Task) error{h.attachTags, h.attachBlockers, h.attachRelated, h.attachAvailability} {
+	for _, f := range []func(...*models.Task) error{h.attachTags, h.attachBlockers, h.attachRelated, h.attachAvailability, h.attachCustom} {
 		if err := f(ptrs...); err != nil {
 			return err
 		}

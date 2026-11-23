@@ -8,6 +8,7 @@
 	import { parentOptions, subtaskSummary } from '$lib/subtasks';
 	import { TYPE_OPTIONS, type WorkItemType } from '$lib/workItems';
 	import { areaLabel } from '$lib/areas';
+	import { valuesForSave } from '$lib/customFields';
 	import { blockerOptions } from '$lib/dependencies';
 
 	type Task = components['schemas']['Task'];
@@ -20,6 +21,7 @@
 		milestoneOptions = [],
 		sprintOptions = [],
 		areaOptions = [],
+		customFields = [],
 		assigneeOptions = [],
 		initialMilestoneId = null,
 		projectTasks = [],
@@ -39,6 +41,8 @@
 		sprintOptions?: { id: string; name: string }[];
 		// The project's area paths.
 		areaOptions?: { id: string; path: string }[];
+		// The project's custom fields.
+		customFields?: components['schemas']['CustomField'][];
 		// The project's active team members — a task can only be assigned to
 		// someone already on the team, not any person in the org.
 		assigneeOptions?: { id: string; name: string }[];
@@ -76,6 +80,11 @@
 	let sprintId = $state(initial?.sprintId ?? '');
 	// svelte-ignore state_referenced_locally
 	let areaId = $state(initial?.areaId ?? '');
+	// Custom field inputs by key (strings while editing).
+	let custom = $state<Record<string, string>>(
+		// svelte-ignore state_referenced_locally
+		Object.fromEntries(Object.entries(initial?.customValues ?? {}).map(([k, v]) => [k, v == null ? '' : String(v)]))
+	);
 	// svelte-ignore state_referenced_locally
 	let parentId = $state(initial?.parentId ?? initialParentId ?? '');
 	// svelte-ignore state_referenced_locally
@@ -209,6 +218,7 @@
 						milestoneId: milestoneId || null,
 						sprintId: sprintId || null,
 						areaId: areaId || null,
+						customValues: valuesForSave(customFields, custom),
 						parentId: parentId || null,
 						// assigneeIds always replaces the full set — sending it
 						// (even as []) is how the backend knows to update it, vs.
@@ -241,6 +251,7 @@
 						milestoneId: milestoneId || undefined,
 						sprintId: sprintId || undefined,
 						areaId: areaId || undefined,
+						customValues: valuesForSave(customFields, custom),
 						parentId: parentId || undefined,
 						title,
 						description: description || undefined,
@@ -338,6 +349,28 @@
 					{/each}
 				</select>
 			</label>
+
+			{#if customFields.length > 0}
+				<div class="grid gap-3 sm:grid-cols-2">
+					{#each customFields as f (f.key)}
+						<label class="block text-sm">
+							<span class="mb-1 block font-medium text-slate-700">{f.label}{f.required ? ' *' : ''}</span>
+							{#if f.type === 'select'}
+								<select class="input" required={f.required} bind:value={custom[f.key]}>
+									<option value="">—</option>
+									{#each f.options ?? [] as o (o)}<option value={o}>{o}</option>{/each}
+								</select>
+							{:else if f.type === 'number'}
+								<input class="input" type="number" step="any" required={f.required} bind:value={custom[f.key]} />
+							{:else if f.type === 'date'}
+								<input class="input" type="date" required={f.required} bind:value={custom[f.key]} />
+							{:else}
+								<input class="input" maxlength="500" required={f.required} bind:value={custom[f.key]} />
+							{/if}
+						</label>
+					{/each}
+				</div>
+			{/if}
 
 			{#if areaOptions.length > 0}
 				<label class="block text-sm">

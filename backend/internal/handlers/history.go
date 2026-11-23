@@ -76,6 +76,7 @@ func taskSnapshot(t models.Task) map[string]any {
 		"duplicateOfId":    id(t.DuplicateOfID),
 		"sprintId":         id(t.SprintID),
 		"areaId":           id(t.AreaID),
+		"customValues":     t.Values,
 	}
 }
 
