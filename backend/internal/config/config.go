@@ -25,6 +25,15 @@ type Config struct {
 	AdminPassword string
 	// AuthOff skips sign-in checks. Only tests set it; Load never does.
 	AuthOff bool
+
+	// Email for notifications; off unless SMTP_HOST and SMTP_FROM are set.
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
+	// PublicURL makes links in emails absolute (PUBLIC_URL).
+	PublicURL string
 }
 
 // Load reads configuration from the environment, applying sensible defaults
@@ -40,6 +49,13 @@ func Load() Config {
 		CookieSecure:  getenv("COOKIE_SECURE", "") == "true",
 		AdminEmail:    os.Getenv("ADMIN_EMAIL"),
 		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
+
+		SMTPHost:     os.Getenv("SMTP_HOST"),
+		SMTPPort:     getenv("SMTP_PORT", "587"),
+		SMTPUser:     os.Getenv("SMTP_USER"),
+		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:     os.Getenv("SMTP_FROM"),
+		PublicURL:    os.Getenv("PUBLIC_URL"),
 	}
 }
 

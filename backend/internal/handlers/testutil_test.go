@@ -253,6 +253,17 @@ CREATE TABLE activity_log (
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE notifications (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	user_id TEXT NOT NULL,
+	type TEXT NOT NULL,
+	title TEXT NOT NULL,
+	body TEXT,
+	link_url TEXT,
+	read_at DATETIME,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_labels (
 	task_id TEXT NOT NULL,
 	label_id TEXT NOT NULL,

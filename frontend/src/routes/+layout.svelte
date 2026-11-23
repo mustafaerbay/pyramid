@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { can, loadMe, session, signOut } from '$lib/auth.svelte';
+	import NotificationBell from '$lib/components/NotificationBell.svelte';
 
 	let { children } = $props();
 
@@ -65,13 +66,14 @@
 				<span class="text-lg font-semibold tracking-tight">▲ Pyramid</span>
 				<span class="hidden text-sm text-slate-500 sm:inline">Software Department Management</span>
 				<span class="text-sm text-slate-500 sm:hidden">{currentLabel}</span>
-				<div class="ml-auto hidden items-center gap-3 text-sm md:flex">
+				<div class="ml-auto"><NotificationBell /></div>
+				<div class="hidden items-center gap-3 text-sm md:flex">
 					<a href="/account" class="font-medium text-slate-700 hover:underline" title="Your account">{firstName}</a>
 					<button type="button" class="text-slate-500 hover:text-slate-800 hover:underline" onclick={doSignOut}>Sign out</button>
 				</div>
 				<button
 					type="button"
-					class="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 md:hidden"
+					class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 md:hidden"
 					aria-label={menuOpen ? 'Close menu' : 'Open menu'}
 					aria-expanded={menuOpen}
 					aria-controls="mobile-nav"

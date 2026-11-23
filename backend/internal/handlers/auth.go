@@ -116,7 +116,8 @@ func (h *Handler) requireAuth() gin.HandlerFunc {
 func (h *Handler) denyViewerWrites() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		m := c.Request.Method
-		if m == http.MethodGet || m == http.MethodHead || strings.HasPrefix(c.FullPath(), "/api/v1/auth/") {
+		p := c.FullPath()
+		if m == http.MethodGet || m == http.MethodHead || strings.HasPrefix(p, "/api/v1/auth/") || strings.HasPrefix(p, "/api/v1/notifications") {
 			c.Next()
 			return
 		}

@@ -207,6 +207,39 @@ func (e MilestoneStatus) Valid() bool {
 	}
 }
 
+// Defines values for NotificationType.
+const (
+	NotificationTypeApproval      NotificationType = "approval"
+	NotificationTypeAssignment    NotificationType = "assignment"
+	NotificationTypeDeadline      NotificationType = "deadline"
+	NotificationTypeMention       NotificationType = "mention"
+	NotificationTypeReviewRequest NotificationType = "review_request"
+	NotificationTypeStatusChange  NotificationType = "status_change"
+	NotificationTypeSystem        NotificationType = "system"
+)
+
+// Valid indicates whether the value is a known member of the NotificationType enum.
+func (e NotificationType) Valid() bool {
+	switch e {
+	case NotificationTypeApproval:
+		return true
+	case NotificationTypeAssignment:
+		return true
+	case NotificationTypeDeadline:
+		return true
+	case NotificationTypeMention:
+		return true
+	case NotificationTypeReviewRequest:
+		return true
+	case NotificationTypeStatusChange:
+		return true
+	case NotificationTypeSystem:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PersonStatus.
 const (
 	PersonStatusActive      PersonStatus = "active"
@@ -761,6 +794,28 @@ type MilestoneUpdate struct {
 	// VersionId Omit to leave unchanged, send null to unassign, or a version id of the same project (400 otherwise).
 	VersionId *openapi_types.UUID `json:"versionId"`
 }
+
+// Notification defines model for Notification.
+type Notification struct {
+	Body      *string            `json:"body"`
+	CreatedAt time.Time          `json:"createdAt"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// Link Path in the app to open, e.g. /projects/{id}?task={taskId}.
+	Link   *string          `json:"link"`
+	ReadAt *time.Time       `json:"readAt"`
+	Title  string           `json:"title"`
+	Type   NotificationType `json:"type"`
+}
+
+// NotificationList defines model for NotificationList.
+type NotificationList struct {
+	Data        []Notification `json:"data"`
+	UnreadCount int            `json:"unreadCount"`
+}
+
+// NotificationType defines model for NotificationType.
+type NotificationType string
 
 // Pagination defines model for Pagination.
 type Pagination struct {

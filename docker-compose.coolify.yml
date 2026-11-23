@@ -10,6 +10,8 @@
 #   SESSION_SECRET        32+ random characters; signs sign-in cookies
 # Optional (first start only): ADMIN_EMAIL + ADMIN_PASSWORD create the first
 # admin account if no account has that email yet.
+# Optional: SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASSWORD, SMTP_FROM
+# turn on notification emails.
 
 services:
   db:
@@ -45,6 +47,13 @@ services:
       COOKIE_SECURE: "true"
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Optional: notification emails (off while SMTP_HOST/SMTP_FROM are empty).
+      PUBLIC_URL: ${PUBLIC_URL:?}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       db:
         condition: service_healthy

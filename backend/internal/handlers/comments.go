@@ -82,6 +82,7 @@ func (h *Handler) CreateTaskComment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save comment", Details: strptr(err.Error())})
 		return
 	}
+	h.notifyComment(c, t, cm)
 	c.JSON(http.StatusCreated, cm.ToAPI())
 }
 

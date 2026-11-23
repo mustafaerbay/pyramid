@@ -117,6 +117,38 @@ paths:
           description: Password changed
         "400":
           $ref: "#/components/responses/BadRequest"
+  /api/v1/notifications:
+    get:
+      operationId: listNotifications
+      tags: [auth]
+      summary: Your notifications, newest first (latest 50)
+      responses:
+        "200":
+          description: Notifications and how many are unread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationList"
+  /api/v1/notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [auth]
+      summary: Mark one of your notifications read
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Marked read
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [auth]
+      summary: Mark all your notifications read
+      responses:
+        "204":
+          description: All marked read
   /api/v1/users:
     get:
       operationId: listUsers
@@ -2968,6 +3000,47 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskHistoryEntry"
+
+    NotificationType:
+      type: string
+      enum: [mention, assignment, status_change, review_request, approval, deadline, system]
+
+    Notification:
+      type: object
+      required: [id, type, title, body, link, readAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        title:
+          type: string
+        body:
+          type: string
+          nullable: true
+        link:
+          type: string
+          nullable: true
+          description: Path in the app to open, e.g. /projects/{id}?task={taskId}.
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationList:
+      type: object
+      required: [data, unreadCount]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        unreadCount:
+          type: integer
 
     TagList:
       type: object

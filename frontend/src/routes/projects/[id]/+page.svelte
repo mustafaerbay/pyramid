@@ -471,6 +471,18 @@
 		taskModalMode = 'edit';
 	}
 
+	// A link with ?task=<id> (from a notification) opens that task once.
+	let openedFromLink = $state<string | null>(null);
+	$effect(() => {
+		const wanted = page.url.searchParams.get('task');
+		if (!wanted || wanted === openedFromLink || tasks.length === 0) return;
+		const t = tasks.find((x) => x.id === wanted);
+		if (t) {
+			openedFromLink = wanted;
+			openEditTask(t);
+		}
+	});
+
 	function openAddSubtask(parent: Task) {
 		editingTask = null;
 		taskModalMilestoneId = parent.milestoneId ?? null;

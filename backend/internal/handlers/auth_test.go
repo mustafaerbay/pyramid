@@ -17,7 +17,7 @@ import (
 
 // newAuthRouter is newTestRouter with sign-in turned on and one admin
 // (admin@x.dev / admin-pass) created the way the server bootstraps it.
-func newAuthRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
+func newAuthRouter(t *testing.T, opts ...func(*Handler)) (*gin.Engine, *gorm.DB) {
 	t.Helper()
 	_, db := newTestRouter(t)
 	cfg := config.Config{
@@ -27,6 +27,9 @@ func newAuthRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 		AdminPassword: "admin-pass",
 	}
 	h := New(db, cfg)
+	for _, o := range opts {
+		o(h)
+	}
 	if err := h.EnsureAdmin(); err != nil {
 		t.Fatalf("EnsureAdmin: %v", err)
 	}

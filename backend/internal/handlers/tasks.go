@@ -268,6 +268,7 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		return
 	}
 	h.logTask(c, "created", t.ID, nil)
+	h.notifyTaskChange(c, nil, nil, t)
 
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
@@ -438,8 +439,10 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
 	}
-	if changes := diffSnapshots(before, taskSnapshot(t)); len(changes) > 0 {
+	after := taskSnapshot(t)
+	if changes := diffSnapshots(before, after); len(changes) > 0 {
 		h.logTask(c, "updated", t.ID, changes)
+		h.notifyTaskChange(c, before, after, t)
 	}
 
 	c.JSON(http.StatusOK, t.ToAPI())

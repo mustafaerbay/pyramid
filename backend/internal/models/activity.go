@@ -39,3 +39,24 @@ type ActivityLog struct {
 }
 
 func (ActivityLog) TableName() string { return "activity_log" }
+
+// Notification is one message for one account (notifications table).
+type Notification struct {
+	ID        uuid.UUID            `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID    uuid.UUID            `gorm:"type:uuid;not null;index"`
+	Type      api.NotificationType `gorm:"type:notification_type;not null"`
+	Title     string               `gorm:"not null"`
+	Body      *string
+	LinkURL   *string `gorm:"column:link_url"`
+	ReadAt    *time.Time
+	CreatedAt time.Time
+}
+
+func (Notification) TableName() string { return "notifications" }
+
+func (n Notification) ToAPI() api.Notification {
+	return api.Notification{
+		Id: n.ID, Type: n.Type, Title: n.Title, Body: n.Body, Link: n.LinkURL,
+		ReadAt: n.ReadAt, CreatedAt: n.CreatedAt,
+	}
+}

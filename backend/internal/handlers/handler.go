@@ -14,11 +14,13 @@ type Handler struct {
 	db     *gorm.DB
 	cfg    config.Config
 	logins *loginLimiter
+	// mail sends one notification email; nil when email is off.
+	mail func(to, subject, body string) error
 }
 
 // New builds a Handler.
 func New(db *gorm.DB, cfg config.Config) *Handler {
-	return &Handler{db: db, cfg: cfg, logins: newLoginLimiter()}
+	return &Handler{db: db, cfg: cfg, logins: newLoginLimiter(), mail: smtpSender(cfg)}
 }
 
 // RegisterRoutes wires every route. Route paths mirror openapi/openapi.yaml.
@@ -37,6 +39,9 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.POST("/auth/logout", h.Logout)
 		v1.GET("/auth/me", h.GetMe)
 		v1.POST("/auth/password", h.ChangePassword)
+		v1.GET("/notifications", h.ListNotifications)
+		v1.POST("/notifications/read-all", h.MarkAllNotificationsRead)
+		v1.POST("/notifications/:id/read", h.MarkNotificationRead)
 		v1.GET("/users", admin, h.ListUsers)
 		v1.POST("/users", admin, h.CreateUser)
 		v1.PATCH("/users/:id", admin, h.UpdateUser)

@@ -74,6 +74,7 @@ func (h *Handler) CreateLeaveRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to create leave request", Details: strptr(err.Error())})
 		return
 	}
+	h.notifyLeaveRequested(c, l)
 	c.JSON(http.StatusCreated, l.ToAPI())
 }
 
@@ -114,10 +115,14 @@ func (h *Handler) UpdateLeaveRequest(c *gin.Context) {
 		c.JSON(http.StatusForbidden, api.Error{Message: "only managers and admins can approve or reject leave"})
 		return
 	}
+	statusBefore := l.Status
 	l.ApplyUpdate(in)
 	if err := h.db.Save(&l).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update leave request", Details: strptr(err.Error())})
 		return
+	}
+	if l.Status != statusBefore && (l.Status == api.LeaveStatusApproved || l.Status == api.LeaveStatusRejected) {
+		h.notifyLeaveDecided(c, l)
 	}
 	c.JSON(http.StatusOK, l.ToAPI())
 }
