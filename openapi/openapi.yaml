@@ -1258,6 +1258,79 @@ paths:
                 $ref: "#/components/schemas/SprintReport"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/project-teams:
+    get:
+      operationId: listProjectTeams
+      tags: [projects]
+      summary: A project's teams
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Teams
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectTeamList"
+    post:
+      operationId: createProjectTeam
+      tags: [projects]
+      summary: Add a team to a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectTeamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectTeam"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/project-teams/{id}:
+    patch:
+      operationId: updateProjectTeam
+      tags: [projects]
+      summary: Change a team (replaces name, members and areas)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectTeamInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectTeam"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProjectTeam
+      tags: [projects]
+      summary: Delete a team (its sprints stay, without a team)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/areas:
     get:
       operationId: listAreas
@@ -2393,13 +2466,16 @@ components:
 
     Project:
       type: object
-      required: [workItemTypes, workflow, customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
+      required: [restricted, workItemTypes, workflow, customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
       properties:
         id:
           type: string
           format: uuid
         key:
           type: string
+        restricted:
+          type: boolean
+          description: Only project members with write access (and managers/admins) can change it.
         workItemTypes:
           type: array
           description: >
@@ -2533,6 +2609,9 @@ components:
       properties:
         key:
           type: string
+        restricted:
+          type: boolean
+          description: Only project members with write access (and managers/admins) can change it.
         workItemTypes:
           type: array
           description: >
@@ -2653,7 +2732,7 @@ components:
 
     ProjectMember:
       type: object
-      required: [id, projectId, personId, role, allocationPct, joinedAt]
+      required: [access, id, projectId, personId, role, allocationPct, joinedAt]
       properties:
         id:
           type: string
@@ -2664,6 +2743,10 @@ components:
         personId:
           type: string
           format: uuid
+        access:
+          type: string
+          enum: [read, write]
+          description: In a restricted project, read members can't change anything.
         role:
           $ref: "#/components/schemas/ProjectRole"
         allocationPct:
@@ -2687,6 +2770,10 @@ components:
         personId:
           type: string
           format: uuid
+        access:
+          type: string
+          enum: [read, write]
+          description: In a restricted project, read members can't change anything.
         role:
           $ref: "#/components/schemas/ProjectRole"
         allocationPct:
@@ -2701,6 +2788,10 @@ components:
     ProjectMemberUpdate:
       type: object
       properties:
+        access:
+          type: string
+          enum: [read, write]
+          description: In a restricted project, read members can't change anything.
         role:
           $ref: "#/components/schemas/ProjectRole"
         allocationPct:
@@ -3878,7 +3969,7 @@ components:
 
     Sprint:
       type: object
-      required: [id, projectId, name, goal, status, startDate, endDate, stats, createdAt, updatedAt]
+      required: [id, projectId, teamId, name, goal, status, startDate, endDate, stats, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -3886,6 +3977,11 @@ components:
         projectId:
           type: string
           format: uuid
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The project team the sprint belongs to (none = whole project).
         name:
           type: string
         goal:
@@ -3915,6 +4011,9 @@ components:
         projectId:
           type: string
           format: uuid
+        teamId:
+          type: string
+          format: uuid
         name:
           type: string
           minLength: 1
@@ -3933,6 +4032,10 @@ components:
     SprintUpdate:
       type: object
       properties:
+        teamId:
+          type: string
+          format: uuid
+          nullable: true
         name:
           type: string
           minLength: 1
@@ -4016,6 +4119,62 @@ components:
           description: Project team members and anyone with work in the sprint.
           items:
             $ref: "#/components/schemas/SprintCapacity"
+
+    ProjectTeam:
+      type: object
+      required: [id, projectId, name, memberIds, areaIds]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        memberIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        areaIds:
+          type: array
+          description: Area paths the team owns (their sub-areas too).
+          items:
+            type: string
+            format: uuid
+
+    ProjectTeamInput:
+      type: object
+      required: [name]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+          description: Needed when creating.
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        memberIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        areaIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    ProjectTeamList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectTeam"
 
     Area:
       type: object

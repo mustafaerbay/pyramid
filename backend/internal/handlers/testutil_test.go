@@ -156,6 +156,7 @@ CREATE TABLE projects (
 	custom_fields TEXT,
 	workflow TEXT,
 	work_item_types TEXT,
+	restricted BOOLEAN NOT NULL DEFAULT 0,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -166,8 +167,9 @@ CREATE TABLE project_members (
 	person_id TEXT NOT NULL,
 	role TEXT NOT NULL DEFAULT 'contributor',
 	allocation_pct REAL NOT NULL DEFAULT 100,
-	joined_at TEXT NOT NULL DEFAULT CURRENT_DATE,
-	left_at TEXT
+	joined_at DATE NOT NULL DEFAULT CURRENT_DATE,
+	left_at DATE,
+	access TEXT NOT NULL DEFAULT 'write'
 );
 
 CREATE TABLE project_versions (
@@ -288,6 +290,7 @@ CREATE TABLE task_related (
 CREATE TABLE sprints (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	project_id TEXT NOT NULL,
+	team_id TEXT,
 	name TEXT NOT NULL,
 	goal TEXT,
 	status TEXT NOT NULL DEFAULT 'planned',
@@ -333,6 +336,20 @@ CREATE TABLE password_resets (
 	expires_at DATETIME NOT NULL,
 	used_at DATETIME,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE project_teams (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	name TEXT NOT NULL,
+	area_ids TEXT NOT NULL DEFAULT '[]',
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE project_team_members (
+	team_id TEXT NOT NULL,
+	person_id TEXT NOT NULL,
+	PRIMARY KEY (team_id, person_id)
 );
 
 CREATE TABLE task_labels (

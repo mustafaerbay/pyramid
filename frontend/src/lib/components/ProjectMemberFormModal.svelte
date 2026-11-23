@@ -35,6 +35,8 @@
 	let personId = $state(initial?.personId ?? '');
 	let role = $state<ProjectRole>(initial?.role ?? 'contributor');
 	let allocationPct = $state(initial?.allocationPct ?? 100);
+	// svelte-ignore state_referenced_locally
+	let access = $state<'read' | 'write'>(initial?.access ?? 'write');
 	let leftAt = $state(initial?.leftAt ?? '');
 
 	let saving = $state(false);
@@ -85,6 +87,7 @@
 					params: { path: { id: member.id } },
 					body: {
 						role,
+						access,
 						allocationPct,
 						leftAt: leftAt || undefined
 					}
@@ -100,6 +103,7 @@
 						projectId,
 						personId,
 						role,
+						access,
 						allocationPct
 					}
 				});
@@ -186,6 +190,14 @@
 							<option value={opt}>{projectRoleLabel[opt]}</option>
 						{/each}
 					</select>
+				</label>
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Access</span>
+					<select class="input" bind:value={access}>
+						<option value="write">Can change</option>
+						<option value="read">Read-only</option>
+					</select>
+					<span class="mt-1 block text-xs text-slate-500">Applies when the project is restricted.</span>
 				</label>
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Allocation</span>

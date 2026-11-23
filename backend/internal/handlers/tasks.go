@@ -217,6 +217,9 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	}
 
 	t := models.NewTaskFromCreate(in)
+	if !h.canWriteProject(c, t.ProjectID) {
+		return
+	}
 	if err := h.resolveType(&t, in.CustomType, false, false); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
@@ -381,6 +384,9 @@ func (h *Handler) GetTask(c *gin.Context) {
 
 // UpdateTask implements PATCH /api/v1/tasks/{id}.
 func (h *Handler) UpdateTask(c *gin.Context) {
+	if !h.canWriteTask(c) {
+		return
+	}
 	var t models.Task
 	if err := h.db.First(&t, "id = ?", c.Param("id")).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -608,6 +614,9 @@ func isExplicitNull(raw map[string]json.RawMessage, key string) bool {
 // DeleteTask implements DELETE /api/v1/tasks/{id}. task_assignees rows are
 // cleaned up by the DB via ON DELETE CASCADE — nothing to do here.
 func (h *Handler) DeleteTask(c *gin.Context) {
+	if !h.canWriteTask(c) {
+		return
+	}
 	// Postgres cascades these; deleting explicitly keeps other databases
 	// (the SQLite tests) from leaving links to a task that's gone.
 	if err := h.db.Where("task_id = ? OR depends_on_id = ?", c.Param("id"), c.Param("id")).Delete(&models.TaskDependency{}).Error; err != nil {

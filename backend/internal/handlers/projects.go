@@ -126,6 +126,13 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 			return
 		}
 	}
+	if in.Restricted != nil && *in.Restricted != p.Restricted && !h.hasRole(c, api.SystemRoleManager) {
+		c.JSON(http.StatusForbidden, api.Error{Message: "only managers and admins can restrict a project"})
+		return
+	}
+	if !h.canWriteProject(c, p.ID) {
+		return
+	}
 	states := p.States()
 	if in.Workflow != nil {
 		if err := models.ValidateWorkflow(*in.Workflow); err != nil {

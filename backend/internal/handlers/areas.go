@@ -107,6 +107,9 @@ func (h *Handler) CreateArea(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "invalid request body"})
 		return
 	}
+	if !h.canWriteProject(c, in.ProjectId) {
+		return
+	}
 	path, err := cleanPath(in.Path)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
@@ -142,6 +145,9 @@ func (h *Handler) loadArea(c *gin.Context) (area, bool) {
 func (h *Handler) UpdateArea(c *gin.Context) {
 	a, ok := h.loadArea(c)
 	if !ok {
+		return
+	}
+	if !h.canWriteProject(c, a.ProjectID) {
 		return
 	}
 	var in api.AreaUpdate
@@ -187,6 +193,9 @@ func (h *Handler) UpdateArea(c *gin.Context) {
 func (h *Handler) DeleteArea(c *gin.Context) {
 	a, ok := h.loadArea(c)
 	if !ok {
+		return
+	}
+	if !h.canWriteProject(c, a.ProjectID) {
 		return
 	}
 	var subs int64

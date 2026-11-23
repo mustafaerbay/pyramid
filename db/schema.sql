@@ -246,6 +246,7 @@ CREATE TABLE projects (
     custom_fields  JSONB,                                  -- this project's extra task fields
     workflow       JSONB,                                  -- this project's states (key, label, category)
     work_item_types JSONB,                                 -- this project's own types (key, label, base type, colour)
+    restricted    BOOLEAN NOT NULL DEFAULT false,          -- only members with write access can change it
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -259,6 +260,7 @@ CREATE TABLE project_members (
     allocation_pct NUMERIC(5,2) NOT NULL DEFAULT 100 CHECK (allocation_pct >= 0 AND allocation_pct <= 100),
     joined_at      DATE NOT NULL DEFAULT CURRENT_DATE,
     left_at        DATE,
+    access         TEXT NOT NULL DEFAULT 'write',           -- 'write' or 'read' (matters for restricted projects)
     UNIQUE (project_id, person_id)
 );
 
@@ -340,9 +342,26 @@ CREATE TABLE sprints (
     status     sprint_status NOT NULL DEFAULT 'planned',
     start_date DATE,
     end_date   DATE,
+    team_id    UUID,                                       -- the project team it belongs to (FK below)
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Teams inside a project: members and the area paths they own
+CREATE TABLE project_teams (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    area_ids   JSONB NOT NULL DEFAULT '[]',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX idx_project_teams_name ON project_teams(project_id, lower(name));
+CREATE TABLE project_team_members (
+    team_id   UUID NOT NULL REFERENCES project_teams(id) ON DELETE CASCADE,
+    person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    PRIMARY KEY (team_id, person_id)
+);
+ALTER TABLE sprints ADD FOREIGN KEY (team_id) REFERENCES project_teams(id) ON DELETE SET NULL;
 
 -- Area paths: a project's areas, "Web/Checkout" style
 CREATE TABLE areas (

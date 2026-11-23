@@ -19,8 +19,10 @@ type ProjectMember struct {
 	PersonID      uuid.UUID       `gorm:"type:uuid;not null;uniqueIndex:idx_project_members_unique"`
 	Role          api.ProjectRole `gorm:"type:project_role;not null;default:contributor"`
 	AllocationPct float64         `gorm:"type:numeric(5,2);not null;default:100"`
-	JoinedAt      time.Time       `gorm:"type:date;not null;default:CURRENT_DATE"`
-	LeftAt        *time.Time      `gorm:"type:date"`
+	// Access is "write" or "read"; it matters in restricted projects.
+	Access   string     `gorm:"not null;default:write"`
+	JoinedAt time.Time  `gorm:"type:date;not null;default:CURRENT_DATE"`
+	LeftAt   *time.Time `gorm:"type:date"`
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -34,6 +36,7 @@ func (m ProjectMember) ToAPI() api.ProjectMember {
 		PersonId:      m.PersonID,
 		Role:          m.Role,
 		AllocationPct: m.AllocationPct,
+		Access:        api.ProjectMemberAccess(m.access()),
 		JoinedAt:      openapi_types.Date{Time: m.JoinedAt},
 	}
 	if m.LeftAt != nil {
@@ -50,7 +53,11 @@ func NewProjectMemberFromCreate(in api.ProjectMemberCreate) ProjectMember {
 		PersonID:      in.PersonId,
 		Role:          api.ProjectRoleContributor,
 		AllocationPct: 100,
+		Access:        "write",
 		JoinedAt:      time.Now().UTC(),
+	}
+	if in.Access != nil {
+		m.Access = string(*in.Access)
 	}
 	if in.Role != nil {
 		m.Role = *in.Role
@@ -68,6 +75,9 @@ func NewProjectMemberFromCreate(in api.ProjectMemberCreate) ProjectMember {
 // Project and person are intentionally not editable here — reassigning means
 // removing the membership and creating a new one, which keeps history clean.
 func (m *ProjectMember) ApplyUpdate(in api.ProjectMemberUpdate) {
+	if in.Access != nil {
+		m.Access = string(*in.Access)
+	}
 	if in.Role != nil {
 		m.Role = *in.Role
 	}
@@ -81,4 +91,11 @@ func (m *ProjectMember) ApplyUpdate(in api.ProjectMemberUpdate) {
 		t := in.LeftAt.Time
 		m.LeftAt = &t
 	}
+}
+
+func (m ProjectMember) access() string {
+	if m.Access == "read" {
+		return "read"
+	}
+	return "write"
 }

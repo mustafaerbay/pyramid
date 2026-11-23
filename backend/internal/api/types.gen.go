@@ -357,6 +357,60 @@ func (e ProjectHealth) Valid() bool {
 	}
 }
 
+// Defines values for ProjectMemberAccess.
+const (
+	ProjectMemberAccessRead  ProjectMemberAccess = "read"
+	ProjectMemberAccessWrite ProjectMemberAccess = "write"
+)
+
+// Valid indicates whether the value is a known member of the ProjectMemberAccess enum.
+func (e ProjectMemberAccess) Valid() bool {
+	switch e {
+	case ProjectMemberAccessRead:
+		return true
+	case ProjectMemberAccessWrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectMemberCreateAccess.
+const (
+	ProjectMemberCreateAccessRead  ProjectMemberCreateAccess = "read"
+	ProjectMemberCreateAccessWrite ProjectMemberCreateAccess = "write"
+)
+
+// Valid indicates whether the value is a known member of the ProjectMemberCreateAccess enum.
+func (e ProjectMemberCreateAccess) Valid() bool {
+	switch e {
+	case ProjectMemberCreateAccessRead:
+		return true
+	case ProjectMemberCreateAccessWrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectMemberUpdateAccess.
+const (
+	ProjectMemberUpdateAccessRead  ProjectMemberUpdateAccess = "read"
+	ProjectMemberUpdateAccessWrite ProjectMemberUpdateAccess = "write"
+)
+
+// Valid indicates whether the value is a known member of the ProjectMemberUpdateAccess enum.
+func (e ProjectMemberUpdateAccess) Valid() bool {
+	switch e {
+	case ProjectMemberUpdateAccessRead:
+		return true
+	case ProjectMemberUpdateAccessWrite:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectPriority.
 const (
 	ProjectPriorityCritical ProjectPriority = "critical"
@@ -1282,6 +1336,9 @@ type Project struct {
 	ProjectCode     *string             `json:"projectCode"`
 	ProjectDirector *string             `json:"projectDirector"`
 	ReportPeriod    *string             `json:"reportPeriod"`
+
+	// Restricted Only project members with write access (and managers/admins) can change it.
+	Restricted      bool                `json:"restricted"`
 	Sponsor         *string             `json:"sponsor"`
 	StartDate       *openapi_types.Date `json:"startDate"`
 	Status          ProjectStatus       `json:"status"`
@@ -1404,6 +1461,8 @@ type ProjectLoad struct {
 
 // ProjectMember defines model for ProjectMember.
 type ProjectMember struct {
+	// Access In a restricted project, read members can't change anything.
+	Access        ProjectMemberAccess `json:"access"`
 	AllocationPct float64             `json:"allocationPct"`
 	Id            openapi_types.UUID  `json:"id"`
 	JoinedAt      openapi_types.Date  `json:"joinedAt"`
@@ -1413,14 +1472,22 @@ type ProjectMember struct {
 	Role          ProjectRole         `json:"role"`
 }
 
+// ProjectMemberAccess In a restricted project, read members can't change anything.
+type ProjectMemberAccess string
+
 // ProjectMemberCreate defines model for ProjectMemberCreate.
 type ProjectMemberCreate struct {
-	AllocationPct *float64            `json:"allocationPct,omitempty"`
-	JoinedAt      *openapi_types.Date `json:"joinedAt,omitempty"`
-	PersonId      openapi_types.UUID  `json:"personId"`
-	ProjectId     openapi_types.UUID  `json:"projectId"`
-	Role          *ProjectRole        `json:"role,omitempty"`
+	// Access In a restricted project, read members can't change anything.
+	Access        *ProjectMemberCreateAccess `json:"access,omitempty"`
+	AllocationPct *float64                   `json:"allocationPct,omitempty"`
+	JoinedAt      *openapi_types.Date        `json:"joinedAt,omitempty"`
+	PersonId      openapi_types.UUID         `json:"personId"`
+	ProjectId     openapi_types.UUID         `json:"projectId"`
+	Role          *ProjectRole               `json:"role,omitempty"`
 }
+
+// ProjectMemberCreateAccess In a restricted project, read members can't change anything.
+type ProjectMemberCreateAccess string
 
 // ProjectMemberList defines model for ProjectMemberList.
 type ProjectMemberList struct {
@@ -1430,11 +1497,16 @@ type ProjectMemberList struct {
 
 // ProjectMemberUpdate defines model for ProjectMemberUpdate.
 type ProjectMemberUpdate struct {
-	AllocationPct *float64            `json:"allocationPct,omitempty"`
-	JoinedAt      *openapi_types.Date `json:"joinedAt,omitempty"`
-	LeftAt        *openapi_types.Date `json:"leftAt,omitempty"`
-	Role          *ProjectRole        `json:"role,omitempty"`
+	// Access In a restricted project, read members can't change anything.
+	Access        *ProjectMemberUpdateAccess `json:"access,omitempty"`
+	AllocationPct *float64                   `json:"allocationPct,omitempty"`
+	JoinedAt      *openapi_types.Date        `json:"joinedAt,omitempty"`
+	LeftAt        *openapi_types.Date        `json:"leftAt,omitempty"`
+	Role          *ProjectRole               `json:"role,omitempty"`
 }
+
+// ProjectMemberUpdateAccess In a restricted project, read members can't change anything.
+type ProjectMemberUpdateAccess string
 
 // ProjectPriority defines model for ProjectPriority.
 type ProjectPriority string
@@ -1444,6 +1516,31 @@ type ProjectRole string
 
 // ProjectStatus defines model for ProjectStatus.
 type ProjectStatus string
+
+// ProjectTeam defines model for ProjectTeam.
+type ProjectTeam struct {
+	// AreaIds Area paths the team owns (their sub-areas too).
+	AreaIds   []openapi_types.UUID `json:"areaIds"`
+	Id        openapi_types.UUID   `json:"id"`
+	MemberIds []openapi_types.UUID `json:"memberIds"`
+	Name      string               `json:"name"`
+	ProjectId openapi_types.UUID   `json:"projectId"`
+}
+
+// ProjectTeamInput defines model for ProjectTeamInput.
+type ProjectTeamInput struct {
+	AreaIds   *[]openapi_types.UUID `json:"areaIds,omitempty"`
+	MemberIds *[]openapi_types.UUID `json:"memberIds,omitempty"`
+	Name      string                `json:"name"`
+
+	// ProjectId Needed when creating.
+	ProjectId *openapi_types.UUID `json:"projectId,omitempty"`
+}
+
+// ProjectTeamList defines model for ProjectTeamList.
+type ProjectTeamList struct {
+	Data []ProjectTeam `json:"data"`
+}
 
 // ProjectUpdate defines model for ProjectUpdate.
 type ProjectUpdate struct {
@@ -1465,6 +1562,9 @@ type ProjectUpdate struct {
 	ProjectCode     *string             `json:"projectCode"`
 	ProjectDirector *string             `json:"projectDirector"`
 	ReportPeriod    *string             `json:"reportPeriod"`
+
+	// Restricted Only project members with write access (and managers/admins) can change it.
+	Restricted      *bool               `json:"restricted,omitempty"`
 	Sponsor         *string             `json:"sponsor"`
 	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
 	Status          *ProjectStatus      `json:"status,omitempty"`
@@ -1578,9 +1678,12 @@ type Sprint struct {
 	StartDate openapi_types.Date `json:"startDate"`
 
 	// Stats Items in the sprint (cancelled left out). Man-days count the items that carry the work.
-	Stats     SprintStats  `json:"stats"`
-	Status    SprintStatus `json:"status"`
-	UpdatedAt time.Time    `json:"updatedAt"`
+	Stats  SprintStats  `json:"stats"`
+	Status SprintStatus `json:"status"`
+
+	// TeamId The project team the sprint belongs to (none = whole project).
+	TeamId    *openapi_types.UUID `json:"teamId"`
+	UpdatedAt time.Time           `json:"updatedAt"`
 }
 
 // SprintCapacity defines model for SprintCapacity.
@@ -1596,12 +1699,13 @@ type SprintCapacity struct {
 
 // SprintCreate defines model for SprintCreate.
 type SprintCreate struct {
-	EndDate   openapi_types.Date `json:"endDate"`
-	Goal      *string            `json:"goal,omitempty"`
-	Name      string             `json:"name"`
-	ProjectId openapi_types.UUID `json:"projectId"`
-	StartDate openapi_types.Date `json:"startDate"`
-	Status    *SprintStatus      `json:"status,omitempty"`
+	EndDate   openapi_types.Date  `json:"endDate"`
+	Goal      *string             `json:"goal,omitempty"`
+	Name      string              `json:"name"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	StartDate openapi_types.Date  `json:"startDate"`
+	Status    *SprintStatus       `json:"status,omitempty"`
+	TeamId    *openapi_types.UUID `json:"teamId,omitempty"`
 }
 
 // SprintDay The sprint's items at the end of that day.
@@ -1650,6 +1754,7 @@ type SprintUpdate struct {
 	Name      *string             `json:"name,omitempty"`
 	StartDate *openapi_types.Date `json:"startDate,omitempty"`
 	Status    *SprintStatus       `json:"status,omitempty"`
+	TeamId    *openapi_types.UUID `json:"teamId"`
 }
 
 // SystemRole admin: everything, including accounts. manager: everything but accounts. member: can't change people or approve leave. viewer: read-only.
@@ -2154,6 +2259,11 @@ type ListProjectMembersParams struct {
 	Role      *ProjectRole        `form:"role,omitempty" json:"role,omitempty"`
 }
 
+// ListProjectTeamsParams defines parameters for ListProjectTeams.
+type ListProjectTeamsParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
 	Page     *PageParam     `form:"page,omitempty" json:"page,omitempty"`
@@ -2271,6 +2381,12 @@ type CreateProjectMemberJSONRequestBody = ProjectMemberCreate
 
 // UpdateProjectMemberJSONRequestBody defines body for UpdateProjectMember for application/json ContentType.
 type UpdateProjectMemberJSONRequestBody = ProjectMemberUpdate
+
+// CreateProjectTeamJSONRequestBody defines body for CreateProjectTeam for application/json ContentType.
+type CreateProjectTeamJSONRequestBody = ProjectTeamInput
+
+// UpdateProjectTeamJSONRequestBody defines body for UpdateProjectTeam for application/json ContentType.
+type UpdateProjectTeamJSONRequestBody = ProjectTeamInput
 
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = ProjectCreate

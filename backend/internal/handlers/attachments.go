@@ -91,6 +91,9 @@ func (h *Handler) ListTaskAttachments(c *gin.Context) {
 
 // UploadTaskAttachment implements POST /api/v1/tasks/{id}/attachments.
 func (h *Handler) UploadTaskAttachment(c *gin.Context) {
+	if !h.canWriteTask(c) {
+		return
+	}
 	t, ok := h.loadTask(c)
 	if !ok {
 		return

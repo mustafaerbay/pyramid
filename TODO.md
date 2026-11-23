@@ -6,9 +6,9 @@ Notes say what was built where it is simpler than ADO.
 
 ## 1. Boards gaps
 
-- [ ] **Teams** — teams inside a project with their own members, area paths and
+- [x] **Teams** — teams inside a project with their own members, area paths and
       sprints; backlog, board and sprints filter by team
-- [ ] **Per-project permissions** — restricted projects: only their members can
+- [x] **Per-project permissions** — restricted projects: only their members can
       change them; members can be read-only on a project
 - [ ] **Process templates** — save a project's process (workflow, types, fields,
       rules, board settings) and apply it to other projects; copy from a project

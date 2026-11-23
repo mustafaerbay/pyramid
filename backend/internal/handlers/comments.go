@@ -65,6 +65,9 @@ func (h *Handler) ListTaskComments(c *gin.Context) {
 
 // CreateTaskComment implements POST /api/v1/tasks/{id}/comments.
 func (h *Handler) CreateTaskComment(c *gin.Context) {
+	if !h.canWriteTask(c) {
+		return
+	}
 	t, ok := h.loadTask(c)
 	if !ok {
 		return

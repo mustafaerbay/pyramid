@@ -98,6 +98,11 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.PATCH("/queries/:id", h.UpdateSavedQuery)
 		v1.DELETE("/queries/:id", h.DeleteSavedQuery)
 
+		v1.GET("/project-teams", h.ListProjectTeams)
+		v1.POST("/project-teams", h.CreateProjectTeam)
+		v1.PATCH("/project-teams/:id", h.UpdateProjectTeam)
+		v1.DELETE("/project-teams/:id", h.DeleteProjectTeam)
+
 		v1.GET("/areas", h.ListAreas)
 		v1.POST("/areas", h.CreateArea)
 		v1.PATCH("/areas/:id", h.UpdateArea)

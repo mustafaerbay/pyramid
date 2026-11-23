@@ -25,6 +25,9 @@
 	let metric = $state<Metric>('manDays');
 	let mode = $state<'burndown' | 'burnup'>('burndown');
 	let backlogFilter = $state('');
+	let teams = $state<components['schemas']['ProjectTeam'][]>([]);
+	let teamFilter = $state('');
+	const shownSprints = $derived(teamFilter ? sprints.filter((s) => s.teamId === teamFilter) : sprints);
 
 	const selected = $derived(sprints.find((s) => s.id === selectedId) ?? null);
 	const inSprint = $derived(selected ? tasks.filter((t) => t.sprintId === selected.id) : []);
@@ -51,6 +54,7 @@
 			api.GET('/api/v1/people', { params: { query: { page: 1, pageSize: 100 } } })
 		]);
 		projectName = p.data?.name ?? '';
+		api.GET('/api/v1/project-teams', { params: { query: { projectId } } }).then((r) => (teams = r.data?.data ?? []));
 		sprints = s.data?.data ?? [];
 		tasks = t.data?.data ?? [];
 		people = Object.fromEntries((pe.data?.data ?? []).map((x) => [x.id, `${x.firstName} ${x.lastName}`]));
@@ -80,6 +84,7 @@
 	let fGoal = $state('');
 	let fStart = $state('');
 	let fEnd = $state('');
+	let fTeam = $state('');
 	function iso(d: Date) {
 		return d.toISOString().slice(0, 10);
 	}
@@ -90,6 +95,7 @@
 		fGoal = '';
 		fStart = iso(start);
 		fEnd = iso(new Date(start.getTime() + 86_400_000 * 13));
+		fTeam = teamFilter;
 		formOpen = 'new';
 	}
 	function openEdit() {
@@ -98,6 +104,7 @@
 		fGoal = selected.goal ?? '';
 		fStart = selected.startDate;
 		fEnd = selected.endDate;
+		fTeam = selected.teamId ?? '';
 		formOpen = 'edit';
 	}
 	async function saveForm(e: SubmitEvent) {
@@ -105,8 +112,8 @@
 		const body = { name: fName, goal: fGoal || undefined, startDate: fStart, endDate: fEnd };
 		const res =
 			formOpen === 'new'
-				? await api.POST('/api/v1/sprints', { body: { ...body, projectId } })
-				: await api.PATCH('/api/v1/sprints/{id}', { params: { path: { id: selected!.id } }, body });
+				? await api.POST('/api/v1/sprints', { body: { ...body, projectId, teamId: fTeam || undefined } })
+				: await api.PATCH('/api/v1/sprints/{id}', { params: { path: { id: selected!.id } }, body: { ...body, teamId: fTeam || null } });
 		if (res.error || !res.data) return flash('error', res.error?.message ?? 'Could not save the sprint.');
 		formOpen = null;
 		selectedId = res.data.id;
@@ -173,6 +180,11 @@
 				<label class="block"><span class="mb-1 block font-medium text-slate-700">End</span><input class="input" type="date" required min={fStart} bind:value={fEnd} /></label>
 			</div>
 			<label class="block"><span class="mb-1 block font-medium text-slate-700">Goal</span><input class="input" bind:value={fGoal} placeholder="What should this sprint achieve?" /></label>
+			{#if teams.length}
+				<label class="block"><span class="mb-1 block font-medium text-slate-700">Team</span>
+					<select class="input" bind:value={fTeam}><option value="">Whole project</option>{#each teams as t (t.id)}<option value={t.id}>{t.name}</option>{/each}</select>
+				</label>
+			{/if}
 			<div class="flex gap-2">
 				<button type="submit" class="btn-primary">Save</button>
 				<button type="button" class="btn-ghost" onclick={() => (formOpen = null)}>Cancel</button>
@@ -186,7 +198,13 @@
 		</div>
 	{:else}
 		<div class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" role="tablist" aria-label="Sprints">
-			{#each sprints as s (s.id)}
+			{#if teams.length}
+				<select class="input w-auto shrink-0" aria-label="Team" bind:value={teamFilter}>
+					<option value="">All teams</option>
+					{#each teams as t (t.id)}<option value={t.id}>{t.name}</option>{/each}
+				</select>
+			{/if}
+			{#each shownSprints as s (s.id)}
 				<button
 					type="button"
 					role="tab"

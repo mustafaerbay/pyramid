@@ -56,6 +56,8 @@ type Project struct {
 	Workflow *string `gorm:"type:jsonb"`
 	// WorkItemTypes is JSON ([]api.WorkItemTypeDef): the project's own types.
 	WorkItemTypes *string `gorm:"type:jsonb"`
+	// Restricted: only members with write access (and managers) change it.
+	Restricted bool `gorm:"not null;default:false"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -251,6 +253,7 @@ func ValidateBoard(b api.BoardSettings, states []api.WorkflowState) error {
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {
 	out := api.Project{
+		Restricted:       p.Restricted,
 		WorkItemTypes:    p.ItemTypes(),
 		Workflow:         p.States(),
 		CustomFields:     p.Fields(),
@@ -317,6 +320,9 @@ func NewProjectFromCreate(in api.ProjectCreate) Project {
 
 // ApplyUpdate mutates the model in place with the non-nil fields of a patch.
 func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
+	if in.Restricted != nil {
+		p.Restricted = *in.Restricted
+	}
 	if in.WorkItemTypes != nil {
 		if b, err := json.Marshal(*in.WorkItemTypes); err == nil {
 			v := string(b)

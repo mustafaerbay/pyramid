@@ -667,6 +667,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/project-teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's teams */
+        get: operations["listProjectTeams"];
+        put?: never;
+        /** Add a team to a project */
+        post: operations["createProjectTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-teams/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a team (its sprints stay, without a team) */
+        delete: operations["deleteProjectTeam"];
+        options?: never;
+        head?: never;
+        /** Change a team (replaces name, members and areas) */
+        patch: operations["updateProjectTeam"];
+        trace?: never;
+    };
     "/api/v1/areas": {
         parameters: {
             query?: never;
@@ -1184,6 +1220,8 @@ export interface components {
             /** Format: uuid */
             id: string;
             key: string;
+            /** @description Only project members with write access (and managers/admins) can change it. */
+            restricted: boolean;
             /** @description The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed. */
             workItemTypes: components["schemas"]["WorkItemTypeDef"][];
             /** @description The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed. */
@@ -1235,6 +1273,8 @@ export interface components {
         };
         ProjectUpdate: {
             key?: string;
+            /** @description Only project members with write access (and managers/admins) can change it. */
+            restricted?: boolean;
             /** @description The project's own work item types (up to 20), each behaving like its base type for levels and capacity. A type still used by items can't be removed. */
             workItemTypes?: components["schemas"]["WorkItemTypeDef"][];
             /** @description The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed. */
@@ -1281,6 +1321,11 @@ export interface components {
             projectId: string;
             /** Format: uuid */
             personId: string;
+            /**
+             * @description In a restricted project, read members can't change anything.
+             * @enum {string}
+             */
+            access: "read" | "write";
             role: components["schemas"]["ProjectRole"];
             /** Format: double */
             allocationPct: number;
@@ -1294,6 +1339,11 @@ export interface components {
             projectId: string;
             /** Format: uuid */
             personId: string;
+            /**
+             * @description In a restricted project, read members can't change anything.
+             * @enum {string}
+             */
+            access?: "read" | "write";
             role?: components["schemas"]["ProjectRole"];
             /** Format: double */
             allocationPct?: number;
@@ -1301,6 +1351,11 @@ export interface components {
             joinedAt?: string;
         };
         ProjectMemberUpdate: {
+            /**
+             * @description In a restricted project, read members can't change anything.
+             * @enum {string}
+             */
+            access?: "read" | "write";
             role?: components["schemas"]["ProjectRole"];
             /** Format: double */
             allocationPct?: number;
@@ -1916,6 +1971,11 @@ export interface components {
             id: string;
             /** Format: uuid */
             projectId: string;
+            /**
+             * Format: uuid
+             * @description The project team the sprint belongs to (none = whole project).
+             */
+            teamId: string | null;
             name: string;
             goal: string | null;
             status: components["schemas"]["SprintStatus"];
@@ -1932,6 +1992,8 @@ export interface components {
         SprintCreate: {
             /** Format: uuid */
             projectId: string;
+            /** Format: uuid */
+            teamId?: string;
             name: string;
             goal?: string;
             status?: components["schemas"]["SprintStatus"];
@@ -1941,6 +2003,8 @@ export interface components {
             endDate: string;
         };
         SprintUpdate: {
+            /** Format: uuid */
+            teamId?: string | null;
             name?: string;
             goal?: string;
             status?: components["schemas"]["SprintStatus"];
@@ -1988,6 +2052,29 @@ export interface components {
             days: components["schemas"]["SprintDay"][];
             /** @description Project team members and anyone with work in the sprint. */
             capacity: components["schemas"]["SprintCapacity"][];
+        };
+        ProjectTeam: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            memberIds: string[];
+            /** @description Area paths the team owns (their sub-areas too). */
+            areaIds: string[];
+        };
+        ProjectTeamInput: {
+            /**
+             * Format: uuid
+             * @description Needed when creating.
+             */
+            projectId?: string;
+            name: string;
+            memberIds?: string[];
+            areaIds?: string[];
+        };
+        ProjectTeamList: {
+            data: components["schemas"]["ProjectTeam"][];
         };
         Area: {
             /** Format: uuid */
@@ -4010,6 +4097,102 @@ export interface operations {
                     "application/json": components["schemas"]["SprintReport"];
                 };
             };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjectTeams: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Teams */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTeamList"];
+                };
+            };
+        };
+    };
+    createProjectTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectTeamInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTeam"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteProjectTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProjectTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectTeamInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTeam"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
         };
     };

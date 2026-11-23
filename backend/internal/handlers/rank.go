@@ -60,6 +60,9 @@ func (h *Handler) newRank(t models.Task, after *models.Task) (float64, bool, err
 
 // MoveTask implements POST /api/v1/tasks/{id}/move.
 func (h *Handler) MoveTask(c *gin.Context) {
+	if !h.canWriteTask(c) {
+		return
+	}
 	t, ok := h.loadTask(c)
 	if !ok {
 		return

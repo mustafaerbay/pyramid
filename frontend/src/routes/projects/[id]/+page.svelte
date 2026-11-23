@@ -28,6 +28,8 @@
 	import CustomFieldsManager from '$lib/components/CustomFieldsManager.svelte';
 	import WorkflowManager from '$lib/components/WorkflowManager.svelte';
 	import TypesManager from '$lib/components/TypesManager.svelte';
+	import TeamsManager from '$lib/components/TeamsManager.svelte';
+	import { teamFilter } from '$lib/teams';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
 	import { areaIdsUnder, areaLabel } from '$lib/areas';
@@ -320,6 +322,24 @@
 	let managingFields = $state(false);
 	let managingWorkflow = $state(false);
 	let managingTypes = $state(false);
+	let managingTeams = $state(false);
+	let teams = $state<components['schemas']['ProjectTeam'][]>([]);
+	async function loadTeams() {
+		const { data } = await api.GET('/api/v1/project-teams', { params: { query: { projectId } } });
+		teams = data?.data ?? [];
+	}
+	let taskTeamFilter = $state('');
+	const teamMatch = $derived.by(() => {
+		const t = teams.find((x) => x.id === taskTeamFilter);
+		return t ? teamFilter(t, areas) : null;
+	});
+	async function setRestricted(restricted: boolean) {
+		if (!project) return;
+		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { restricted } });
+		if (err || !data) return flash('error', err?.message ?? 'Could not change access.');
+		project = data;
+		flash('success', restricted ? 'Only members with write access can change this project now.' : 'Everyone who can edit may change this project again.');
+	}
 	async function saveTypes(workItemTypes: components['schemas']['WorkItemTypeDef'][]): Promise<string | null> {
 		if (!project) return 'No project';
 		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { workItemTypes } });
@@ -449,6 +469,7 @@
 			return false;
 		if (taskTypeFilter && t.type !== taskTypeFilter) return false;
 		if (areaFilterIds && !(t.areaId && areaFilterIds.has(t.areaId))) return false;
+		if (teamMatch && !teamMatch(t)) return false;
 		if (taskSprintFilter === '__none__' ? t.sprintId : taskSprintFilter && t.sprintId !== taskSprintFilter) return false;
 		return hasAllTags(t.tags, taskTagFilters);
 	}
@@ -1084,6 +1105,7 @@
 		loadTasks();
 		loadSprints();
 		loadAreas();
+		loadTeams();
 	});
 </script>
 
@@ -1219,7 +1241,7 @@
 						<li class="m-card {member.leftAt ? 'opacity-60' : ''}">
 							<div class="flex items-start justify-between gap-2">
 								<p class="font-medium text-slate-900">{personLabel(member.personId)}</p>
-								<Badge tone={projectRoleTone[member.role]}>{projectRoleLabel[member.role]}</Badge>
+								<Badge tone={projectRoleTone[member.role]}>{projectRoleLabel[member.role]}</Badge>{#if member.access === 'read'} <Badge tone="neutralMuted">read-only</Badge>{/if}
 							</div>
 							<div class="m-meta">
 								<span>{member.allocationPct}% allocation</span>
@@ -1268,7 +1290,7 @@
 										{/if}
 									</td>
 									<td class="px-4 py-3">
-										<Badge tone={projectRoleTone[member.role]}>{projectRoleLabel[member.role]}</Badge>
+										<Badge tone={projectRoleTone[member.role]}>{projectRoleLabel[member.role]}</Badge>{#if member.access === 'read'} <Badge tone="neutralMuted">read-only</Badge>{/if}{#if member.access === 'read'} <Badge tone="neutralMuted">read-only</Badge>{/if}
 									</td>
 									<td class="px-4 py-3 text-slate-600">{member.allocationPct}%</td>
 									<td class="px-4 py-3 text-slate-600">{member.joinedAt}</td>
@@ -1611,6 +1633,12 @@
 							{/each}
 						</select>
 					{/if}
+					{#if teams.length}
+						<select class="input w-auto" aria-label="Filter by team" bind:value={taskTeamFilter}>
+							<option value="">All teams</option>
+							{#each teams as tm (tm.id)}<option value={tm.id}>{tm.name}</option>{/each}
+						</select>
+					{/if}
 					<select class="input w-auto" aria-label="Filter by area" bind:value={taskAreaFilter}>
 						<option value="">All areas</option>
 						{#each areas as a (a.id)}
@@ -1622,6 +1650,12 @@
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingFields = true)}>Fields…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingWorkflow = true)}>Workflow…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTypes = true)}>Types…</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTeams = true)}>Teams…</button>
+					{/if}
+					{#if can('manager') && project}
+						<label class="flex items-center gap-1 text-xs text-slate-600" title="Only project members with write access (and managers) can change a restricted project">
+							<input type="checkbox" checked={project.restricted} onchange={(e) => setRestricted(e.currentTarget.checked)} /> Restricted
+						</label>
 					{/if}
 					<select class="input w-auto" aria-label="Filter by type" bind:value={taskTypeFilter}>
 						<option value="">All types</option>
@@ -2188,4 +2222,15 @@
 
 {#if managingTypes && project}
 	<TypesManager types={project.workItemTypes} onSave={saveTypes} onClose={() => (managingTypes = false)} />
+{/if}
+
+{#if managingTeams}
+	<TeamsManager
+		{projectId}
+		{teams}
+		people={Object.values(people).map((x) => ({ id: x.id, name: `${x.firstName} ${x.lastName}` })).sort((a, b) => a.name.localeCompare(b.name))}
+		{areas}
+		onChange={loadTeams}
+		onClose={() => (managingTeams = false)}
+	/>
 {/if}

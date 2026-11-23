@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -177,7 +178,15 @@ func (h *Handler) CreateSprint(c *gin.Context) {
 	if in.Status != nil {
 		s.Status = *in.Status
 	}
+	s.TeamID = in.TeamId
+	if !h.canWriteProject(c, s.ProjectID) {
+		return
+	}
 	if err := validSprint(s); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	if err := h.validateSprintTeam(s); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
 	}
@@ -201,10 +210,26 @@ func (h *Handler) UpdateSprint(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if !h.canWriteProject(c, s.ProjectID) {
+		return
+	}
+	body, _ := io.ReadAll(c.Request.Body)
 	var in api.SprintUpdate
-	if err := c.ShouldBindJSON(&in); err != nil {
+	if err := json.Unmarshal(body, &in); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "invalid request body", Details: strptr(err.Error())})
 		return
+	}
+	var raw map[string]json.RawMessage
+	_ = json.Unmarshal(body, &raw)
+	if _, ok := raw["teamId"]; ok {
+		s.TeamID = in.TeamId
+		if isExplicitNull(raw, "teamId") {
+			s.TeamID = nil
+		}
+		if err := h.validateSprintTeam(s); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
 	}
 	if in.Name != nil {
 		s.Name = strings.TrimSpace(*in.Name)
@@ -236,6 +261,9 @@ func (h *Handler) UpdateSprint(c *gin.Context) {
 func (h *Handler) DeleteSprint(c *gin.Context) {
 	s, ok := h.loadSprint(c)
 	if !ok {
+		return
+	}
+	if !h.canWriteProject(c, s.ProjectID) {
 		return
 	}
 	if err := h.db.Model(&models.Task{}).Where("sprint_id = ?", s.ID).Update("sprint_id", nil).Error; err != nil {
