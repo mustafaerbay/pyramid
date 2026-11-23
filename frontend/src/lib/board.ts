@@ -1,27 +1,20 @@
 // Kanban board: one column per task status.
 
-const ALL_STATUSES = ['backlog', 'todo', 'in_progress', 'in_review', 'blocked', 'done', 'cancelled'] as const;
-export type BoardStatus = (typeof ALL_STATUSES)[number];
+export type State = { key: string; label: string; category: string };
 
-/** Columns shown when no status filter is set: everything but cancelled. */
-export const DEFAULT_BOARD_STATUSES: BoardStatus[] = ALL_STATUSES.filter((s) => s !== 'cancelled');
-
-/** The board's columns for a status filter (empty = default), in board order. */
-export function boardStatuses(filter: readonly string[]): BoardStatus[] {
-	if (filter.length === 0) return DEFAULT_BOARD_STATUSES;
-	return ALL_STATUSES.filter((s) => filter.includes(s));
+/** Board columns: the workflow's states, cancelled ones only when the status filter asks. */
+export function boardStates<S extends State>(workflow: readonly S[], statusFilter: readonly string[]): S[] {
+	if (statusFilter.length === 0) return workflow.filter((s) => s.category !== 'cancelled');
+	return workflow.filter((s) => statusFilter.includes(s.category));
 }
 
-type BoardTask = { number: number; status: string; rank: number };
+type BoardTask = { number: number; state: string; rank: number };
 
-/** Groups tasks into the given columns, in the manual order (rank), then by number. */
-export function boardColumns<T extends BoardTask>(
-	tasks: readonly T[],
-	statuses: readonly BoardStatus[]
-): { status: BoardStatus; tasks: T[] }[] {
-	return statuses.map((status) => ({
-		status,
-		tasks: tasks.filter((t) => t.status === status).sort((a, b) => a.rank - b.rank || a.number - b.number)
+/** Groups tasks into columns by state, in the manual order (rank), then by number. */
+export function boardColumns<T extends BoardTask>(tasks: readonly T[], states: readonly string[]): { state: string; tasks: T[] }[] {
+	return states.map((state) => ({
+		state,
+		tasks: tasks.filter((t) => t.state === state).sort((a, b) => a.rank - b.rank || a.number - b.number)
 	}));
 }
 

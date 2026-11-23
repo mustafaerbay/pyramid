@@ -26,11 +26,12 @@
 	import AreaManager from '$lib/components/AreaManager.svelte';
 	import ImportCsvModal from '$lib/components/ImportCsvModal.svelte';
 	import CustomFieldsManager from '$lib/components/CustomFieldsManager.svelte';
+	import WorkflowManager from '$lib/components/WorkflowManager.svelte';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
 	import { areaIdsUnder, areaLabel } from '$lib/areas';
 	import { TYPE_OPTIONS, childType, type WorkItemType } from '$lib/workItems';
-	import { afterIdToPlaceBefore, boardStatuses } from '$lib/board';
+	import { afterIdToPlaceBefore, boardStates } from '$lib/board';
 	import { countsTowardTotals, nestTasks, subtaskSummary } from '$lib/subtasks';
 	import { hasAllTags, tagColor } from '$lib/tags';
 	import { fitText, formatManDays, shortfalls } from '$lib/capacity';
@@ -316,6 +317,15 @@
 	let managingAreas = $state(false);
 	let importing = $state(false);
 	let managingFields = $state(false);
+	let managingWorkflow = $state(false);
+	async function saveWorkflow(states: components['schemas']['WorkflowState'][]): Promise<string | null> {
+		if (!project) return 'No project';
+		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { workflow: states } });
+		if (err || !data) return err?.message ?? 'Could not save the workflow.';
+		project = data;
+		flash('success', 'Workflow saved.');
+		return null;
+	}
 	async function saveFields(customFields: components['schemas']['CustomField'][]): Promise<string | null> {
 		if (!project) return 'No project';
 		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { customFields } });
@@ -612,16 +622,22 @@
 	}
 
 	// Board moves update the card at once and put it back if saving fails.
-	async function moveTask(task: Task, status: TaskStatus) {
-		const before = task.status;
-		if (before === status) return;
-		tasks = tasks.map((t) => (t.id === task.id ? { ...t, status } : t));
+	// The project's workflow states (default: one per status).
+	const workflow = $derived(project?.workflow ?? []);
+	const categoryOf = (key: string) => (workflow.find((w) => w.key === key)?.category ?? key) as TaskStatus;
+
+	// Board and row moves: the item changes state at once and goes back if
+	// saving fails.
+	async function moveTask(task: Task, state: string) {
+		const before = { state: task.state, status: task.status };
+		if (before.state === state) return;
+		tasks = tasks.map((t) => (t.id === task.id ? { ...t, state, status: categoryOf(state) } : t));
 		const { data, error: err } = await api.PATCH('/api/v1/tasks/{id}', {
 			params: { path: { id: task.id } },
-			body: { status }
+			body: { state }
 		});
 		if (err || !data) {
-			tasks = tasks.map((t) => (t.id === task.id ? { ...t, status: before } : t));
+			tasks = tasks.map((t) => (t.id === task.id ? { ...t, ...before } : t));
 			flash('error', err?.message ?? 'Failed to move task.');
 			return;
 		}
@@ -1593,6 +1609,7 @@
 					{#if can('member')}
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingAreas = true)}>Areas…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingFields = true)}>Fields…</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingWorkflow = true)}>Workflow…</button>
 					{/if}
 					<select class="input w-auto" aria-label="Filter by type" bind:value={taskTypeFilter}>
 						<option value="">All types</option>
@@ -1643,8 +1660,8 @@
 					<TaskBoard
 						tasks={tasks.filter(matchesTaskFilters)}
 						allTasks={tasks}
-						statuses={boardStatuses(taskStatusFilters)}
-						statusOptions={statusFilterOptions}
+						states={boardStates(workflow, taskStatusFilters)}
+						{workflow}
 						statusTone={taskStatusTone}
 						priorityTone={taskPriorityTone}
 						{assigneesLabel}
@@ -1720,17 +1737,11 @@
 														taskStatusTone(task.status)
 													]}"
 													aria-label="Status of {task.title}"
-													value={task.status}
-													onchange={(e) => quickUpdateStatus(task, e.currentTarget.value as TaskStatus)}
+													value={task.state}
+													onchange={(e) => moveTask(task, e.currentTarget.value)}
 												>
-													<option value="backlog">backlog</option>
-													<option value="todo">todo</option>
-													<option value="in_progress">in progress</option>
-													<option value="in_review">in review</option>
-													<option value="blocked">blocked</option>
-													<option value="done">done</option>
-													<option value="cancelled">cancelled</option>
-												</select>
+													{#each workflow as w (w.key)}<option value={w.key}>{w.label}</option>{/each}
+</select>
 											</div>
 											<div class="flex gap-2">
 												<button data-write
@@ -1841,18 +1852,11 @@
 														class="rounded-full border-0 px-2 py-0.5 text-xs font-medium {badgeToneClass[
 															taskStatusTone(task.status)
 														]}"
-														value={task.status}
-														onchange={(e) =>
-															quickUpdateStatus(task, e.currentTarget.value as TaskStatus)}
-													>
-														<option value="backlog">backlog</option>
-														<option value="todo">todo</option>
-														<option value="in_progress">in progress</option>
-														<option value="in_review">in review</option>
-														<option value="blocked">blocked</option>
-														<option value="done">done</option>
-														<option value="cancelled">cancelled</option>
-													</select>
+														value={task.state}
+													onchange={(e) => moveTask(task, e.currentTarget.value)}
+												>
+													{#each workflow as w (w.key)}<option value={w.key}>{w.label}</option>{/each}
+</select>
 												</td>
 												<td class="px-4 py-2.5 text-xs text-slate-400">
 													{task.dueDate ?? ''}
@@ -2071,6 +2075,7 @@
 		{milestoneOptions}
 		areaOptions={areas}
 		customFields={project?.customFields ?? []}
+		workflow={project?.workflow ?? []}
 		sprintOptions={sprints.filter((sp) => sp.status !== 'completed' && sp.status !== 'cancelled').map((sp) => ({ id: sp.id, name: sp.name }))}
 		{assigneeOptions}
 		initialMilestoneId={taskModalMilestoneId}
@@ -2162,4 +2167,8 @@
 
 {#if managingFields && project}
 	<CustomFieldsManager fields={project.customFields} onSave={saveFields} onClose={() => (managingFields = false)} />
+{/if}
+
+{#if managingWorkflow && project}
+	<WorkflowManager states={project.workflow} onSave={saveWorkflow} onClose={() => (managingWorkflow = false)} />
 {/if}

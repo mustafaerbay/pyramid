@@ -2269,7 +2269,7 @@ components:
       properties:
         wipLimits:
           type: object
-          description: Most items allowed in a status column at once (1–999), by status. Missing = no limit.
+          description: Most items allowed in a board column at once (1–999), by workflow state key. Missing = no limit.
           additionalProperties:
             type: integer
             minimum: 1
@@ -2282,6 +2282,20 @@ components:
           type: string
           enum: [none, type, priority]
           description: Colour the edge of each card by this field.
+
+    WorkflowState:
+      type: object
+      required: [key, label, category]
+      properties:
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9_]{0,39}$"
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        category:
+          $ref: "#/components/schemas/TaskStatus"
 
     CustomField:
       type: object
@@ -2308,13 +2322,24 @@ components:
 
     Project:
       type: object
-      required: [customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
+      required: [workflow, customFields, boardSettings, id, key, name, status, priority, health, createdAt, updatedAt]
       properties:
         id:
           type: string
           format: uuid
         key:
           type: string
+        workflow:
+          type: array
+          description: >
+            The project's states in board order (1–20). Each belongs to a
+            category (a TaskStatus) that capacity, sprints and charts use.
+            Needs a "done" state and one that isn't done or cancelled; a state
+            still used by items can't be removed.
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/WorkflowState"
         customFields:
           type: array
           description: Extra fields every work item in this project has (up to 20).
@@ -2428,6 +2453,17 @@ components:
       properties:
         key:
           type: string
+        workflow:
+          type: array
+          description: >
+            The project's states in board order (1–20). Each belongs to a
+            category (a TaskStatus) that capacity, sprints and charts use.
+            Needs a "done" state and one that isn't done or cancelled; a state
+            still used by items can't be removed.
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/WorkflowState"
         customFields:
           type: array
           description: Extra fields every work item in this project has (up to 20).
@@ -3069,7 +3105,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, rank, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, customValues, createdAt, updatedAt]
+      required: [id, projectId, rank, number, type, state, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, customValues, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -3113,6 +3149,9 @@ components:
           type: object
           description: Values of the project's custom fields, by key (text, number or YYYY-MM-DD; a select's option).
           additionalProperties: {}
+        state:
+          type: string
+          description: The item's state in its project's workflow; status is that state's category.
         title:
           type: string
         description:
@@ -3229,6 +3268,9 @@ components:
         customValues:
           type: object
           additionalProperties: {}
+        state:
+          type: string
+          description: A state of the project's workflow (sets status); otherwise the first state of status's category.
         title:
           type: string
           minLength: 1
@@ -3344,6 +3386,9 @@ components:
           type: object
           description: Replaces all custom values when present.
           additionalProperties: {}
+        state:
+          type: string
+          description: Move to this workflow state (sets status). Sending only status picks the first state of that category.
         title:
           type: string
         description:

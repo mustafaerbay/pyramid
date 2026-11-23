@@ -1,29 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { afterIdToPlaceBefore, boardColumns, boardStatuses, DEFAULT_BOARD_STATUSES } from './board';
+import { afterIdToPlaceBefore, boardColumns, boardStates } from './board';
 
-type T = { id: string; number: number; rank: number; status: string; priority: 'low' | 'medium' | 'high' | 'urgent' };
+type T = { id: string; number: number; rank: number; state: string; priority: 'low' | 'medium' | 'high' | 'urgent' };
 const t = (number: number, status: string, priority: T['priority'] = 'medium', rank = number): T => ({
 	id: `t${number}`,
 	number,
 	rank,
-	status,
+	state: status,
 	priority
 });
 
-describe('boardStatuses', () => {
-	it('shows every status but cancelled by default', () => {
-		expect(boardStatuses([])).toEqual(DEFAULT_BOARD_STATUSES);
-		expect(DEFAULT_BOARD_STATUSES).not.toContain('cancelled');
+describe('boardStates', () => {
+	const wf = [
+		{ key: 'new', label: 'New', category: 'backlog' },
+		{ key: 'doing', label: 'Doing', category: 'in_progress' },
+		{ key: 'qa', label: 'QA', category: 'in_review' },
+		{ key: 'shipped', label: 'Shipped', category: 'done' },
+		{ key: 'dropped', label: 'Dropped', category: 'cancelled' }
+	];
+	it('shows every state but cancelled ones by default, in workflow order', () => {
+		expect(boardStates(wf, []).map((s) => s.key)).toEqual(['new', 'doing', 'qa', 'shipped']);
 	});
-	it('shows only the filtered statuses, in board order', () => {
-		expect(boardStatuses(['done', 'cancelled', 'todo'])).toEqual(['todo', 'done', 'cancelled']);
+	it('shows the states of the filtered categories', () => {
+		expect(boardStates(wf, ['in_review', 'cancelled']).map((s) => s.key)).toEqual(['qa', 'dropped']);
 	});
 });
 
 describe('boardColumns', () => {
 	it('puts each task in its status column', () => {
 		const cols = boardColumns([t(1, 'todo'), t(2, 'done'), t(3, 'todo')], ['todo', 'in_progress', 'done']);
-		expect(cols.map((c) => [c.status, c.tasks.map((x) => x.number)])).toEqual([
+		expect(cols.map((c) => [c.state, c.tasks.map((x) => x.number)])).toEqual([
 			['todo', [1, 3]],
 			['in_progress', []],
 			['done', [2]]

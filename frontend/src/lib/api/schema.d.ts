@@ -1091,7 +1091,7 @@ export interface components {
         /** @enum {string} */
         ProjectHealth: "on_track" | "at_risk" | "off_track";
         BoardSettings: {
-            /** @description Most items allowed in a status column at once (1–999), by status. Missing = no limit. */
+            /** @description Most items allowed in a board column at once (1–999), by workflow state key. Missing = no limit. */
             wipLimits: {
                 [key: string]: number;
             };
@@ -1105,6 +1105,11 @@ export interface components {
              * @enum {string}
              */
             cardColor: "none" | "type" | "priority";
+        };
+        WorkflowState: {
+            key: string;
+            label: string;
+            category: components["schemas"]["TaskStatus"];
         };
         CustomField: {
             /** @description Stable id of the field, used in Task.customValues. */
@@ -1120,6 +1125,8 @@ export interface components {
             /** Format: uuid */
             id: string;
             key: string;
+            /** @description The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed. */
+            workflow: components["schemas"]["WorkflowState"][];
             /** @description Extra fields every work item in this project has (up to 20). */
             customFields: components["schemas"]["CustomField"][];
             boardSettings: components["schemas"]["BoardSettings"];
@@ -1167,6 +1174,8 @@ export interface components {
         };
         ProjectUpdate: {
             key?: string;
+            /** @description The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed. */
+            workflow?: components["schemas"]["WorkflowState"][];
             /** @description Extra fields every work item in this project has (up to 20). */
             customFields?: components["schemas"]["CustomField"][];
             boardSettings?: components["schemas"]["BoardSettings"];
@@ -1510,6 +1519,8 @@ export interface components {
             customValues: {
                 [key: string]: unknown;
             };
+            /** @description The item's state in its project's workflow; status is that state's category. */
+            state: string;
             title: string;
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -1586,6 +1597,8 @@ export interface components {
             customValues?: {
                 [key: string]: unknown;
             };
+            /** @description A state of the project's workflow (sets status); otherwise the first state of status's category. */
+            state?: string;
             title: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1641,6 +1654,8 @@ export interface components {
             customValues?: {
                 [key: string]: unknown;
             };
+            /** @description Move to this workflow state (sets status). Sending only status picks the first state of that category. */
+            state?: string;
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];

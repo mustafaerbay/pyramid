@@ -4,7 +4,7 @@
 	import Badge from '$lib/components/Badge.svelte';
 	import TagChips from '$lib/components/TagChips.svelte';
 	import { badgeToneClass, type BadgeTone } from '$lib/badgeTones';
-	import { boardColumns, boardLanes, wipState, type BoardStatus } from '$lib/board';
+	import { boardColumns, boardLanes, wipState, type State } from '$lib/board';
 	import { formatManDays } from '$lib/capacity';
 	import { subtaskSummary } from '$lib/subtasks';
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
@@ -17,8 +17,8 @@
 	let {
 		tasks,
 		allTasks,
-		statuses,
-		statusOptions,
+		states,
+		workflow,
 		statusTone,
 		priorityTone,
 		assigneesLabel,
@@ -35,8 +35,10 @@
 		tasks: Task[];
 		/** Every task in the project, for parent titles and subtask counts. */
 		allTasks: Task[];
-		statuses: BoardStatus[];
-		statusOptions: { value: TaskStatus; label: string }[];
+		/** Columns: workflow states shown on the board. */
+		states: State[];
+		/** Every state of the project's workflow (for the move picker). */
+		workflow: State[];
 		statusTone: (s: TaskStatus) => BadgeTone;
 		priorityTone: (p: Task['priority']) => BadgeTone;
 		assigneesLabel: (ids: string[]) => string;
@@ -46,16 +48,19 @@
 		canEditSettings?: boolean;
 		onSaveSettings: (s: BoardSettings) => Promise<boolean>;
 		onOpen: (t: Task) => void;
-		onMove: (t: Task, status: TaskStatus) => void;
+		/** Move to a workflow state (by key). */
+		onMove: (t: Task, state: string) => void;
 		/** Dropped on a card: goes just before it in the manual order. */
 		onPlaceBefore: (t: Task, targetId: string) => void;
 		onTagSelect: (tag: string) => void;
 	} = $props();
 
-	const label = (s: TaskStatus) => statusOptions.find((o) => o.value === s)?.label ?? s;
+	const label = (key: string) => workflow.find((o) => o.key === key)?.label ?? key;
+	const category = (key: string) => (workflow.find((o) => o.key === key)?.category ?? key) as TaskStatus;
+	const stateKeys = $derived(states.map((s) => s.key));
 	const taskTitle = (id: string) => allTasks.find((t) => t.id === id)?.title ?? 'Deleted item';
 	const lanes = $derived(boardLanes(tasks, settings.swimlanes, { person: personName, task: taskTitle }));
-	const totals = $derived(boardColumns(tasks, statuses));
+	const totals = $derived(boardColumns(tasks, stateKeys));
 	// Same width rules for headers and lane cells so they line up.
 	const colClass = 'w-[80vw] shrink-0 snap-start sm:w-64 lg:w-auto lg:min-w-48 lg:flex-1';
 
@@ -82,11 +87,11 @@
 	let draggingId = $state<string | null>(null);
 	let over = $state<string | null>(null); // `${lane}|${status}`
 
-	function drop(status: TaskStatus) {
+	function drop(state: string) {
 		const task = tasks.find((t) => t.id === draggingId);
 		draggingId = null;
 		over = null;
-		if (task && task.status !== status) onMove(task, status);
+		if (task && task.state !== state) onMove(task, state);
 	}
 
 	// Settings panel.
@@ -128,7 +133,7 @@
 			<div class="mb-1 font-medium text-slate-700">WIP limits</div>
 			<p class="mb-2 text-xs text-slate-500">Most items a column should hold at once. Leave empty for no limit.</p>
 			<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-				{#each statuses as s (s)}
+				{#each stateKeys as s (s)}
 					<label class="block text-xs">
 						<span class="mb-0.5 block text-slate-600">{label(s)}</span>
 						<input type="number" min="1" max="999" class="input" bind:value={draft.wipLimits[s]} />
@@ -167,18 +172,18 @@
 	<div class="space-y-3">
 		<!-- column headers, once -->
 		<div class="flex gap-3">
-			{#each totals as col (col.status)}
+			{#each totals as col (col.state)}
 				{@const pts = col.tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0)}
 				{@const md = col.tasks.reduce((s, t) => s + (allTasks.some((c) => c.parentId === t.id && c.status !== 'cancelled') ? 0 : t.manDays), 0)}
-				{@const limit = settings.wipLimits[col.status]}
+				{@const limit = settings.wipLimits[col.state]}
 				{@const wip = wipState(col.tasks.length, limit)}
 				<header
 					class="{colClass} flex items-center justify-between gap-2 rounded-lg border px-3 py-2 {wip === 'over'
 						? 'border-red-300 bg-red-50'
 						: 'border-slate-200 bg-slate-50'}"
 				>
-					<span class="rounded-full px-2 py-0.5 text-xs font-semibold {badgeToneClass[statusTone(col.status)]}">
-						{label(col.status)}
+					<span class="rounded-full px-2 py-0.5 text-xs font-semibold {badgeToneClass[statusTone(category(col.state))]}">
+						{label(col.state)}
 					</span>
 					<span
 						class="text-xs tabular-nums {wip === 'over' ? 'font-semibold text-red-700' : 'text-slate-500'}"
@@ -197,13 +202,13 @@
 				<div class="sticky left-0 text-xs font-semibold text-slate-600">{lane.label} · {lane.tasks.length}</div>
 			{/if}
 			<div class="flex gap-3">
-				{#each boardColumns(lane.tasks, statuses) as col (col.status)}
-					{@const key = `${lane.key}|${col.status}`}
+				{#each boardColumns(lane.tasks, stateKeys) as col (col.state)}
+					{@const key = `${lane.key}|${col.state}`}
 					<section
 						class="{colClass} flex flex-col rounded-lg border bg-slate-50 {over === key
 							? 'border-slate-400 ring-2 ring-slate-300'
 							: 'border-slate-200'}"
-						aria-label="{label(col.status)} column{lane.label ? `, ${lane.label}` : ''}"
+						aria-label="{label(col.state)} column{lane.label ? `, ${lane.label}` : ''}"
 						ondragover={(e) => {
 							if (!draggingId) return;
 							e.preventDefault();
@@ -214,7 +219,7 @@
 						}}
 						ondrop={(e) => {
 							e.preventDefault();
-							drop(col.status);
+							drop(col.state);
 						}}
 					>
 						<ul class="flex min-h-20 flex-1 flex-col gap-2 p-2">
@@ -247,7 +252,7 @@
 										draggingId = null;
 										over = null;
 										if (!moving || moving.id === task.id) return;
-										if (moving.status !== col.status) onMove(moving, col.status);
+										if (moving.state !== col.state) onMove(moving, col.state);
 										onPlaceBefore(moving, task.id);
 									}}
 								>
@@ -283,12 +288,10 @@
 										<select data-write-lock tabindex={can('member') ? 0 : -1}
 											class="min-h-8 min-w-0 max-w-full rounded-md border-0 bg-slate-100 py-0 pl-2 pr-6 text-xs text-slate-600"
 											aria-label="Move {task.title} to"
-											value={task.status}
-											onchange={(e) => onMove(task, e.currentTarget.value as TaskStatus)}
+											value={task.state}
+											onchange={(e) => onMove(task, e.currentTarget.value)}
 										>
-											{#each statusOptions as opt (opt.value)}
-												<option value={opt.value}>{opt.label}</option>
-											{/each}
+											{#each workflow as opt (opt.key)}<option value={opt.key}>{opt.label}</option>{/each}
 										</select>
 									</div>
 								</li>

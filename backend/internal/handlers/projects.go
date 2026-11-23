@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mustafaerbay/pyramid/backend/internal/api"
@@ -107,8 +109,28 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 			return
 		}
 	}
+	states := p.States()
+	if in.Workflow != nil {
+		if err := models.ValidateWorkflow(*in.Workflow); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+		keys := make([]string, len(*in.Workflow))
+		for i, s := range *in.Workflow {
+			keys[i] = s.Key
+		}
+		var used []string
+		h.db.Model(&models.Task{}).Distinct("COALESCE(state, CAST(status AS TEXT))").
+			Where("project_id = ? AND COALESCE(state, CAST(status AS TEXT)) NOT IN ?", p.ID, keys).
+			Pluck("COALESCE(state, CAST(status AS TEXT))", &used)
+		if len(used) > 0 {
+			c.JSON(http.StatusBadRequest, api.Error{Message: fmt.Sprintf("items are still in %s; move them to another state first", strings.Join(used, ", "))})
+			return
+		}
+		states = *in.Workflow
+	}
 	if in.BoardSettings != nil {
-		if err := models.ValidateBoard(*in.BoardSettings); err != nil {
+		if err := models.ValidateBoard(*in.BoardSettings, states); err != nil {
 			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 			return
 		}

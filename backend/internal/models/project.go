@@ -52,6 +52,8 @@ type Project struct {
 	BoardSettings *string `gorm:"type:jsonb"`
 	// CustomFields is JSON ([]api.CustomField): extra fields on its items.
 	CustomFields *string `gorm:"type:jsonb"`
+	// Workflow is JSON ([]api.WorkflowState); nil means the default seven.
+	Workflow *string `gorm:"type:jsonb"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -59,6 +61,65 @@ type Project struct {
 
 // TableName pins the model to the existing pluralized table.
 func (Project) TableName() string { return "projects" }
+
+// DefaultWorkflow is one state per status, keyed by the status.
+func DefaultWorkflow() []api.WorkflowState {
+	labels := []struct {
+		s api.TaskStatus
+		l string
+	}{
+		{api.TaskStatusBacklog, "Backlog"}, {api.TaskStatusTodo, "To do"}, {api.TaskStatusInProgress, "In progress"},
+		{api.TaskStatusInReview, "In review"}, {api.TaskStatusBlocked, "Blocked"}, {api.TaskStatusDone, "Done"},
+		{api.TaskStatusCancelled, "Cancelled"},
+	}
+	out := make([]api.WorkflowState, len(labels))
+	for i, x := range labels {
+		out[i] = api.WorkflowState{Key: string(x.s), Label: x.l, Category: x.s}
+	}
+	return out
+}
+
+// States returns the project's workflow, or the default one.
+func (p Project) States() []api.WorkflowState {
+	if p.Workflow != nil {
+		var out []api.WorkflowState
+		if json.Unmarshal([]byte(*p.Workflow), &out) == nil && len(out) > 0 {
+			return out
+		}
+	}
+	return DefaultWorkflow()
+}
+
+// ValidateWorkflow checks a workflow: 1–20 states with unique keys, known
+// categories, a done state and one to work in.
+func ValidateWorkflow(states []api.WorkflowState) error {
+	if len(states) == 0 || len(states) > 20 {
+		return errors.New("a workflow needs 1–20 states")
+	}
+	seen := map[string]bool{}
+	done, open := false, false
+	for _, s := range states {
+		if !fieldKey.MatchString(s.Key) {
+			return fmt.Errorf("state key %q must be lowercase letters, digits or _ (starting with a letter)", s.Key)
+		}
+		if seen[s.Key] {
+			return fmt.Errorf("two states use the key %q", s.Key)
+		}
+		seen[s.Key] = true
+		if l := strings.TrimSpace(s.Label); l == "" || len([]rune(l)) > 40 {
+			return errors.New("every state needs a name of 1–40 characters")
+		}
+		if !s.Category.Valid() {
+			return fmt.Errorf("unknown category %q", s.Category)
+		}
+		done = done || s.Category == api.TaskStatusDone
+		open = open || (s.Category != api.TaskStatusDone && s.Category != api.TaskStatusCancelled)
+	}
+	if !done || !open {
+		return errors.New("a workflow needs a done state and at least one state to work in")
+	}
+	return nil
+}
 
 // Fields returns the project's custom field definitions ([] when none).
 func (p Project) Fields() []api.CustomField {
@@ -126,10 +187,14 @@ func (p Project) Board() api.BoardSettings {
 }
 
 // ValidateBoard checks limits (1–999, known statuses) and the options.
-func ValidateBoard(b api.BoardSettings) error {
-	for status, n := range b.WipLimits {
-		if !api.TaskStatus(status).Valid() {
-			return fmt.Errorf("unknown status %q in wipLimits", status)
+func ValidateBoard(b api.BoardSettings, states []api.WorkflowState) error {
+	known := map[string]bool{}
+	for _, s := range states {
+		known[s.Key] = true
+	}
+	for state, n := range b.WipLimits {
+		if !known[state] {
+			return fmt.Errorf("this project has no state %q for a WIP limit", state)
 		}
 		if n < 1 || n > 999 {
 			return errors.New("WIP limits must be between 1 and 999")
@@ -147,6 +212,7 @@ func ValidateBoard(b api.BoardSettings) error {
 // ToAPI converts the persistence model into the generated API DTO.
 func (p Project) ToAPI() api.Project {
 	out := api.Project{
+		Workflow:         p.States(),
 		CustomFields:     p.Fields(),
 		BoardSettings:    p.Board(),
 		Id:               p.ID,
@@ -211,6 +277,12 @@ func NewProjectFromCreate(in api.ProjectCreate) Project {
 
 // ApplyUpdate mutates the model in place with the non-nil fields of a patch.
 func (p *Project) ApplyUpdate(in api.ProjectUpdate) {
+	if in.Workflow != nil {
+		if b, err := json.Marshal(*in.Workflow); err == nil {
+			v := string(b)
+			p.Workflow = &v
+		}
+	}
 	if in.CustomFields != nil {
 		if b, err := json.Marshal(*in.CustomFields); err == nil {
 			v := string(b)

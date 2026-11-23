@@ -22,6 +22,7 @@
 		sprintOptions = [],
 		areaOptions = [],
 		customFields = [],
+		workflow = [],
 		assigneeOptions = [],
 		initialMilestoneId = null,
 		projectTasks = [],
@@ -43,6 +44,8 @@
 		areaOptions?: { id: string; path: string }[];
 		// The project's custom fields.
 		customFields?: components['schemas']['CustomField'][];
+		// The project's workflow states; status is set through these.
+		workflow?: components['schemas']['WorkflowState'][];
 		// The project's active team members — a task can only be assigned to
 		// someone already on the team, not any person in the org.
 		assigneeOptions?: { id: string; name: string }[];
@@ -116,6 +119,8 @@
 	// caller-settable — it's normal to log work retroactively that's already
 	// in progress or done.
 	let status = $state<TaskStatus>(initial?.status ?? 'todo');
+	// svelte-ignore state_referenced_locally
+	let wfState = $state(initial?.state ?? workflow.find((w) => w.category === 'todo')?.key ?? workflow[0]?.key ?? '');
 	let priority = $state<TaskPriority>(initial?.priority ?? 'medium');
 	let startDate = $state(initial?.startDate ?? '');
 	let dueDate = $state(initial?.dueDate ?? '');
@@ -228,7 +233,7 @@
 						storyPoints: num(storyPoints),
 						remainingManDays: num(remaining),
 						completedManDays: num(completed),
-						status,
+						...(workflow.length ? { state: wfState } : { status }),
 						priority,
 						startDate: startDate || undefined,
 						dueDate: dueDate || undefined,
@@ -260,7 +265,7 @@
 						storyPoints: num(storyPoints),
 						remainingManDays: num(remaining),
 						completedManDays: num(completed),
-						status,
+						...(workflow.length ? { state: wfState } : { status }),
 						priority,
 						startDate: startDate || undefined,
 						dueDate: dueDate || undefined,
@@ -569,12 +574,20 @@
 
 			<div class="grid grid-cols-2 gap-4">
 				<label class="block text-sm">
-					<span class="mb-1 block font-medium text-slate-700">Status</span>
-					<select class="input" bind:value={status}>
-						{#each statusOptions as opt (opt)}
-							<option value={opt}>{opt.replace('_', ' ')}</option>
-						{/each}
-					</select>
+					<span class="mb-1 block font-medium text-slate-700">State</span>
+					{#if workflow.length}
+						<select class="input" bind:value={wfState}>
+							{#each workflow as w (w.key)}
+								<option value={w.key}>{w.label}</option>
+							{/each}
+						</select>
+					{:else}
+						<select class="input" bind:value={status}>
+							{#each statusOptions as opt (opt)}
+								<option value={opt}>{opt.replace('_', ' ')}</option>
+							{/each}
+						</select>
+					{/if}
 				</label>
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Priority</span>

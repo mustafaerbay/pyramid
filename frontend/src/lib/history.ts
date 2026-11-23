@@ -15,6 +15,7 @@ type Change = { from?: unknown; to?: unknown };
 const LABELS: Record<string, string> = {
 	title: 'Title',
 	type: 'Type',
+	state: 'State',
 	description: 'Description',
 	status: 'Status',
 	priority: 'Priority',

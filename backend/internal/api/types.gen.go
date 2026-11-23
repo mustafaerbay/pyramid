@@ -751,7 +751,7 @@ type BoardSettings struct {
 	// Swimlanes Split the board into rows by this field.
 	Swimlanes BoardSettingsSwimlanes `json:"swimlanes"`
 
-	// WipLimits Most items allowed in a status column at once (1–999), by status. Missing = no limit.
+	// WipLimits Most items allowed in a board column at once (1–999), by workflow state key. Missing = no limit.
 	WipLimits map[string]int `json:"wipLimits"`
 }
 
@@ -1245,6 +1245,9 @@ type Project struct {
 	TurkeyQa        *string             `json:"turkeyQa"`
 	TurkeySe        *string             `json:"turkeySe"`
 	UpdatedAt       time.Time           `json:"updatedAt"`
+
+	// Workflow The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed.
+	Workflow []WorkflowState `json:"workflow"`
 }
 
 // ProjectCreate defines model for ProjectCreate.
@@ -1421,6 +1424,9 @@ type ProjectUpdate struct {
 	TurkeyPm        *string             `json:"turkeyPm"`
 	TurkeyQa        *string             `json:"turkeyQa"`
 	TurkeySe        *string             `json:"turkeySe"`
+
+	// Workflow The project's states in board order (1–20). Each belongs to a category (a TaskStatus) that capacity, sprints and charts use. Needs a "done" state and one that isn't done or cancelled; a state still used by items can't be removed.
+	Workflow *[]WorkflowState `json:"workflow,omitempty"`
 }
 
 // QueryFilters Every list given must match (an item matches a list if it has any of its values). Empty or missing = any.
@@ -1652,7 +1658,10 @@ type Task struct {
 
 	// StartDate Planned start; man-days are spread over the working days from startDate to dueDate.
 	StartDate *openapi_types.Date `json:"startDate"`
-	Status    TaskStatus          `json:"status"`
+
+	// State The item's state in its project's workflow; status is that state's category.
+	State  string     `json:"state"`
+	Status TaskStatus `json:"status"`
 
 	// StoryPoints Relative size in points (0–999).
 	StoryPoints *float64 `json:"storyPoints"`
@@ -1727,8 +1736,11 @@ type TaskCreate struct {
 	RemainingManDays *float64              `json:"remainingManDays"`
 	SprintId         *openapi_types.UUID   `json:"sprintId,omitempty"`
 	StartDate        *openapi_types.Date   `json:"startDate,omitempty"`
-	Status           *TaskStatus           `json:"status,omitempty"`
-	StoryPoints      *float64              `json:"storyPoints"`
+
+	// State A state of the project's workflow (sets status); otherwise the first state of status's category.
+	State       *string     `json:"state,omitempty"`
+	Status      *TaskStatus `json:"status,omitempty"`
+	StoryPoints *float64    `json:"storyPoints"`
 
 	// Tags Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`
@@ -1825,7 +1837,10 @@ type TaskUpdate struct {
 	// SprintId Plan in this sprint; null takes it out of its sprint.
 	SprintId  *openapi_types.UUID `json:"sprintId"`
 	StartDate *openapi_types.Date `json:"startDate,omitempty"`
-	Status    *TaskStatus         `json:"status,omitempty"`
+
+	// State Move to this workflow state (sets status). Sending only status picks the first state of that category.
+	State  *string     `json:"state,omitempty"`
+	Status *TaskStatus `json:"status,omitempty"`
 
 	// StoryPoints Send null to clear.
 	StoryPoints *float64 `json:"storyPoints"`
@@ -1948,6 +1963,13 @@ type WeeklySummaryList struct {
 type WeeklySummaryUpdate struct {
 	Summary *string             `json:"summary,omitempty"`
 	WeekOf  *openapi_types.Date `json:"weekOf,omitempty"`
+}
+
+// WorkflowState defines model for WorkflowState.
+type WorkflowState struct {
+	Category TaskStatus `json:"category"`
+	Key      string     `json:"key"`
+	Label    string     `json:"label"`
 }
 
 // IdParam defines model for IdParam.

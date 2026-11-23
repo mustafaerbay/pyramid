@@ -154,6 +154,7 @@ CREATE TABLE projects (
 	team_size_planned INTEGER,
 	board_settings TEXT,
 	custom_fields TEXT,
+	workflow TEXT,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -211,6 +212,7 @@ CREATE TABLE tasks (
 	title TEXT NOT NULL,
 	description TEXT,
 	status TEXT NOT NULL DEFAULT 'backlog',
+	state TEXT,
 	priority TEXT NOT NULL DEFAULT 'medium',
 	start_date DATE,
 	estimate_man_days REAL,

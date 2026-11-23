@@ -27,6 +27,8 @@ type Task struct {
 	// ParentID puts this work item under another (same project).
 	ParentID *uuid.UUID   `gorm:"type:uuid;index"`
 	Type     api.TaskType `gorm:"type:task_type;not null;default:task"`
+	// State is the item\'s state in its project\'s workflow (Status is its category).
+	State string `gorm:"type:text"`
 	// CustomValues is JSON: the project custom field values, by key.
 	CustomValues *string `gorm:"type:jsonb"`
 	// AreaID is the area path the item belongs to.
@@ -162,6 +164,10 @@ func (t Task) ToAPI() api.Task {
 	copy(out.RelatedIds, t.RelatedIDs)
 	out.DuplicateOfId = t.DuplicateOfID
 	out.SprintId = t.SprintID
+	out.State = t.State
+	if out.State == "" {
+		out.State = string(t.Status)
+	}
 	out.AreaId = t.AreaID
 	out.CustomValues = t.Values
 	if out.CustomValues == nil {

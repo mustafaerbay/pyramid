@@ -240,6 +240,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
 	}
+	if err := h.resolveState(&t, in.State, true); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
 	var blockers []uuid.UUID
 	if in.BlockedByIds != nil {
 		blockers = dedupeIDs(*in.BlockedByIds)
@@ -424,6 +428,10 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	clearMilestone := isExplicitNull(raw, "milestoneId")
 
 	t.ApplyUpdate(in, clearMilestone)
+	if err := h.resolveState(&t, in.State, in.Status != nil); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
 	// These three can be cleared with an explicit null.
 	if isExplicitNull(raw, "storyPoints") {
 		t.StoryPoints = nil
