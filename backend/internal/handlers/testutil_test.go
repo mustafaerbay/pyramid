@@ -201,6 +201,7 @@ CREATE TABLE tasks (
 	number INTEGER NOT NULL,
 	rank REAL NOT NULL DEFAULT 0,
 	parent_id TEXT,
+	sprint_id TEXT,
 	duplicate_of_id TEXT,
 	milestone_id TEXT,
 	type TEXT NOT NULL DEFAULT 'task',
@@ -275,6 +276,18 @@ CREATE TABLE task_related (
 	task_id TEXT NOT NULL,
 	other_id TEXT NOT NULL,
 	PRIMARY KEY (task_id, other_id)
+);
+
+CREATE TABLE sprints (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	name TEXT NOT NULL,
+	goal TEXT,
+	status TEXT NOT NULL DEFAULT 'planned',
+	start_date DATE,
+	end_date DATE,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE task_labels (

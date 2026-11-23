@@ -295,6 +295,13 @@
 		loadingWeeklySummaries = false;
 	}
 
+	let sprints = $state<components['schemas']['Sprint'][]>([]);
+	async function loadSprints() {
+		const { data } = await api.GET('/api/v1/sprints', { params: { query: { projectId } } });
+		sprints = data?.data ?? [];
+	}
+	let taskSprintFilter = $state('');
+
 	async function loadTasks() {
 		loadingTasks = true;
 		tasksError = null;
@@ -382,6 +389,7 @@
 		if (taskAssigneeFilter && taskAssigneeFilter !== '__unassigned__' && !t.assigneeIds.includes(taskAssigneeFilter))
 			return false;
 		if (taskTypeFilter && t.type !== taskTypeFilter) return false;
+		if (taskSprintFilter === '__none__' ? t.sprintId : taskSprintFilter && t.sprintId !== taskSprintFilter) return false;
 		return hasAllTags(t.tags, taskTagFilters);
 	}
 
@@ -1008,6 +1016,7 @@
 		loadVersions();
 		loadWeeklySummaries();
 		loadTasks();
+		loadSprints();
 	});
 </script>
 
@@ -1449,7 +1458,9 @@
 		<section class="space-y-3">
 			<div class="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<h2 class="text-lg font-semibold tracking-tight">Tasks</h2>
+					<h2 class="text-lg font-semibold tracking-tight">
+						Tasks <a href="/projects/{projectId}/sprints" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Sprints →</a>
+					</h2>
 					<p class="mt-0.5 text-sm text-slate-500">
 						{tasks.length}
 						{tasks.length === 1 ? 'task' : 'tasks'}
@@ -1519,6 +1530,15 @@
 							<option value={person.id}>{person.name}</option>
 						{/each}
 					</select>
+					{#if sprints.length > 0}
+						<select class="input w-auto" aria-label="Filter by sprint" bind:value={taskSprintFilter}>
+							<option value="">All sprints</option>
+							<option value="__none__">No sprint</option>
+							{#each sprints as sp (sp.id)}
+								<option value={sp.id}>{sp.name}{sp.status === 'active' ? ' (active)' : ''}</option>
+							{/each}
+						</select>
+					{/if}
 					<select class="input w-auto" aria-label="Filter by type" bind:value={taskTypeFilter}>
 						<option value="">All types</option>
 						{#each TYPE_OPTIONS as o (o.value)}
@@ -1994,6 +2014,7 @@
 		{projectId}
 		task={editingTask}
 		{milestoneOptions}
+		sprintOptions={sprints.filter((sp) => sp.status !== 'completed' && sp.status !== 'cancelled').map((sp) => ({ id: sp.id, name: sp.name }))}
 		{assigneeOptions}
 		initialMilestoneId={taskModalMilestoneId}
 		projectTasks={tasks}

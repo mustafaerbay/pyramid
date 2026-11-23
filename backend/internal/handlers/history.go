@@ -74,6 +74,7 @@ func taskSnapshot(t models.Task) map[string]any {
 		"blockedByIds":     blockers,
 		"relatedIds":       related,
 		"duplicateOfId":    id(t.DuplicateOfID),
+		"sprintId":         id(t.SprintID),
 	}
 }
 

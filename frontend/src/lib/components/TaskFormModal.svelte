@@ -17,6 +17,7 @@
 		projectId,
 		task = null,
 		milestoneOptions = [],
+		sprintOptions = [],
 		assigneeOptions = [],
 		initialMilestoneId = null,
 		projectTasks = [],
@@ -32,6 +33,8 @@
 		// The project's milestones, for the "which milestone is this part of"
 		// picker — tasks don't have to belong to one (project-level backlog).
 		milestoneOptions?: { id: string; name: string }[];
+		// Open sprints of the project.
+		sprintOptions?: { id: string; name: string }[];
 		// The project's active team members — a task can only be assigned to
 		// someone already on the team, not any person in the org.
 		assigneeOptions?: { id: string; name: string }[];
@@ -65,6 +68,8 @@
 	let tags = $state<string[]>([...(initial?.tags ?? [])]);
 	// svelte-ignore state_referenced_locally
 	let milestoneId = $state(initial?.milestoneId ?? initialMilestoneId ?? '');
+	// svelte-ignore state_referenced_locally
+	let sprintId = $state(initial?.sprintId ?? '');
 	// svelte-ignore state_referenced_locally
 	let parentId = $state(initial?.parentId ?? initialParentId ?? '');
 	// svelte-ignore state_referenced_locally
@@ -196,6 +201,7 @@
 						// "clear this" apart from "field wasn't touched".
 						type,
 						milestoneId: milestoneId || null,
+						sprintId: sprintId || null,
 						parentId: parentId || null,
 						// assigneeIds always replaces the full set — sending it
 						// (even as []) is how the backend knows to update it, vs.
@@ -226,6 +232,7 @@
 						projectId,
 						type,
 						milestoneId: milestoneId || undefined,
+						sprintId: sprintId || undefined,
 						parentId: parentId || undefined,
 						title,
 						description: description || undefined,
@@ -323,6 +330,21 @@
 					{/each}
 				</select>
 			</label>
+
+			{#if sprintOptions.length > 0 || sprintId}
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Sprint</span>
+					<select class="input" bind:value={sprintId}>
+						<option value="">Not in a sprint</option>
+						{#each sprintOptions as sp (sp.id)}
+							<option value={sp.id}>{sp.name}</option>
+						{/each}
+						{#if sprintId && !sprintOptions.some((sp) => sp.id === sprintId)}
+							<option value={sprintId}>(closed sprint)</option>
+						{/if}
+					</select>
+				</label>
+			{/if}
 
 			{#if parentChoices.length > 0 || parentId}
 				<label class="block text-sm">

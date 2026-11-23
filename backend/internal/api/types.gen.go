@@ -465,6 +465,30 @@ func (e SeniorityLevel) Valid() bool {
 	}
 }
 
+// Defines values for SprintStatus.
+const (
+	SprintStatusActive    SprintStatus = "active"
+	SprintStatusCancelled SprintStatus = "cancelled"
+	SprintStatusCompleted SprintStatus = "completed"
+	SprintStatusPlanned   SprintStatus = "planned"
+)
+
+// Valid indicates whether the value is a known member of the SprintStatus enum.
+func (e SprintStatus) Valid() bool {
+	switch e {
+	case SprintStatusActive:
+		return true
+	case SprintStatusCancelled:
+		return true
+	case SprintStatusCompleted:
+		return true
+	case SprintStatusPlanned:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SystemRole.
 const (
 	SystemRoleAdmin   SystemRole = "admin"
@@ -1252,6 +1276,91 @@ type ProjectUpdate struct {
 // SeniorityLevel defines model for SeniorityLevel.
 type SeniorityLevel string
 
+// Sprint defines model for Sprint.
+type Sprint struct {
+	CreatedAt time.Time          `json:"createdAt"`
+	EndDate   openapi_types.Date `json:"endDate"`
+	Goal      *string            `json:"goal"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+	StartDate openapi_types.Date `json:"startDate"`
+
+	// Stats Items in the sprint (cancelled left out). Man-days count the items that carry the work.
+	Stats     SprintStats  `json:"stats"`
+	Status    SprintStatus `json:"status"`
+	UpdatedAt time.Time    `json:"updatedAt"`
+}
+
+// SprintCapacity defines model for SprintCapacity.
+type SprintCapacity struct {
+	// AvailableManDays Working days in the sprint outside approved leave, at the person's monthly capacity.
+	AvailableManDays float64            `json:"availableManDays"`
+	LeaveDays        int                `json:"leaveDays"`
+	PersonId         openapi_types.UUID `json:"personId"`
+
+	// PlannedManDays Their man-days on items in this sprint.
+	PlannedManDays float64 `json:"plannedManDays"`
+}
+
+// SprintCreate defines model for SprintCreate.
+type SprintCreate struct {
+	EndDate   openapi_types.Date `json:"endDate"`
+	Goal      *string            `json:"goal,omitempty"`
+	Name      string             `json:"name"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+	StartDate openapi_types.Date `json:"startDate"`
+	Status    *SprintStatus      `json:"status,omitempty"`
+}
+
+// SprintDay The sprint's items at the end of that day.
+type SprintDay struct {
+	Date         openapi_types.Date `json:"date"`
+	DoneCount    int                `json:"doneCount"`
+	DoneManDays  float64            `json:"doneManDays"`
+	DonePoints   float64            `json:"donePoints"`
+	ScopeCount   int                `json:"scopeCount"`
+	ScopeManDays float64            `json:"scopeManDays"`
+	ScopePoints  float64            `json:"scopePoints"`
+}
+
+// SprintList defines model for SprintList.
+type SprintList struct {
+	Data []Sprint `json:"data"`
+}
+
+// SprintReport defines model for SprintReport.
+type SprintReport struct {
+	// Capacity Project team members and anyone with work in the sprint.
+	Capacity []SprintCapacity `json:"capacity"`
+
+	// Days One entry per day from the start date up to today or the end date, whichever is first.
+	Days   []SprintDay `json:"days"`
+	Sprint Sprint      `json:"sprint"`
+}
+
+// SprintStats Items in the sprint (cancelled left out). Man-days count the items that carry the work.
+type SprintStats struct {
+	DoneCount   int     `json:"doneCount"`
+	DoneManDays float64 `json:"doneManDays"`
+	DonePoints  float64 `json:"donePoints"`
+	ManDays     float64 `json:"manDays"`
+	Points      float64 `json:"points"`
+	TaskCount   int     `json:"taskCount"`
+}
+
+// SprintStatus defines model for SprintStatus.
+type SprintStatus string
+
+// SprintUpdate defines model for SprintUpdate.
+type SprintUpdate struct {
+	EndDate   *openapi_types.Date `json:"endDate,omitempty"`
+	Goal      *string             `json:"goal,omitempty"`
+	Name      *string             `json:"name,omitempty"`
+	StartDate *openapi_types.Date `json:"startDate,omitempty"`
+	Status    *SprintStatus       `json:"status,omitempty"`
+}
+
 // SystemRole admin: everything, including accounts. manager: everything but accounts. member: can't change people or approve leave. viewer: read-only.
 type SystemRole string
 
@@ -1305,6 +1414,9 @@ type Task struct {
 
 	// RemainingManDays Work left, in man-days (0–9999). Set to 0 when the item is done.
 	RemainingManDays *float64 `json:"remainingManDays"`
+
+	// SprintId The sprint this item is planned in (same project).
+	SprintId *openapi_types.UUID `json:"sprintId"`
 
 	// StartDate Planned start; man-days are spread over the working days from startDate to dueDate.
 	StartDate *openapi_types.Date `json:"startDate"`
@@ -1378,6 +1490,7 @@ type TaskCreate struct {
 	// RelatedIds Replaces the related links when present (empty array clears).
 	RelatedIds       *[]openapi_types.UUID `json:"relatedIds,omitempty"`
 	RemainingManDays *float64              `json:"remainingManDays"`
+	SprintId         *openapi_types.UUID   `json:"sprintId,omitempty"`
 	StartDate        *openapi_types.Date   `json:"startDate,omitempty"`
 	Status           *TaskStatus           `json:"status,omitempty"`
 	StoryPoints      *float64              `json:"storyPoints"`
@@ -1467,8 +1580,11 @@ type TaskUpdate struct {
 	// RelatedIds Replaces the related links when present (empty array clears).
 	RelatedIds       *[]openapi_types.UUID `json:"relatedIds,omitempty"`
 	RemainingManDays *float64              `json:"remainingManDays"`
-	StartDate        *openapi_types.Date   `json:"startDate,omitempty"`
-	Status           *TaskStatus           `json:"status,omitempty"`
+
+	// SprintId Plan in this sprint; null takes it out of its sprint.
+	SprintId  *openapi_types.UUID `json:"sprintId"`
+	StartDate *openapi_types.Date `json:"startDate,omitempty"`
+	Status    *TaskStatus         `json:"status,omitempty"`
 
 	// StoryPoints Send null to clear.
 	StoryPoints *float64 `json:"storyPoints"`
@@ -1690,6 +1806,11 @@ type ListProjectsParams struct {
 	Status   *ProjectStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
+// ListSprintsParams defines parameters for ListSprints.
+type ListSprintsParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
 // ListTasksParams defines parameters for ListTasks.
 type ListTasksParams struct {
 	Page        *PageParam          `form:"page,omitempty" json:"page,omitempty"`
@@ -1700,6 +1821,9 @@ type ListTasksParams struct {
 	// AssigneeId Only tasks that have this person among their assignees.
 	AssigneeId *openapi_types.UUID `form:"assigneeId,omitempty" json:"assigneeId,omitempty"`
 	Status     *TaskStatus         `form:"status,omitempty" json:"status,omitempty"`
+
+	// SprintId Only tasks in this sprint, or "none" for tasks in no sprint.
+	SprintId *string `form:"sprintId,omitempty" json:"sprintId,omitempty"`
 
 	// Tag Only tasks that carry this tag (ignoring case).
 	Tag *string `form:"tag,omitempty" json:"tag,omitempty"`
@@ -1772,6 +1896,12 @@ type CreateProjectJSONRequestBody = ProjectCreate
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = ProjectUpdate
+
+// CreateSprintJSONRequestBody defines body for CreateSprint for application/json ContentType.
+type CreateSprintJSONRequestBody = SprintCreate
+
+// UpdateSprintJSONRequestBody defines body for UpdateSprint for application/json ContentType.
+type UpdateSprintJSONRequestBody = SprintUpdate
 
 // UpdateTaskCommentJSONRequestBody defines body for UpdateTaskComment for application/json ContentType.
 type UpdateTaskCommentJSONRequestBody = TaskCommentInput

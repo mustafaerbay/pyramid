@@ -40,6 +40,11 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	if s := c.Query("status"); s != "" {
 		q = q.Where("status = ?", s)
 	}
+	if sp := c.Query("sprintId"); sp == "none" {
+		q = q.Where("sprint_id IS NULL")
+	} else if sp != "" {
+		q = q.Where("sprint_id = ?", sp)
+	}
 	if tag := strings.TrimSpace(c.Query("tag")); tag != "" {
 		q = q.Where("id IN (?)", h.db.Table("task_labels").
 			Select("task_labels.task_id").
@@ -239,6 +244,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		related = dedupeIDs(*in.RelatedIds)
 	}
 	if err := h.validateLinks(&t, related); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
+	if err := h.validateSprint(&t); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
 	}
@@ -451,6 +460,16 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	if err := h.validateLinks(&t, related); err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 		return
+	}
+	if _, ok := raw["sprintId"]; ok {
+		t.SprintID = nil
+		if !isExplicitNull(raw, "sprintId") {
+			t.SprintID = in.SprintId
+		}
+		if err := h.validateSprint(&t); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
 	}
 	if err := h.db.Save(&t).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task", Details: strptr(err.Error())})

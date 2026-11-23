@@ -171,3 +171,21 @@ func SpreadManDaysAroundLeave(manDays float64, start, due *time.Time, leave []Da
 	}
 	return manDays * float64(freeDaysBetween(from, to, leave)) / float64(total)
 }
+
+// SprintCapacity is a person's man-days available in [start, end]: each
+// weekday not on leave adds capacity ÷ that month's working days.
+func SprintCapacity(capacity float64, start, end time.Time, leave []DateRange) (available float64, leaveDays int) {
+	for d := dateOnly(start); !d.After(dateOnly(end)); d = d.AddDate(0, 0, 1) {
+		if !isWeekday(d) {
+			continue
+		}
+		if onLeave(d, leave) {
+			leaveDays++
+			continue
+		}
+		if wd := WorkingDaysInMonth(d); wd > 0 {
+			available += capacity / float64(wd)
+		}
+	}
+	return available, leaveDays
+}

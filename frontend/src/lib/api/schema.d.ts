@@ -562,6 +562,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sprints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's sprints, by start date */
+        get: operations["listSprints"];
+        put?: never;
+        /** Create a sprint */
+        post: operations["createSprint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sprints/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a sprint */
+        get: operations["getSprint"];
+        put?: never;
+        post?: never;
+        /** Delete a sprint (its items go back to the backlog) */
+        delete: operations["deleteSprint"];
+        options?: never;
+        head?: never;
+        /** Update a sprint */
+        patch: operations["updateSprint"];
+        trace?: never;
+    };
+    "/api/v1/sprints/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Burndown/burnup by day and capacity by person */
+        get: operations["getSprintReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tags": {
         parameters: {
             query?: never;
@@ -1270,6 +1324,11 @@ export interface components {
             /** @description Per-project sequential number, e.g. 42 for "PYR-42". */
             number: number;
             type: components["schemas"]["TaskType"];
+            /**
+             * Format: uuid
+             * @description The sprint this item is planned in (same project).
+             */
+            sprintId?: string | null;
             title: string;
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -1339,6 +1398,8 @@ export interface components {
              */
             parentId?: string;
             type?: components["schemas"]["TaskType"];
+            /** Format: uuid */
+            sprintId?: string;
             title: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1380,6 +1441,11 @@ export interface components {
              */
             parentId?: string | null;
             type?: components["schemas"]["TaskType"];
+            /**
+             * Format: uuid
+             * @description Plan in this sprint; null takes it out of its sprint.
+             */
+            sprintId?: string | null;
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1537,6 +1603,99 @@ export interface components {
              * @description Place right after this task (same project); null puts it first.
              */
             afterId: string | null;
+        };
+        /** @enum {string} */
+        SprintStatus: "planned" | "active" | "completed" | "cancelled";
+        /** @description Items in the sprint (cancelled left out). Man-days count the items that carry the work. */
+        SprintStats: {
+            taskCount: number;
+            doneCount: number;
+            /** Format: double */
+            points: number;
+            /** Format: double */
+            donePoints: number;
+            /** Format: double */
+            manDays: number;
+            /** Format: double */
+            doneManDays: number;
+        };
+        Sprint: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            goal: string | null;
+            status: components["schemas"]["SprintStatus"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            stats: components["schemas"]["SprintStats"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SprintCreate: {
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            goal?: string;
+            status?: components["schemas"]["SprintStatus"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+        };
+        SprintUpdate: {
+            name?: string;
+            goal?: string;
+            status?: components["schemas"]["SprintStatus"];
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            endDate?: string;
+        };
+        SprintList: {
+            data: components["schemas"]["Sprint"][];
+        };
+        /** @description The sprint's items at the end of that day. */
+        SprintDay: {
+            /** Format: date */
+            date: string;
+            scopeCount: number;
+            doneCount: number;
+            /** Format: double */
+            scopePoints: number;
+            /** Format: double */
+            donePoints: number;
+            /** Format: double */
+            scopeManDays: number;
+            /** Format: double */
+            doneManDays: number;
+        };
+        SprintCapacity: {
+            /** Format: uuid */
+            personId: string;
+            /**
+             * Format: double
+             * @description Working days in the sprint outside approved leave, at the person's monthly capacity.
+             */
+            availableManDays: number;
+            /**
+             * Format: double
+             * @description Their man-days on items in this sprint.
+             */
+            plannedManDays: number;
+            leaveDays: number;
+        };
+        SprintReport: {
+            sprint: components["schemas"]["Sprint"];
+            /** @description One entry per day from the start date up to today or the end date, whichever is first. */
+            days: components["schemas"]["SprintDay"][];
+            /** @description Project team members and anyone with work in the sprint. */
+            capacity: components["schemas"]["SprintCapacity"][];
         };
         TagList: {
             data: string[];
@@ -3211,6 +3370,148 @@ export interface operations {
             };
         };
     };
+    listSprints: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sprints with their progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SprintList"];
+                };
+            };
+        };
+    };
+    createSprint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SprintCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sprint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getSprint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sprint */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sprint"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteSprint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateSprint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SprintUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Sprint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSprintReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SprintReport"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     listTags: {
         parameters: {
             query?: never;
@@ -3242,6 +3543,8 @@ export interface operations {
                 /** @description Only tasks that have this person among their assignees. */
                 assigneeId?: string;
                 status?: components["schemas"]["TaskStatus"];
+                /** @description Only tasks in this sprint, or "none" for tasks in no sprint. */
+                sprintId?: string;
                 /** @description Only tasks that carry this tag (ignoring case). */
                 tag?: string;
             };

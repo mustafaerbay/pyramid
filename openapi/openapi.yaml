@@ -1103,6 +1103,110 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TaskHistory"
+  /api/v1/sprints:
+    get:
+      operationId: listSprints
+      tags: [sprints]
+      summary: A project's sprints, by start date
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Sprints with their progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SprintList"
+    post:
+      operationId: createSprint
+      tags: [sprints]
+      summary: Create a sprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SprintCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sprint"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/sprints/{id}:
+    get:
+      operationId: getSprint
+      tags: [sprints]
+      summary: Get a sprint
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: The sprint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sprint"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateSprint
+      tags: [sprints]
+      summary: Update a sprint
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SprintUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sprint"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteSprint
+      tags: [sprints]
+      summary: Delete a sprint (its items go back to the backlog)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/sprints/{id}/report:
+    get:
+      operationId: getSprintReport
+      tags: [sprints]
+      summary: Burndown/burnup by day and capacity by person
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: The report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SprintReport"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tags:
     get:
       operationId: listTags
@@ -1154,6 +1258,12 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/TaskStatus"
+        - name: sprintId
+          in: query
+          required: false
+          description: Only tasks in this sprint, or "none" for tasks in no sprint.
+          schema:
+            type: string
         - name: tag
           in: query
           required: false
@@ -2670,6 +2780,11 @@ components:
           description: Per-project sequential number, e.g. 42 for "PYR-42".
         type:
           $ref: "#/components/schemas/TaskType"
+        sprintId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The sprint this item is planned in (same project).
         title:
           type: string
         description:
@@ -2777,6 +2892,9 @@ components:
           description: Put this under that work item (same project; see Task.parentId for the rules).
         type:
           $ref: "#/components/schemas/TaskType"
+        sprintId:
+          type: string
+          format: uuid
         title:
           type: string
           minLength: 1
@@ -2878,6 +2996,11 @@ components:
             unchanged.
         type:
           $ref: "#/components/schemas/TaskType"
+        sprintId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Plan in this sprint; null takes it out of its sprint.
         title:
           type: string
         description:
@@ -3204,6 +3327,173 @@ components:
           format: uuid
           nullable: true
           description: Place right after this task (same project); null puts it first.
+
+    SprintStatus:
+      type: string
+      enum: [planned, active, completed, cancelled]
+
+    SprintStats:
+      type: object
+      required: [taskCount, doneCount, points, donePoints, manDays, doneManDays]
+      description: Items in the sprint (cancelled left out). Man-days count the items that carry the work.
+      properties:
+        taskCount:
+          type: integer
+        doneCount:
+          type: integer
+        points:
+          type: number
+          format: double
+        donePoints:
+          type: number
+          format: double
+        manDays:
+          type: number
+          format: double
+        doneManDays:
+          type: number
+          format: double
+
+    Sprint:
+      type: object
+      required: [id, projectId, name, goal, status, startDate, endDate, stats, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        goal:
+          type: string
+          nullable: true
+        status:
+          $ref: "#/components/schemas/SprintStatus"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        stats:
+          $ref: "#/components/schemas/SprintStats"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SprintCreate:
+      type: object
+      required: [projectId, name, startDate, endDate]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        goal:
+          type: string
+        status:
+          $ref: "#/components/schemas/SprintStatus"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    SprintUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        goal:
+          type: string
+        status:
+          $ref: "#/components/schemas/SprintStatus"
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    SprintList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sprint"
+
+    SprintDay:
+      type: object
+      required: [date, scopeCount, doneCount, scopePoints, donePoints, scopeManDays, doneManDays]
+      description: The sprint's items at the end of that day.
+      properties:
+        date:
+          type: string
+          format: date
+        scopeCount:
+          type: integer
+        doneCount:
+          type: integer
+        scopePoints:
+          type: number
+          format: double
+        donePoints:
+          type: number
+          format: double
+        scopeManDays:
+          type: number
+          format: double
+        doneManDays:
+          type: number
+          format: double
+
+    SprintCapacity:
+      type: object
+      required: [personId, availableManDays, plannedManDays, leaveDays]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        availableManDays:
+          type: number
+          format: double
+          description: Working days in the sprint outside approved leave, at the person's monthly capacity.
+        plannedManDays:
+          type: number
+          format: double
+          description: Their man-days on items in this sprint.
+        leaveDays:
+          type: integer
+
+    SprintReport:
+      type: object
+      required: [sprint, days, capacity]
+      properties:
+        sprint:
+          $ref: "#/components/schemas/Sprint"
+        days:
+          type: array
+          description: One entry per day from the start date up to today or the end date, whichever is first.
+          items:
+            $ref: "#/components/schemas/SprintDay"
+        capacity:
+          type: array
+          description: Project team members and anyone with work in the sprint.
+          items:
+            $ref: "#/components/schemas/SprintCapacity"
 
     TagList:
       type: object
