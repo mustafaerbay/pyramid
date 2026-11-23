@@ -735,6 +735,16 @@ CREATE TABLE delivery_plans (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Work item templates: a name and the fields a new item starts with
+CREATE TABLE item_templates (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    fields     JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX item_templates_project ON item_templates(project_id);
+
 -- People following a work item (told about every change)
 CREATE TABLE task_followers (
     task_id    UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,

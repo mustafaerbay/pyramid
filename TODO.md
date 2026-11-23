@@ -33,7 +33,7 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Follow items** — follow any item and get notified of its changes
 - [x] **Notification subscriptions** — choose which events notify you; Slack /
       Teams incoming webhooks per project
-- [ ] **Clone, move and templates** — copy an item (with children), move it to
+- [x] **Clone, move and templates** — copy an item (with children), move it to
       another project, item templates with pre-filled fields
 - [ ] **Full-text search** — titles, descriptions and comments, from the header
 - [ ] **Excel** — .xlsx export and import next to CSV

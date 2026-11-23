@@ -199,6 +199,113 @@ paths:
                 $ref: "#/components/schemas/NotificationSettings"
         "400":
           $ref: "#/components/responses/BadRequest"
+  /api/v1/tasks/{id}/transfer:
+    post:
+      operationId: transferTask
+      tags: [tasks]
+      summary: Move an item (with its children) to another project
+      description: >
+        Each moved item gets the next number in the new project and goes to
+        the bottom of its order. Sprint, area and milestone are cleared; a
+        state or project type the new project doesn't have falls back to its
+        default; custom values it has no field for are dropped.
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId]
+              properties:
+                projectId:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: The moved item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/item-templates:
+    get:
+      operationId: listItemTemplates
+      tags: [tasks]
+      summary: A project's work item templates
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemTemplateList"
+    post:
+      operationId: createItemTemplate
+      tags: [tasks]
+      summary: Add a work item template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemTemplateInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/item-templates/{id}:
+    patch:
+      operationId: updateItemTemplate
+      tags: [tasks]
+      summary: Change a work item template
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemTemplateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteItemTemplate
+      tags: [tasks]
+      summary: Remove a work item template
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Removed
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tasks/{id}/followers:
     get:
       operationId: getTaskFollowers
@@ -4390,6 +4497,74 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TaskHistoryEntry"
+
+    ItemTemplateFields:
+      type: object
+      description: The fields a new item starts with (all optional).
+      properties:
+        type:
+          $ref: "#/components/schemas/TaskType"
+        customType:
+          type: string
+        title:
+          type: string
+          maxLength: 300
+        description:
+          type: string
+        priority:
+          $ref: "#/components/schemas/TaskPriority"
+        tags:
+          type: array
+          items:
+            type: string
+        storyPoints:
+          type: number
+        estimateManDays:
+          type: number
+        customValues:
+          type: object
+          additionalProperties: true
+
+    ItemTemplate:
+      type: object
+      required: [id, projectId, name, fields, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        fields:
+          $ref: "#/components/schemas/ItemTemplateFields"
+        createdAt:
+          type: string
+          format: date-time
+
+    ItemTemplateInput:
+      type: object
+      required: [projectId, name, fields]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        fields:
+          $ref: "#/components/schemas/ItemTemplateFields"
+
+    ItemTemplateList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItemTemplate"
 
     NotificationSettings:
       type: object

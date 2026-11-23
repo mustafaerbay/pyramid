@@ -128,6 +128,14 @@ CREATE TABLE users (
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE item_templates (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	name TEXT NOT NULL,
+	fields TEXT NOT NULL DEFAULT '{}',
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_followers (
 	task_id TEXT NOT NULL,
 	person_id TEXT NOT NULL,

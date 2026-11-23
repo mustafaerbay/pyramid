@@ -1516,6 +1516,45 @@ type Health struct {
 // HookEvent defines model for HookEvent.
 type HookEvent string
 
+// ItemTemplate defines model for ItemTemplate.
+type ItemTemplate struct {
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Fields The fields a new item starts with (all optional).
+	Fields    ItemTemplateFields `json:"fields"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+}
+
+// ItemTemplateFields The fields a new item starts with (all optional).
+type ItemTemplateFields struct {
+	CustomType      *string         `json:"customType,omitempty"`
+	CustomValues    *map[string]any `json:"customValues,omitempty"`
+	Description     *string         `json:"description,omitempty"`
+	EstimateManDays *float32        `json:"estimateManDays,omitempty"`
+	Priority        *TaskPriority   `json:"priority,omitempty"`
+	StoryPoints     *float32        `json:"storyPoints,omitempty"`
+	Tags            *[]string       `json:"tags,omitempty"`
+	Title           *string         `json:"title,omitempty"`
+
+	// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+	Type *TaskType `json:"type,omitempty"`
+}
+
+// ItemTemplateInput defines model for ItemTemplateInput.
+type ItemTemplateInput struct {
+	// Fields The fields a new item starts with (all optional).
+	Fields    ItemTemplateFields `json:"fields"`
+	Name      string             `json:"name"`
+	ProjectId openapi_types.UUID `json:"projectId"`
+}
+
+// ItemTemplateList defines model for ItemTemplateList.
+type ItemTemplateList struct {
+	Data []ItemTemplate `json:"data"`
+}
+
 // KickoffActionItem defines model for KickoffActionItem.
 type KickoffActionItem struct {
 	CreatedAt   time.Time           `json:"createdAt"`
@@ -2876,6 +2915,11 @@ type ListGoalsParams struct {
 	Status   *GoalStatus    `form:"status,omitempty" json:"status,omitempty"`
 }
 
+// ListItemTemplatesParams defines parameters for ListItemTemplates.
+type ListItemTemplatesParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
 // ListLeaveRequestsParams defines parameters for ListLeaveRequests.
 type ListLeaveRequestsParams struct {
 	Page     *PageParam     `form:"page,omitempty" json:"page,omitempty"`
@@ -2978,6 +3022,11 @@ type UploadTaskAttachmentMultipartBody struct {
 	File openapi_types.File `json:"file"`
 }
 
+// TransferTaskJSONBody defines body for TransferTask for application/json ContentType.
+type TransferTaskJSONBody struct {
+	ProjectId openapi_types.UUID `json:"projectId"`
+}
+
 // ListVersionsParams defines parameters for ListVersions.
 type ListVersionsParams struct {
 	Page      *PageParam          `form:"page,omitempty" json:"page,omitempty"`
@@ -3033,6 +3082,12 @@ type CreateGoalJSONRequestBody = GoalCreate
 
 // UpdateGoalJSONRequestBody defines body for UpdateGoal for application/json ContentType.
 type UpdateGoalJSONRequestBody = GoalUpdate
+
+// CreateItemTemplateJSONRequestBody defines body for CreateItemTemplate for application/json ContentType.
+type CreateItemTemplateJSONRequestBody = ItemTemplateInput
+
+// UpdateItemTemplateJSONRequestBody defines body for UpdateItemTemplate for application/json ContentType.
+type UpdateItemTemplateJSONRequestBody = ItemTemplateInput
 
 // CreateLeaveRequestJSONRequestBody defines body for CreateLeaveRequest for application/json ContentType.
 type CreateLeaveRequestJSONRequestBody = LeaveRequestCreate
@@ -3126,6 +3181,9 @@ type CreateTaskCommentJSONRequestBody = TaskCommentInput
 
 // MoveTaskJSONRequestBody defines body for MoveTask for application/json ContentType.
 type MoveTaskJSONRequestBody = TaskMove
+
+// TransferTaskJSONRequestBody defines body for TransferTask for application/json ContentType.
+type TransferTaskJSONRequestBody TransferTaskJSONBody
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserCreate

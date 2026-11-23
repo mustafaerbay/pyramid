@@ -33,6 +33,7 @@
 	import RulesManager from '$lib/components/RulesManager.svelte';
 	import ProcessManager from '$lib/components/ProcessManager.svelte';
 	import HooksManager from '$lib/components/HooksManager.svelte';
+	import { cloneBody, descendants, templateFields } from '$lib/clone';
 	import { teamFilter } from '$lib/teams';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
@@ -599,6 +600,53 @@
 		taskModalParentId = parent.id;
 		taskModalType = childType(parent.type);
 		taskModalMode = 'create';
+	}
+
+	// Copy, move and item templates.
+	let itemTemplates = $state<components['schemas']['ItemTemplate'][]>([]);
+	let transferTargets = $state<{ id: string; name: string }[]>([]);
+	$effect(() => {
+		if (!projectId) return;
+		api.GET('/api/v1/item-templates', { params: { query: { projectId } } }).then((r) => (itemTemplates = r.data?.data ?? []));
+		api.GET('/api/v1/projects', { params: { query: { page: 1, pageSize: 100 } } }).then(
+			(r) => (transferTargets = (r.data?.data ?? []).filter((p) => p.id !== projectId).map((p) => ({ id: p.id, name: p.name })).sort((a, b) => a.name.localeCompare(b.name)))
+		);
+	});
+	async function copyTask(t: Task, withChildren: boolean) {
+		const post = (body: ReturnType<typeof cloneBody>) => api.POST('/api/v1/tasks', { body: body as components['schemas']['TaskCreate'] });
+		const { data: copy, error: err } = await post(cloneBody(t, { parentId: t.parentId }));
+		if (err || !copy) return flash('error', err?.message ?? 'Could not copy the item.');
+		if (withChildren) {
+			const ids = new Map([[t.id, copy.id]]);
+			for (const k of descendants(t.id, tasks)) {
+				const { data } = await post(cloneBody(k, { parentId: ids.get(k.parentId ?? '') ?? copy.id, keepTitle: true }));
+				if (data) ids.set(k.id, data.id);
+			}
+		}
+		await loadTasks();
+		flash('success', `Copied as #${copy.number}.`);
+		openEditTask(tasks.find((x) => x.id === copy.id) ?? copy);
+	}
+	async function transferTask(t: Task, pid: string) {
+		const { data, error: err } = await api.POST('/api/v1/tasks/{id}/transfer', { params: { path: { id: t.id } }, body: { projectId: pid } });
+		if (err || !data) return flash('error', err?.message ?? 'Could not move the item.');
+		closeTaskModal();
+		await loadTasks();
+		flash('success', `Moved to ${transferTargets.find((p) => p.id === pid)?.name ?? 'the project'} as #${data.number}.`);
+	}
+	async function saveTemplate(t: Task, name: string) {
+		const { data, error: err } = await api.POST('/api/v1/item-templates', {
+			body: { projectId, name, fields: templateFields(t) as components['schemas']['ItemTemplateFields'] }
+		});
+		if (err || !data) return flash('error', err?.message ?? 'Could not save the template.');
+		itemTemplates = [...itemTemplates, data].sort((a, b) => a.name.localeCompare(b.name));
+		flash('success', `Template "${data.name}" saved — pick it when adding an item.`);
+	}
+	async function deleteTemplate(id: string) {
+		const t = itemTemplates.find((x) => x.id === id);
+		if (!t || !confirm(`Delete the template "${t.name}"?`)) return;
+		await api.DELETE('/api/v1/item-templates/{id}', { params: { path: { id } } });
+		itemTemplates = itemTemplates.filter((x) => x.id !== id);
 	}
 
 	function closeTaskModal() {
@@ -2162,6 +2210,12 @@
 		onClose={closeTaskModal}
 		onSaved={handleTaskSaved}
 		onDelete={editingTask ? () => askRemoveTask(editingTask!) : undefined}
+		templates={itemTemplates}
+		{transferTargets}
+		onCopy={editingTask ? (kids) => copyTask(editingTask!, kids) : undefined}
+		onTransfer={editingTask ? (pid) => transferTask(editingTask!, pid) : undefined}
+		onSaveTemplate={editingTask ? (name) => saveTemplate(editingTask!, name) : undefined}
+		onDeleteTemplate={deleteTemplate}
 	/>
 	{/key}
 {/if}

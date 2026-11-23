@@ -33,7 +33,13 @@
 		onAddSubtask,
 		onClose,
 		onSaved,
-		onDelete
+		onDelete,
+		templates = [],
+		transferTargets = [],
+		onCopy,
+		onTransfer,
+		onSaveTemplate,
+		onDeleteTemplate
 	}: {
 		projectId: string;
 		task?: Task | null;
@@ -69,7 +75,31 @@
 		// Shown as a "Delete task" link in edit mode only. The parent owns the
 		// actual confirm-and-delete flow (same split as milestones/members).
 		onDelete?: () => void;
+		/** Item templates of this project (create mode can start from one). */
+		templates?: components['schemas']['ItemTemplate'][];
+		/** Projects this item can be moved to. */
+		transferTargets?: { id: string; name: string }[];
+		onCopy?: (withChildren: boolean) => void;
+		onTransfer?: (projectId: string) => void;
+		onSaveTemplate?: (name: string) => void;
+		onDeleteTemplate?: (id: string) => void;
 	} = $props();
+	let templateId = $state('');
+	let moveTo = $state('');
+	function applyTemplate(id: string) {
+		const t = templates.find((x) => x.id === id);
+		if (!t) return;
+		const f = t.fields;
+		if (f.customType) typeChoice = `custom:${f.customType}`;
+		else if (f.type) typeChoice = f.type;
+		if (f.title) title = f.title;
+		if (f.description) description = f.description;
+		if (f.priority) priority = f.priority;
+		if (f.tags) tags = [...f.tags];
+		if (f.storyPoints != null) storyPoints = f.storyPoints;
+		if (f.estimateManDays != null) setTotal(String(f.estimateManDays));
+		if (f.customValues) custom = { ...custom, ...Object.fromEntries(Object.entries(f.customValues).map(([k, v]) => [k, v == null ? '' : String(v)])) };
+	}
 
 	// svelte-ignore state_referenced_locally
 	const isEdit = task !== null;
@@ -329,6 +359,31 @@
 			{#if formError}
 				<div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
 					{formError}
+				</div>
+			{/if}
+
+			{#if !isEdit && templates.length}
+				<div class="flex items-center gap-2 text-sm">
+					<span class="text-slate-600">Start from</span>
+					<select
+						class="input w-auto py-1"
+						aria-label="Template"
+						bind:value={templateId}
+						onchange={() => applyTemplate(templateId)}
+					>
+						<option value="">No template</option>
+						{#each templates as t (t.id)}<option value={t.id}>{t.name}</option>{/each}
+					</select>
+					{#if templateId && onDeleteTemplate}
+						<button
+							type="button"
+							class="text-xs text-slate-500 hover:text-red-600"
+							onclick={() => {
+								onDeleteTemplate(templateId);
+								templateId = '';
+							}}>Delete template</button
+						>
+					{/if}
 				</div>
 			{/if}
 
@@ -620,9 +675,40 @@
 
 			<div class="flex items-center justify-between gap-2 pt-2">
 				{#if isEdit && onDelete}
-					<button type="button" class="text-sm text-red-600 hover:text-red-700 hover:underline" onclick={onDelete}>
-						Delete task
-					</button>
+					<span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+						<button type="button" class="text-red-600 hover:text-red-700 hover:underline" onclick={onDelete}>Delete task</button>
+						{#if onCopy}
+							<button type="button" class="text-slate-600 hover:underline" onclick={() => onCopy(false)}>Copy</button>
+							{#if projectTasks.some((x) => x.parentId === task?.id)}
+								<button type="button" class="text-slate-600 hover:underline" onclick={() => onCopy(true)}>Copy with children</button>
+							{/if}
+						{/if}
+						{#if onSaveTemplate}
+							<button
+								type="button"
+								class="text-slate-600 hover:underline"
+								onclick={() => {
+									const n = prompt('Template name', task?.title ?? '');
+									if (n?.trim()) onSaveTemplate(n.trim());
+								}}>Save as template</button
+							>
+						{/if}
+						{#if onTransfer && transferTargets.length}
+							<select
+								class="rounded border-slate-200 py-0.5 text-xs"
+								aria-label="Move to project"
+								bind:value={moveTo}
+								onchange={() => {
+									const target = transferTargets.find((p) => p.id === moveTo);
+									if (target && confirm(`Move this item (and its children) to ${target.name}? Sprint, area and milestone are cleared.`)) onTransfer(moveTo);
+									moveTo = '';
+								}}
+							>
+								<option value="">Move to project…</option>
+								{#each transferTargets as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
+							</select>
+						{/if}
+					</span>
 				{:else}
 					<span></span>
 				{/if}

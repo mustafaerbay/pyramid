@@ -161,6 +161,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tasks/{id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an item (with its children) to another project
+         * @description Each moved item gets the next number in the new project and goes to the bottom of its order. Sprint, area and milestone are cleared; a state or project type the new project doesn't have falls back to its default; custom values it has no field for are dropped.
+         */
+        post: operations["transferTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/item-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's work item templates */
+        get: operations["listItemTemplates"];
+        put?: never;
+        /** Add a work item template */
+        post: operations["createItemTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/item-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a work item template */
+        delete: operations["deleteItemTemplate"];
+        options?: never;
+        head?: never;
+        /** Change a work item template */
+        patch: operations["updateItemTemplate"];
+        trace?: never;
+    };
     "/api/v1/tasks/{id}/followers": {
         parameters: {
             query?: never;
@@ -2214,6 +2270,39 @@ export interface components {
         TaskHistory: {
             data: components["schemas"]["TaskHistoryEntry"][];
         };
+        /** @description The fields a new item starts with (all optional). */
+        ItemTemplateFields: {
+            type?: components["schemas"]["TaskType"];
+            customType?: string;
+            title?: string;
+            description?: string;
+            priority?: components["schemas"]["TaskPriority"];
+            tags?: string[];
+            storyPoints?: number;
+            estimateManDays?: number;
+            customValues?: {
+                [key: string]: unknown;
+            };
+        };
+        ItemTemplate: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            fields: components["schemas"]["ItemTemplateFields"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ItemTemplateInput: {
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            fields: components["schemas"]["ItemTemplateFields"];
+        };
+        ItemTemplateList: {
+            data: components["schemas"]["ItemTemplate"][];
+        };
         NotificationSettings: {
             /** @description Per notification type; a missing type gets both. */
             types: {
@@ -3263,6 +3352,133 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    transferTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    projectId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The moved item */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listItemTemplates: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemTemplateList"];
+                };
+            };
+        };
+    };
+    createItemTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteItemTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateItemTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
         };
     };
     getTaskFollowers: {
