@@ -20,6 +20,7 @@
 	import MetricCard from '$lib/components/MetricCard.svelte';
 	import TagChips from '$lib/components/TagChips.svelte';
 	import TaskBoard from '$lib/components/TaskBoard.svelte';
+	import Markdown from '$lib/components/Markdown.svelte';
 	import { can } from '$lib/auth.svelte';
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
@@ -1157,7 +1158,7 @@
 					</div>
 					<h1 class="mt-1 text-2xl font-semibold tracking-tight">{project.name}</h1>
 					{#if project.description}
-						<p class="mt-2 max-w-2xl text-sm text-slate-600">{project.description}</p>
+						<Markdown text={project.description} class="mt-2 max-w-2xl text-sm text-slate-600" />
 					{/if}
 					<dl class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-500">
 						<div>

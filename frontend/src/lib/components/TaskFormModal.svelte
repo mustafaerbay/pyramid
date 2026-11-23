@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MentionTextarea from './MentionTextarea.svelte';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import { formatManDays, splitEvenly } from '$lib/capacity';
@@ -353,10 +354,10 @@
 				</label>
 			</div>
 
-			<label class="block text-sm">
+			<div class="block text-sm">
 				<span class="mb-1 block font-medium text-slate-700">Description</span>
-				<textarea class="input" rows="2" bind:value={description}></textarea>
-			</label>
+				<MentionTextarea bind:value={description} people={assigneeOptions.map((p) => p.name)} rows={4} label="Description" />
+			</div>
 
 			<div class="block text-sm">
 				<span class="mb-1 block font-medium text-slate-700">Tags</span>

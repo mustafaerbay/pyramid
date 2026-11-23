@@ -167,3 +167,26 @@ func TestNotifications_Leave(t *testing.T) {
 		t.Errorf("amy after approval = %+v", l.Data)
 	}
 }
+
+func TestNotifications_DescriptionMentions(t *testing.T) {
+	r, _ := newAuthRouter(t)
+	admin := login(t, r, "admin@x.dev", "admin-pass")
+	addAccount(t, r, admin, "amy@x.dev", api.SystemRoleMember)
+	addAccount(t, r, admin, "bob@x.dev", api.SystemRoleMember)
+	amy := login(t, r, "amy@x.dev", "first-pass")
+	bob := login(t, r, "bob@x.dev", "first-pass")
+
+	var task api.Task
+	call(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: uuid.New(), Title: "Spec", Description: ptrTo("**Please** review, @P bob@x.dev"),
+	}, amy, &task)
+	l := inbox(t, r, bob)
+	if l.UnreadCount != 1 || l.Data[0].Type != api.NotificationTypeMention || !strings.Contains(l.Data[0].Title, "mentioned you") {
+		t.Fatalf("bob after mention = %+v", l.Data)
+	}
+	// Editing the text without a new mention doesn't notify again.
+	call(t, r, http.MethodPatch, "/api/v1/tasks/"+task.Id.String(), map[string]any{"description": "Please review now, @P bob@x.dev"}, amy, nil)
+	if n := inbox(t, r, bob).UnreadCount; n != 1 {
+		t.Errorf("bob unread after edit = %d, want 1", n)
+	}
+}

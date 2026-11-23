@@ -5,6 +5,7 @@
 	import BurndownChart from './BurndownChart.svelte';
 	import CapacityCard from './CapacityCard.svelte';
 	import CfdChart from './CfdChart.svelte';
+	import Markdown from './Markdown.svelte';
 	import QueryChart from './QueryChart.svelte';
 	import VelocityChart from './VelocityChart.svelte';
 
@@ -82,7 +83,7 @@
 				<QueryChart {rows} {total} chart={widget.chart ?? 'bar'} groupBy={widget.groupBy ?? 'status'} stackBy={widget.stackBy ?? 'priority'} {names} />
 			{/if}
 		{:else if widget.kind === 'notes'}
-			<p class="whitespace-pre-line text-sm text-slate-700">{widget.text ?? ''}</p>
+			<Markdown text={widget.text ?? ''} class="text-sm text-slate-700" />
 		{:else if widget.kind === 'burndown'}
 			{#if report && sprint}
 				<p class="-mt-2 mb-2 text-xs text-slate-500">{sprint.name}</p>

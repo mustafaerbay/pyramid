@@ -4,6 +4,8 @@
 	import type { components } from '$lib/api/schema';
 	import { can, session } from '$lib/auth.svelte';
 	import { describeChange, type Names } from '$lib/history';
+	import Markdown from './Markdown.svelte';
+	import MentionTextarea from './MentionTextarea.svelte';
 
 	type Task = components['schemas']['Task'];
 	type Comment = components['schemas']['TaskComment'];
@@ -48,6 +50,11 @@
 	let comments = $state<Comment[]>([]);
 	let history = $state<Entry[]>([]);
 	let people = $state<Record<string, string>>({});
+	const personNames = $derived(Object.values(people).sort((a, b) => a.localeCompare(b)));
+	const itemLink = (n: number) => {
+		const t = projectTasks.find((x) => x.number === n);
+		return t ? `/projects/${t.projectId}?task=${t.id}` : null;
+	};
 	let sprintNames = $state<Record<string, string>>({});
 	let areaNames = $state<Record<string, string>>({});
 	let draft = $state('');
@@ -204,30 +211,20 @@
 						{/if}
 					</div>
 					{#if editingId === c.id}
-						<textarea class="input mt-1" rows="3" maxlength="5000" aria-label="Edit comment" bind:value={editDraft}></textarea>
+						<div class="mt-1"><MentionTextarea bind:value={editDraft} people={personNames} rows={3} maxlength={5000} label="Edit comment" /></div>
 						<div class="mt-1 flex gap-2">
 							<button type="button" class="btn-primary px-3 py-1 text-xs" onclick={() => saveEdit(c)}>Save</button>
 							<button type="button" class="btn-ghost px-3 py-1 text-xs" onclick={() => (editingId = null)}>Cancel</button>
 						</div>
 					{:else}
-						<p class="mt-0.5 whitespace-pre-wrap break-words text-slate-700">{c.body}</p>
+						<Markdown text={c.body} people={personNames} item={itemLink} class="mt-0.5 text-slate-700" />
 					{/if}
 				</li>
 			{/each}
 		</ul>
 		{#if can('member')}
 			<form class="mt-3 space-y-2" onsubmit={post}>
-				<textarea
-					class="input"
-					rows="2"
-					maxlength="5000"
-					placeholder="Write a comment…"
-					aria-label="New comment"
-					bind:value={draft}
-					onkeydown={(e) => {
-						if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
-					}}
-				></textarea>
+				<MentionTextarea bind:value={draft} people={personNames} rows={2} maxlength={5000} placeholder="Write a comment… (Markdown, @ to mention)" label="New comment" />
 				<button type="submit" class="btn-secondary" disabled={busy || !draft.trim()}>{busy ? 'Posting…' : 'Comment'}</button>
 			</form>
 		{/if}

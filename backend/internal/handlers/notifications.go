@@ -142,6 +142,32 @@ func (h *Handler) notifyTaskChange(c *gin.Context, before, after map[string]any,
 		}
 	}
 	h.notify(c, added, api.NotificationTypeAssignment, fmt.Sprintf("%s assigned you to %s", who, taskRef(t)), nil, taskLink(t))
+	// People newly @mentioned in the description.
+	desc := func(m map[string]any) string {
+		if m == nil {
+			return ""
+		}
+		v, _ := m["description"].(string)
+		return v
+	}
+	now := ""
+	if t.Description != nil {
+		now = *t.Description
+	}
+	if mentions := h.mentioned(now); len(mentions) > 0 {
+		was := map[uuid.UUID]bool{}
+		for _, id := range h.mentioned(desc(before)) {
+			was[id] = true
+		}
+		var fresh []uuid.UUID
+		for _, id := range mentions {
+			if !was[id] {
+				fresh = append(fresh, id)
+			}
+		}
+		body := excerpt(now, 300)
+		h.notify(c, fresh, api.NotificationTypeMention, fmt.Sprintf("%s mentioned you in %s", who, taskRef(t)), &body, taskLink(t))
+	}
 	if before != nil && before["status"] != after["status"] {
 		h.notify(c, kept, api.NotificationTypeStatusChange,
 			fmt.Sprintf("%s moved %s to %s", who, taskRef(t), strings.ReplaceAll(string(t.Status), "_", " ")), nil, taskLink(t))
