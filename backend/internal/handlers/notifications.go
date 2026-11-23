@@ -88,15 +88,18 @@ func (h *Handler) notify(c *gin.Context, people []uuid.UUID, typ api.Notificatio
 		return
 	}
 	for _, u := range users {
-		n := models.Notification{UserID: u.ID, Type: typ, Title: title, Body: body}
-		if link != "" {
-			n.LinkURL = &link
+		pref := h.prefsOf(u.ID)[string(typ)]
+		if pref.InApp {
+			n := models.Notification{UserID: u.ID, Type: typ, Title: title, Body: body}
+			if link != "" {
+				n.LinkURL = &link
+			}
+			if err := h.db.Create(&n).Error; err != nil {
+				log.Printf("notify: %v", err)
+				continue
+			}
 		}
-		if err := h.db.Create(&n).Error; err != nil {
-			log.Printf("notify: %v", err)
-			continue
-		}
-		if h.mail != nil {
+		if h.mail != nil && pref.Email {
 			text := title + "\n"
 			if body != nil {
 				text += "\n" + *body + "\n"
@@ -142,6 +145,11 @@ func (h *Handler) notifyTaskChange(c *gin.Context, before, after map[string]any,
 		}
 	}
 	h.notify(c, added, api.NotificationTypeAssignment, fmt.Sprintf("%s assigned you to %s", who, taskRef(t)), nil, taskLink(t))
+	if before != nil {
+		if f := h.followersOf(t.ID); len(f) > 0 {
+			h.notify(c, f, api.NotificationTypeFollow, fmt.Sprintf("%s changed %s", who, taskRef(t)), nil, taskLink(t))
+		}
+	}
 	// People newly @mentioned in the description.
 	desc := func(m map[string]any) string {
 		if m == nil {
@@ -202,7 +210,7 @@ func (h *Handler) notifyComment(c *gin.Context, t models.Task, cm models.TaskCom
 		return
 	}
 	_, who := h.actor(c)
-	people := append(append([]uuid.UUID{}, t.AssigneeIDs...), h.mentioned(cm.Body)...)
+	people := append(append(append([]uuid.UUID{}, t.AssigneeIDs...), h.mentioned(cm.Body)...), h.followersOf(t.ID)...)
 	body := excerpt(cm.Body, 300)
 	h.notify(c, people, api.NotificationTypeMention, fmt.Sprintf("%s commented on %s", who, taskRef(t)), &body, taskLink(t))
 }

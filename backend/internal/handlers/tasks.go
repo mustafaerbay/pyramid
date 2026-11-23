@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -354,6 +355,8 @@ func (h *Handler) CreateTask(c *gin.Context) {
 	}
 	h.logTask(c, "created", t.ID, nil)
 	h.notifyTaskChange(c, nil, nil, t)
+	created := t.ToAPI()
+	h.emit(c, t.ProjectID, api.HookEventItemCreated, hookPayload{Item: &created, URL: taskLink(t)}, fmt.Sprintf("created %s", taskRef(t)))
 
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
@@ -635,6 +638,18 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	if changes := diffSnapshots(before, after); len(changes) > 0 {
 		h.logTask(c, "updated", t.ID, changes)
 		h.notifyTaskChange(c, before, after, t)
+		item := t.ToAPI()
+		fields := make([]string, 0, len(changes))
+		for k := range changes {
+			fields = append(fields, k)
+		}
+		sort.Strings(fields)
+		h.emit(c, t.ProjectID, api.HookEventItemUpdated, hookPayload{Item: &item, Changes: fields, URL: taskLink(t)},
+			fmt.Sprintf("changed %s (%s)", taskRef(t), strings.Join(fields, ", ")))
+		if before["state"] != after["state"] {
+			h.emit(c, t.ProjectID, api.HookEventItemStateChanged, hookPayload{Item: &item, Changes: []string{"state"}, URL: taskLink(t)},
+				fmt.Sprintf("moved %s to %s", taskRef(t), h.stateLabel(&t)))
+		}
 	}
 
 	_ = h.attachCustom(&t)
@@ -665,6 +680,8 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to delete task", Details: strptr(err.Error())})
 		return
 	}
+	var gone models.Task
+	h.db.First(&gone, "id = ?", c.Param("id"))
 	res := h.db.Delete(&models.Task{}, "id = ?", c.Param("id"))
 	if res.Error != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to delete task", Details: strptr(res.Error.Error())})
@@ -675,6 +692,10 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 		return
 	}
 	h.deleteTaskFiles(c.Param("id"))
+	if gone.ID != uuid.Nil {
+		item := gone.ToAPI()
+		h.emit(c, gone.ProjectID, api.HookEventItemDeleted, hookPayload{Item: &item}, fmt.Sprintf("deleted %s", taskRef(gone)))
+	}
 	c.Status(http.StatusNoContent)
 }
 

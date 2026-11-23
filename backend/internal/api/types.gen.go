@@ -369,6 +369,39 @@ func (e GoalStatus) Valid() bool {
 	}
 }
 
+// Defines values for HookEvent.
+const (
+	HookEventItemCommented    HookEvent = "item_commented"
+	HookEventItemCreated      HookEvent = "item_created"
+	HookEventItemDeleted      HookEvent = "item_deleted"
+	HookEventItemStateChanged HookEvent = "item_state_changed"
+	HookEventItemUpdated      HookEvent = "item_updated"
+	HookEventSprintCreated    HookEvent = "sprint_created"
+	HookEventSprintUpdated    HookEvent = "sprint_updated"
+)
+
+// Valid indicates whether the value is a known member of the HookEvent enum.
+func (e HookEvent) Valid() bool {
+	switch e {
+	case HookEventItemCommented:
+		return true
+	case HookEventItemCreated:
+		return true
+	case HookEventItemDeleted:
+		return true
+	case HookEventItemStateChanged:
+		return true
+	case HookEventItemUpdated:
+		return true
+	case HookEventSprintCreated:
+		return true
+	case HookEventSprintUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LeaveStatus.
 const (
 	LeaveStatusApproved  LeaveStatus = "approved"
@@ -455,6 +488,7 @@ const (
 	NotificationTypeApproval      NotificationType = "approval"
 	NotificationTypeAssignment    NotificationType = "assignment"
 	NotificationTypeDeadline      NotificationType = "deadline"
+	NotificationTypeFollow        NotificationType = "follow"
 	NotificationTypeMention       NotificationType = "mention"
 	NotificationTypeReviewRequest NotificationType = "review_request"
 	NotificationTypeStatusChange  NotificationType = "status_change"
@@ -469,6 +503,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeAssignment:
 		return true
 	case NotificationTypeDeadline:
+		return true
+	case NotificationTypeFollow:
 		return true
 	case NotificationTypeMention:
 		return true
@@ -522,6 +558,48 @@ func (e ProjectHealth) Valid() bool {
 	case ProjectHealthOffTrack:
 		return true
 	case ProjectHealthOnTrack:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectHookKind.
+const (
+	ProjectHookKindSlack   ProjectHookKind = "slack"
+	ProjectHookKindTeams   ProjectHookKind = "teams"
+	ProjectHookKindWebhook ProjectHookKind = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the ProjectHookKind enum.
+func (e ProjectHookKind) Valid() bool {
+	switch e {
+	case ProjectHookKindSlack:
+		return true
+	case ProjectHookKindTeams:
+		return true
+	case ProjectHookKindWebhook:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectHookInputKind.
+const (
+	ProjectHookInputKindSlack   ProjectHookInputKind = "slack"
+	ProjectHookInputKindTeams   ProjectHookInputKind = "teams"
+	ProjectHookInputKindWebhook ProjectHookInputKind = "webhook"
+)
+
+// Valid indicates whether the value is a known member of the ProjectHookInputKind enum.
+func (e ProjectHookInputKind) Valid() bool {
+	switch e {
+	case ProjectHookInputKindSlack:
+		return true
+	case ProjectHookInputKindTeams:
+		return true
+	case ProjectHookInputKindWebhook:
 		return true
 	default:
 		return false
@@ -1435,6 +1513,9 @@ type Health struct {
 	Time   time.Time `json:"time"`
 }
 
+// HookEvent defines model for HookEvent.
+type HookEvent string
+
 // KickoffActionItem defines model for KickoffActionItem.
 type KickoffActionItem struct {
 	CreatedAt   time.Time           `json:"createdAt"`
@@ -1569,10 +1650,22 @@ type Notification struct {
 	Type   NotificationType `json:"type"`
 }
 
+// NotificationChannels defines model for NotificationChannels.
+type NotificationChannels struct {
+	Email bool `json:"email"`
+	InApp bool `json:"inApp"`
+}
+
 // NotificationList defines model for NotificationList.
 type NotificationList struct {
 	Data        []Notification `json:"data"`
 	UnreadCount int            `json:"unreadCount"`
+}
+
+// NotificationSettings defines model for NotificationSettings.
+type NotificationSettings struct {
+	// Types Per notification type; a missing type gets both.
+	Types map[string]NotificationChannels `json:"types"`
 }
 
 // NotificationType defines model for NotificationType.
@@ -1818,6 +1911,52 @@ type ProjectFlow struct {
 
 // ProjectHealth defines model for ProjectHealth.
 type ProjectHealth string
+
+// ProjectHook defines model for ProjectHook.
+type ProjectHook struct {
+	Active    bool        `json:"active"`
+	CreatedAt time.Time   `json:"createdAt"`
+	Events    []HookEvent `json:"events"`
+
+	// HasSecret A webhook signs its body with this secret (X-Pyramid-Signature); the secret is never shown again.
+	HasSecret bool               `json:"hasSecret"`
+	Id        openapi_types.UUID `json:"id"`
+	Kind      ProjectHookKind    `json:"kind"`
+	LastAt    *time.Time         `json:"lastAt"`
+	LastError *string            `json:"lastError"`
+
+	// LastStatus HTTP status of the last delivery (0 = it couldn't connect).
+	LastStatus *int               `json:"lastStatus"`
+	Name       string             `json:"name"`
+	ProjectId  openapi_types.UUID `json:"projectId"`
+	Url        string             `json:"url"`
+}
+
+// ProjectHookKind defines model for ProjectHook.Kind.
+type ProjectHookKind string
+
+// ProjectHookInput defines model for ProjectHookInput.
+type ProjectHookInput struct {
+	Active    *bool                `json:"active,omitempty"`
+	Events    []HookEvent          `json:"events"`
+	Kind      ProjectHookInputKind `json:"kind"`
+	Name      string               `json:"name"`
+	ProjectId openapi_types.UUID   `json:"projectId"`
+
+	// Secret Webhooks only. Empty string = remove; missing = keep.
+	Secret *string `json:"secret,omitempty"`
+
+	// Url http(s) URL, up to 2000 characters.
+	Url string `json:"url"`
+}
+
+// ProjectHookInputKind defines model for ProjectHookInput.Kind.
+type ProjectHookInputKind string
+
+// ProjectHookList defines model for ProjectHookList.
+type ProjectHookList struct {
+	Data []ProjectHook `json:"data"`
+}
 
 // ProjectKickoff defines model for ProjectKickoff.
 type ProjectKickoff struct {
@@ -2438,6 +2577,12 @@ type TaskFieldChange struct {
 	To any `json:"to"`
 }
 
+// TaskFollowers defines model for TaskFollowers.
+type TaskFollowers struct {
+	Following bool                 `json:"following"`
+	PersonIds []openapi_types.UUID `json:"personIds"`
+}
+
 // TaskHistory defines model for TaskHistory.
 type TaskHistory struct {
 	Data []TaskHistoryEntry `json:"data"`
@@ -2763,6 +2908,11 @@ type GetPersonWorkloadParams struct {
 	Year *int `form:"year,omitempty" json:"year,omitempty"`
 }
 
+// ListProjectHooksParams defines parameters for ListProjectHooks.
+type ListProjectHooksParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
 // ListProjectKickoffsParams defines parameters for ListProjectKickoffs.
 type ListProjectKickoffsParams struct {
 	Page      *PageParam          `form:"page,omitempty" json:"page,omitempty"`
@@ -2890,6 +3040,9 @@ type CreateLeaveRequestJSONRequestBody = LeaveRequestCreate
 // UpdateLeaveRequestJSONRequestBody defines body for UpdateLeaveRequest for application/json ContentType.
 type UpdateLeaveRequestJSONRequestBody = LeaveRequestUpdate
 
+// PutNotificationSettingsJSONRequestBody defines body for PutNotificationSettings for application/json ContentType.
+type PutNotificationSettingsJSONRequestBody = NotificationSettings
+
 // CreateMilestoneJSONRequestBody defines body for CreateMilestone for application/json ContentType.
 type CreateMilestoneJSONRequestBody = MilestoneCreate
 
@@ -2904,6 +3057,12 @@ type UpdatePersonJSONRequestBody = PersonUpdate
 
 // CreateProcessTemplateJSONRequestBody defines body for CreateProcessTemplate for application/json ContentType.
 type CreateProcessTemplateJSONRequestBody = ProcessTemplateCreate
+
+// CreateProjectHookJSONRequestBody defines body for CreateProjectHook for application/json ContentType.
+type CreateProjectHookJSONRequestBody = ProjectHookInput
+
+// UpdateProjectHookJSONRequestBody defines body for UpdateProjectHook for application/json ContentType.
+type UpdateProjectHookJSONRequestBody = ProjectHookInput
 
 // CreateProjectKickoffJSONRequestBody defines body for CreateProjectKickoff for application/json ContentType.
 type CreateProjectKickoffJSONRequestBody = ProjectKickoffCreate

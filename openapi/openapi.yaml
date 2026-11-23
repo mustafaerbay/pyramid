@@ -168,6 +168,173 @@ paths:
           description: Password changed
         "400":
           $ref: "#/components/responses/BadRequest"
+  /api/v1/me/notification-settings:
+    get:
+      operationId: getNotificationSettings
+      tags: [notifications]
+      summary: Which notifications you get, in the app and by email
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+    put:
+      operationId: putNotificationSettings
+      tags: [notifications]
+      summary: Choose which notifications you get
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSettings"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/tasks/{id}/followers:
+    get:
+      operationId: getTaskFollowers
+      tags: [tasks]
+      summary: Who follows this item, and whether you do
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Followers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskFollowers"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/tasks/{id}/follow:
+    put:
+      operationId: followTask
+      tags: [tasks]
+      summary: Follow this item (get notified of every change)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Following
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskFollowers"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: unfollowTask
+      tags: [tasks]
+      summary: Stop following this item
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Not following
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskFollowers"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/project-hooks:
+    get:
+      operationId: listProjectHooks
+      tags: [hooks]
+      summary: A project's Slack, Teams and webhook hooks (managers)
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Hooks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectHookList"
+    post:
+      operationId: createProjectHook
+      tags: [hooks]
+      summary: Add a hook (managers)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectHookInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectHook"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/project-hooks/{id}:
+    patch:
+      operationId: updateProjectHook
+      tags: [hooks]
+      summary: Change a hook (managers)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectHookInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectHook"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProjectHook
+      tags: [hooks]
+      summary: Remove a hook (managers)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Removed
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/project-hooks/{id}/test:
+    post:
+      operationId: testProjectHook
+      tags: [hooks]
+      summary: Send a test message now and report how it went (managers)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Result (lastStatus / lastError)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectHook"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -4224,9 +4391,123 @@ components:
           items:
             $ref: "#/components/schemas/TaskHistoryEntry"
 
+    NotificationSettings:
+      type: object
+      required: [types]
+      properties:
+        types:
+          type: object
+          description: Per notification type; a missing type gets both.
+          additionalProperties:
+            $ref: "#/components/schemas/NotificationChannels"
+
+    NotificationChannels:
+      type: object
+      required: [inApp, email]
+      properties:
+        inApp:
+          type: boolean
+        email:
+          type: boolean
+
+    TaskFollowers:
+      type: object
+      required: [following, personIds]
+      properties:
+        following:
+          type: boolean
+        personIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    HookEvent:
+      type: string
+      enum: [item_created, item_updated, item_state_changed, item_commented, item_deleted, sprint_created, sprint_updated]
+
+    ProjectHook:
+      type: object
+      required: [id, projectId, kind, name, url, hasSecret, events, active, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [slack, teams, webhook]
+        name:
+          type: string
+        url:
+          type: string
+        hasSecret:
+          type: boolean
+          description: A webhook signs its body with this secret (X-Pyramid-Signature); the secret is never shown again.
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/HookEvent"
+        active:
+          type: boolean
+        lastStatus:
+          type: integer
+          nullable: true
+          description: HTTP status of the last delivery (0 = it couldn't connect).
+        lastError:
+          type: string
+          nullable: true
+        lastAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ProjectHookInput:
+      type: object
+      required: [projectId, kind, name, url, events]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [slack, teams, webhook]
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        url:
+          type: string
+          description: http(s) URL, up to 2000 characters.
+        secret:
+          type: string
+          description: Webhooks only. Empty string = remove; missing = keep.
+          maxLength: 200
+        events:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/HookEvent"
+        active:
+          type: boolean
+
+    ProjectHookList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectHook"
+
     NotificationType:
       type: string
-      enum: [mention, assignment, status_change, review_request, approval, deadline, system]
+      enum: [mention, assignment, status_change, review_request, approval, deadline, system, follow]
 
     Notification:
       type: object

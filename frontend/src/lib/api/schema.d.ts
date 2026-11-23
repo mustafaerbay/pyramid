@@ -143,6 +143,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/notification-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which notifications you get, in the app and by email */
+        get: operations["getNotificationSettings"];
+        /** Choose which notifications you get */
+        put: operations["putNotificationSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{id}/followers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who follows this item, and whether you do */
+        get: operations["getTaskFollowers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{id}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Follow this item (get notified of every change) */
+        put: operations["followTask"];
+        post?: never;
+        /** Stop following this item */
+        delete: operations["unfollowTask"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-hooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's Slack, Teams and webhook hooks (managers) */
+        get: operations["listProjectHooks"];
+        put?: never;
+        /** Add a hook (managers) */
+        post: operations["createProjectHook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-hooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a hook (managers) */
+        delete: operations["deleteProjectHook"];
+        options?: never;
+        head?: never;
+        /** Change a hook (managers) */
+        patch: operations["updateProjectHook"];
+        trace?: never;
+    };
+    "/api/v1/project-hooks/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test message now and report how it went (managers) */
+        post: operations["testProjectHook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -2108,8 +2214,61 @@ export interface components {
         TaskHistory: {
             data: components["schemas"]["TaskHistoryEntry"][];
         };
+        NotificationSettings: {
+            /** @description Per notification type; a missing type gets both. */
+            types: {
+                [key: string]: components["schemas"]["NotificationChannels"];
+            };
+        };
+        NotificationChannels: {
+            inApp: boolean;
+            email: boolean;
+        };
+        TaskFollowers: {
+            following: boolean;
+            personIds: string[];
+        };
         /** @enum {string} */
-        NotificationType: "mention" | "assignment" | "status_change" | "review_request" | "approval" | "deadline" | "system";
+        HookEvent: "item_created" | "item_updated" | "item_state_changed" | "item_commented" | "item_deleted" | "sprint_created" | "sprint_updated";
+        ProjectHook: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** @enum {string} */
+            kind: "slack" | "teams" | "webhook";
+            name: string;
+            url: string;
+            /** @description A webhook signs its body with this secret (X-Pyramid-Signature); the secret is never shown again. */
+            hasSecret: boolean;
+            events: components["schemas"]["HookEvent"][];
+            active: boolean;
+            /** @description HTTP status of the last delivery (0 = it couldn't connect). */
+            lastStatus?: number | null;
+            lastError?: string | null;
+            /** Format: date-time */
+            lastAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ProjectHookInput: {
+            /** Format: uuid */
+            projectId: string;
+            /** @enum {string} */
+            kind: "slack" | "teams" | "webhook";
+            name: string;
+            /** @description http(s) URL, up to 2000 characters. */
+            url: string;
+            /** @description Webhooks only. Empty string = remove; missing = keep. */
+            secret?: string;
+            events: components["schemas"]["HookEvent"][];
+            active?: boolean;
+        };
+        ProjectHookList: {
+            data: components["schemas"]["ProjectHook"][];
+        };
+        /** @enum {string} */
+        NotificationType: "mention" | "assignment" | "status_change" | "review_request" | "approval" | "deadline" | "system" | "follow";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -3059,6 +3218,239 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    getNotificationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettings"];
+                };
+            };
+        };
+    };
+    putNotificationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationSettings"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getTaskFollowers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Followers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskFollowers"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    followTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Following */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskFollowers"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    unfollowTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Not following */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskFollowers"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjectHooks: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Hooks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectHookList"];
+                };
+            };
+        };
+    };
+    createProjectHook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectHookInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectHook"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteProjectHook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProjectHook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectHookInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectHook"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    testProjectHook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Result (lastStatus / lastError) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectHook"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listNotifications: {

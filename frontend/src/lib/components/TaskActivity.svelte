@@ -50,6 +50,16 @@
 	let comments = $state<Comment[]>([]);
 	let history = $state<Entry[]>([]);
 	let people = $state<Record<string, string>>({});
+	let followers = $state<components['schemas']['TaskFollowers']>({ following: false, personIds: [] });
+	$effect(() => {
+		const id = task.id;
+		api.GET('/api/v1/tasks/{id}/followers', { params: { path: { id } } }).then((r) => (followers = r.data ?? followers));
+	});
+	async function toggleFollow() {
+		const opts = { params: { path: { id: task.id } } };
+		const r = followers.following ? await api.DELETE('/api/v1/tasks/{id}/follow', opts) : await api.PUT('/api/v1/tasks/{id}/follow', opts);
+		if (r.data) followers = r.data;
+	}
 	const personNames = $derived(Object.values(people).sort((a, b) => a.localeCompare(b)));
 	const itemLink = (n: number) => {
 		const t = projectTasks.find((x) => x.number === n);
@@ -141,7 +151,7 @@
 </script>
 
 <div class="mt-6 border-t border-slate-200 pt-4">
-	<div class="mb-3 flex gap-1 text-sm" role="tablist">
+	<div class="mb-3 flex flex-wrap items-center gap-1 text-sm" role="tablist">
 		{#each [['comments', `Comments (${comments.length})`], ['files', `Files (${files.length})`], ['history', 'History']] as [key, label] (key)}
 			<button
 				type="button"
@@ -151,6 +161,13 @@
 				onclick={() => (tab = key as 'comments' | 'history' | 'files')}>{label}</button
 			>
 		{/each}
+		<button
+			type="button"
+			class="ml-auto rounded-md px-2 py-1 text-xs {followers.following ? 'bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200' : 'text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50'}"
+			aria-pressed={followers.following}
+			title={followers.personIds.length ? `Followed by ${followers.personIds.map((id) => people[id] ?? 'someone').join(', ')}` : 'Get notified of every change'}
+			onclick={toggleFollow}>{followers.following ? '★ Following' : '☆ Follow'}{followers.personIds.length ? ` · ${followers.personIds.length}` : ''}</button
+		>
 	</div>
 
 	{#if error}

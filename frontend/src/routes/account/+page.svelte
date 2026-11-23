@@ -2,6 +2,7 @@
 	import { api } from '$lib/api/client';
 	import { session } from '$lib/auth.svelte';
 	import { ROLE_OPTIONS } from '$lib/roles';
+	import NotificationSettings from '$lib/components/NotificationSettings.svelte';
 
 	let current = $state('');
 	let next = $state('');
@@ -48,6 +49,8 @@
 			</div>
 		</div>
 	{/if}
+
+	<NotificationSettings />
 
 	<form class="space-y-4 rounded-lg border border-slate-200 bg-white p-4 sm:p-6" onsubmit={submit}>
 		<h2 class="text-lg font-semibold tracking-tight">Change password</h2>

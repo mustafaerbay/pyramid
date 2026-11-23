@@ -77,7 +77,7 @@ CREATE TYPE leave_type   AS ENUM ('vacation', 'sick', 'personal', 'parental', 'b
 CREATE TYPE leave_status AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
 
 -- System
-CREATE TYPE notification_type AS ENUM ('mention', 'assignment', 'status_change', 'review_request', 'approval', 'deadline', 'system');
+CREATE TYPE notification_type AS ENUM ('mention', 'assignment', 'status_change', 'review_request', 'approval', 'deadline', 'system', 'follow');
 
 -- ============================================================================
 -- 1. PEOPLE MANAGEMENT
@@ -135,6 +135,7 @@ CREATE TABLE users (
     system_role    system_role NOT NULL DEFAULT 'member',
     is_active      BOOLEAN NOT NULL DEFAULT true,
     last_login_at  TIMESTAMPTZ,
+    notification_prefs JSONB NOT NULL DEFAULT '{}', -- per notification type: {inApp, email}
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -733,6 +734,31 @@ CREATE TABLE delivery_plans (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- People following a work item (told about every change)
+CREATE TABLE task_followers (
+    task_id    UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    person_id  UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (task_id, person_id)
+);
+
+-- Outgoing hooks per project: Slack / Teams messages and signed JSON webhooks
+CREATE TABLE project_hooks (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    kind        TEXT NOT NULL,                 -- slack | teams | webhook
+    name        TEXT NOT NULL,
+    url         TEXT NOT NULL,
+    secret      TEXT,                          -- webhook: HMAC-SHA256 key for X-Pyramid-Signature
+    events      JSONB NOT NULL DEFAULT '[]',
+    active      BOOLEAN NOT NULL DEFAULT true,
+    last_status INT,
+    last_error  TEXT,
+    last_at     TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX project_hooks_project ON project_hooks(project_id);
 
 -- Audit / activity trail (polymorphic target + JSON diff)
 CREATE TABLE activity_log (

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"unicode/utf8"
@@ -86,7 +87,11 @@ func (h *Handler) CreateTaskComment(c *gin.Context) {
 		return
 	}
 	h.notifyComment(c, t, cm)
-	c.JSON(http.StatusCreated, cm.ToAPI())
+	out := cm.ToAPI()
+	item := t.ToAPI()
+	h.emit(c, t.ProjectID, api.HookEventItemCommented, hookPayload{Item: &item, Comment: &out, URL: taskLink(t)},
+		fmt.Sprintf("commented on %s: %s", taskRef(t), excerpt(oneLine(cm.Body), 200)))
+	c.JSON(http.StatusCreated, out)
 }
 
 func (h *Handler) loadComment(c *gin.Context) (models.TaskComment, bool) {

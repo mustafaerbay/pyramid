@@ -123,8 +123,31 @@ CREATE TABLE users (
 	system_role TEXT NOT NULL DEFAULT 'member',
 	is_active BOOLEAN NOT NULL DEFAULT 1,
 	last_login_at DATETIME,
+	notification_prefs TEXT NOT NULL DEFAULT '{}',
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE task_followers (
+	task_id TEXT NOT NULL,
+	person_id TEXT NOT NULL,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (task_id, person_id)
+);
+
+CREATE TABLE project_hooks (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	kind TEXT NOT NULL,
+	name TEXT NOT NULL,
+	url TEXT NOT NULL,
+	secret TEXT,
+	events TEXT NOT NULL DEFAULT '[]',
+	active BOOLEAN NOT NULL DEFAULT 1,
+	last_status INTEGER,
+	last_error TEXT,
+	last_at DATETIME,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE projects (

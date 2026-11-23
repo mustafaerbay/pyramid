@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -126,7 +127,16 @@ func (h *Handler) sprintJSON(c *gin.Context, status int, s models.Sprint) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load sprint", Details: strptr(err.Error())})
 		return
 	}
-	c.JSON(status, s.ToAPI(stats[s.ID]))
+	out := s.ToAPI(stats[s.ID])
+	switch {
+	case status == http.StatusCreated:
+		h.emit(c, s.ProjectID, api.HookEventSprintCreated, hookPayload{Sprint: &out, URL: fmt.Sprintf("/projects/%s/sprints", s.ProjectID)},
+			fmt.Sprintf("planned sprint %s (%s – %s)", s.Name, out.StartDate, out.EndDate))
+	case c.Request.Method == http.MethodPatch:
+		h.emit(c, s.ProjectID, api.HookEventSprintUpdated, hookPayload{Sprint: &out, URL: fmt.Sprintf("/projects/%s/sprints", s.ProjectID)},
+			fmt.Sprintf("updated sprint %s (%s)", s.Name, out.Status))
+	}
+	c.JSON(status, out)
 }
 
 func (h *Handler) loadSprint(c *gin.Context) (models.Sprint, bool) {

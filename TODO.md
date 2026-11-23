@@ -30,8 +30,8 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Delivery plans** — saved plans, dependency lines, markers, team lanes
 - [x] **Rich text and @mentions** — Markdown in descriptions and comments,
       person suggestions while typing @
-- [ ] **Follow items** — follow any item and get notified of its changes
-- [ ] **Notification subscriptions** — choose which events notify you; Slack /
+- [x] **Follow items** — follow any item and get notified of its changes
+- [x] **Notification subscriptions** — choose which events notify you; Slack /
       Teams incoming webhooks per project
 - [ ] **Clone, move and templates** — copy an item (with children), move it to
       another project, item templates with pre-filled fields
@@ -41,7 +41,7 @@ Notes say what was built where it is simpler than ADO.
 ## 2. Integration and platform
 
 - [ ] **API tokens** — personal access tokens for scripts and integrations
-- [ ] **Webhooks** — outgoing service hooks on item / sprint / comment events
+- [x] **Webhooks** — outgoing service hooks on item / sprint / comment events
 - [ ] **Git linking** — GitHub / GitLab webhooks link commits and PRs that mention
       an item (`CAD-12`, `#12` in a project's repo) and show them on the item
 - [ ] **Two-factor sign-in and SSO** — TOTP 2FA; OpenID Connect sign-in

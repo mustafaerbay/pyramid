@@ -32,6 +32,7 @@
 	import TeamsManager from '$lib/components/TeamsManager.svelte';
 	import RulesManager from '$lib/components/RulesManager.svelte';
 	import ProcessManager from '$lib/components/ProcessManager.svelte';
+	import HooksManager from '$lib/components/HooksManager.svelte';
 	import { teamFilter } from '$lib/teams';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
@@ -328,6 +329,7 @@
 	let managingTeams = $state(false);
 	let managingRules = $state(false);
 	let managingProcess = $state(false);
+	let managingHooks = $state(false);
 	async function saveRules(rules: components['schemas']['WorkItemRules']): Promise<string | null> {
 		if (!project) return 'No project';
 		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { rules } });
@@ -1665,7 +1667,7 @@
 						<details class="relative">
 							<summary class="btn-ghost cursor-pointer list-none px-2 py-1 text-xs">Settings ▾</summary>
 							<div class="absolute right-0 z-30 mt-1 w-44 rounded-md border border-slate-200 bg-white py-1 text-sm shadow-lg">
-								{#each [['Workflow', () => (managingWorkflow = true)], ['Work item types', () => (managingTypes = true)], ['Custom fields', () => (managingFields = true)], ['Rules', () => (managingRules = true)], ['Areas', () => (managingAreas = true)], ['Teams', () => (managingTeams = true)], ['Process templates', () => (managingProcess = true)]] as [label, open] (label)}
+								{#each [['Workflow', () => (managingWorkflow = true)], ['Work item types', () => (managingTypes = true)], ['Custom fields', () => (managingFields = true)], ['Rules', () => (managingRules = true)], ['Areas', () => (managingAreas = true)], ['Teams', () => (managingTeams = true)], ['Process templates', () => (managingProcess = true)], ...(can('manager') ? [['Integrations', () => (managingHooks = true)]] : [])] as [label, open] (label)}
 									<button
 										type="button"
 										class="block w-full px-3 py-1.5 text-left hover:bg-slate-50"
@@ -2264,6 +2266,10 @@
 
 {#if managingRules && project}
 	<RulesManager rules={project.rules} states={project.workflow} fields={project.customFields} onSave={saveRules} onClose={() => (managingRules = false)} />
+{/if}
+
+{#if managingHooks && project}
+	<HooksManager projectId={project.id} onClose={() => (managingHooks = false)} />
 {/if}
 
 {#if managingProcess && project}
