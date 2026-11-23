@@ -41,7 +41,12 @@ const list = (v: string) =>
 		.map((x) => x.trim())
 		.filter(Boolean);
 
-export type ImportRow = { line: number; body: Record<string, unknown> & { title: string; projectId: string } };
+export type ImportRow = {
+	line: number;
+	body: Record<string, unknown> & { title: string; projectId: string };
+	/** Parent is another row of the same file (created first). */
+	parentLine?: number;
+};
 
 /**
  * Turns CSV rows (first row = headers) into task bodies for `projectId`.
@@ -64,6 +69,14 @@ export function rowsToTasks(
 	const customCols = (lk.customFields ?? [])
 		.map((f) => ({ f, i: header.findIndex((h) => h === f.label.trim().toLowerCase() || h === f.key) }))
 		.filter((c) => c.i >= 0);
+
+	// Titles in the file, so a Parent can name another row.
+	const fileTitles = new Map<string, number>();
+	rows.slice(1).forEach((r, idx) => {
+		const t = col.title === undefined ? '' : (r[col.title] ?? '').trim().toLowerCase();
+		if (t && !fileTitles.has(t)) fileTitles.set(t, idx + 2);
+	});
+	const parentLines = new Map<number, number>();
 
 	rows.slice(1).forEach((r, idx) => {
 		const line = idx + 2;
@@ -109,11 +122,15 @@ export function rowsToTasks(
 			if (tags.length) body.tags = tags;
 			const parent = get('parent');
 			if (parent) {
-				const m = /^#\d+$/.test(parent)
-					? lk.tasks.find((t) => t.number === Number(parent.slice(1)))
-					: lk.tasks.find((t) => same(t.title, parent));
-				if (!m) throw new Error(`No existing item "${parent}" to put this under`);
-				body.parentId = m.id;
+				const inFile = /^#\d+$/.test(parent) ? undefined : fileTitles.get(parent.toLowerCase());
+				if (inFile !== undefined && inFile !== line) parentLines.set(line, inFile);
+				else {
+					const m = /^#\d+$/.test(parent)
+						? lk.tasks.find((t) => t.number === Number(parent.slice(1)))
+						: lk.tasks.find((t) => same(t.title, parent));
+					if (!m) throw new Error(`No item "${parent}" in the file or the project to put this under`);
+					body.parentId = m.id;
+				}
 			}
 			const named = (k: string, items: { id: string; name: string }[], field: string, what: string) => {
 				const v = get(k);
@@ -145,12 +162,50 @@ export function rowsToTasks(
 				} else values[f.key] = v;
 			}
 			if (Object.keys(values).length) body.customValues = values;
-			ok.push({ line, body });
+			ok.push({ line, body, ...(parentLines.has(line) ? { parentLine: parentLines.get(line) } : {}) });
 		} catch (e) {
 			errors.push({ line, message: (e as Error).message });
 		}
 	});
+
+	// Drop rows whose parent row has a problem or that form a loop, until
+	// nothing changes.
+	let changed = true;
+	while (changed) {
+		changed = false;
+		const good = new Set(ok.map((r) => r.line));
+		for (const r of [...ok]) {
+			if (r.parentLine === undefined) continue;
+			let bad = !good.has(r.parentLine) ? `Its parent row (line ${r.parentLine}) has a problem` : '';
+			const seen = new Set([r.line]);
+			for (let p: number | undefined = r.parentLine; !bad && p !== undefined; p = parentLines.get(p)) {
+				if (seen.has(p)) bad = 'Parent rows point at each other in a loop';
+				seen.add(p);
+			}
+			if (bad) {
+				ok.splice(ok.indexOf(r), 1);
+				errors.push({ line: r.line, message: bad });
+				changed = true;
+			}
+		}
+	}
+	errors.sort((a, b) => a.line - b.line);
 	return { ok, errors };
+}
+
+/** Rows in creation order: parents before the rows under them. */
+export function importWaves(rows: readonly ImportRow[]): ImportRow[][] {
+	const waves: ImportRow[][] = [];
+	const placed = new Set<number>();
+	let left = [...rows];
+	while (left.length) {
+		const wave = left.filter((r) => r.parentLine === undefined || placed.has(r.parentLine));
+		if (wave.length === 0) break;
+		wave.forEach((r) => placed.add(r.line));
+		waves.push(wave);
+		left = left.filter((r) => !placed.has(r.line));
+	}
+	return waves;
 }
 
 type ExportTask = {

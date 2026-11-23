@@ -2,7 +2,7 @@
 	import { api } from '$lib/api/client';
 	import { parseCsv } from '$lib/csv';
 	import { runLimited } from '$lib/bulk';
-	import { EXPORT_HEADER, rowsToTasks, type ImportRow, type Lookups } from '$lib/taskCsv';
+	import { EXPORT_HEADER, importWaves, rowsToTasks, type ImportRow, type Lookups } from '$lib/taskCsv';
 
 	let { projectId, lookups, onDone, onClose }: { projectId: string; lookups: Lookups; onDone: (message: string) => void; onClose: () => void } = $props();
 
@@ -26,12 +26,28 @@
 		if (!parsed) return;
 		busy = true;
 		progress = 0;
-		const results = await runLimited(parsed.ok, 5, async (r) => {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			const { error } = await api.POST('/api/v1/tasks', { body: r.body as any });
-			progress++;
-			if (error) throw new Error(`Line ${r.line}: ${error.message}`);
-		});
+		// Parents first: each wave waits for the one before, so a row can be
+		// put under the item its parent row just became.
+		const createdId = new Map<number, string>();
+		const results: { ok: boolean; error?: unknown }[] = [];
+		for (const wave of importWaves(parsed.ok)) {
+			const out = await runLimited(wave, 5, async (r) => {
+				const body = { ...r.body };
+				if (r.parentLine !== undefined) {
+					const pid = createdId.get(r.parentLine);
+					if (!pid) throw new Error(`Line ${r.line}: its parent row (line ${r.parentLine}) wasn't created`);
+					body.parentId = pid;
+				}
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const { data, error } = await api.POST('/api/v1/tasks', { body: body as any });
+				progress++;
+				if (error || !data) throw new Error(`Line ${r.line}: ${error?.message ?? 'failed'}`);
+				createdId.set(r.line, data.id);
+			});
+			results.push(...out);
+		}
+		const notReached = parsed.ok.length - results.length;
+		for (let i = 0; i < notReached; i++) results.push({ ok: false, error: new Error('Parent row was never created') });
 		busy = false;
 		const failed = results.filter((x) => !x.ok);
 		onDone(
@@ -50,7 +66,7 @@
 		</div>
 		<p class="mb-3 text-sm text-slate-500">
 			Needs a <b>Title</b> column. Also read: {EXPORT_HEADER.slice(3).join(', ')}. People by email or name, several split with
-			";". Parent as #number or the title of an existing item. A file exported from Pyramid imports as is.
+			";". Parent as #number, the title of an existing item, or the title of another row in the file. A file exported from Pyramid imports as is.
 		</p>
 		<input type="file" accept=".csv,text/csv" class="block w-full text-sm" onchange={read} disabled={busy} />
 

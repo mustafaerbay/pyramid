@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseCsv, toCsv } from './csv';
-import { rowsToTasks, tasksToCsv, type Lookups } from './taskCsv';
+import { importWaves, rowsToTasks, tasksToCsv, type Lookups } from './taskCsv';
 import { runLimited } from './bulk';
 
 describe('csv', () => {
@@ -141,5 +141,34 @@ describe('tasksToCsv with custom fields', () => {
 		);
 		expect(head.at(-1)).toBe('Risk');
 		expect(row.at(-1)).toBe('High');
+	});
+});
+
+describe('parents from the same file', () => {
+	it('points a row at another row by title and orders the creation in waves', () => {
+		const { ok, errors } = rowsToTasks(
+			[
+				['Title', 'Type', 'Parent'],
+				['Login task', 'task', 'Login story'],
+				['Login story', 'story', 'Accounts'],
+				['Accounts', 'feature', ''],
+				['Existing child', 'task', '#12']
+			],
+			'p',
+			lookups
+		);
+		expect(errors).toEqual([]);
+		expect(ok.find((r) => r.body.title === 'Login task')!.parentLine).toBe(3);
+		expect(ok.find((r) => r.body.title === 'Login task')!.body.parentId).toBeUndefined();
+		expect(importWaves(ok).map((w) => w.map((r) => r.body.title))).toEqual([
+			['Accounts', 'Existing child'],
+			['Login story'],
+			['Login task']
+		]);
+	});
+	it('reports rows that point at each other in a loop', () => {
+		const { ok, errors } = rowsToTasks([['Title', 'Parent'], ['A', 'B'], ['B', 'A']], 'p', lookups);
+		expect(ok).toEqual([]);
+		expect(errors.map((e) => e.line)).toEqual([2, 3]);
 	});
 });
