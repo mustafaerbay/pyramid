@@ -136,6 +136,31 @@ CREATE TABLE item_templates (
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE api_tokens (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	user_id TEXT NOT NULL,
+	name TEXT NOT NULL,
+	prefix TEXT NOT NULL,
+	token_hash TEXT NOT NULL UNIQUE,
+	scope TEXT NOT NULL DEFAULT 'read',
+	expires_at DATETIME,
+	last_used_at DATETIME,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE audit_log (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	user_id TEXT,
+	actor TEXT NOT NULL,
+	action TEXT NOT NULL,
+	resource TEXT NOT NULL,
+	entity_id TEXT,
+	fields TEXT NOT NULL DEFAULT '[]',
+	via TEXT NOT NULL DEFAULT 'session',
+	ip TEXT,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_followers (
 	task_id TEXT NOT NULL,
 	person_id TEXT NOT NULL,

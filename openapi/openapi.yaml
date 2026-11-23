@@ -465,6 +465,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SearchResults"
+  /api/v1/me/tokens:
+    get:
+      operationId: listApiTokens
+      tags: [auth]
+      summary: Your personal access tokens
+      responses:
+        "200":
+          description: Tokens (never the secret)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiTokenList"
+    post:
+      operationId: createApiToken
+      tags: [auth]
+      summary: Make a personal access token (shown once)
+      description: >
+        Send it as "Authorization: Bearer <token>". A read token can only
+        GET; a write token can do what your account can. Tokens can't manage
+        tokens. Needs a signed-in session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiTokenInput"
+      responses:
+        "201":
+          description: The token, with its secret
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiTokenCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/me/tokens/{id}:
+    delete:
+      operationId: revokeApiToken
+      tags: [auth]
+      summary: Revoke one of your tokens
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Revoked
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/audit:
+    get:
+      operationId: listAudit
+      tags: [admin]
+      summary: Who changed what across the app, newest first (admins)
+      parameters:
+        - name: resource
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Text in the actor or action.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditList"
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -4649,6 +4720,111 @@ components:
           type: string
           nullable: true
           description: The matching part of the description or comment.
+
+    ApiToken:
+      type: object
+      required: [id, name, prefix, scope, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        prefix:
+          type: string
+          description: The first characters, to tell tokens apart.
+        scope:
+          type: string
+          enum: [read, write]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ApiTokenCreated:
+      allOf:
+        - $ref: "#/components/schemas/ApiToken"
+        - type: object
+          required: [token]
+          properties:
+            token:
+              type: string
+
+    ApiTokenInput:
+      type: object
+      required: [name, scope]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        scope:
+          type: string
+          enum: [read, write]
+        expiresInDays:
+          type: integer
+          minimum: 1
+          maximum: 365
+          description: Missing = never expires.
+
+    ApiTokenList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ApiToken"
+
+    AuditEntry:
+      type: object
+      required: [id, at, actor, action, resource, fields, via]
+      properties:
+        id:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+        action:
+          type: string
+          description: e.g. "update project", "sign in", "failed sign in".
+        resource:
+          type: string
+        entityId:
+          type: string
+          nullable: true
+        fields:
+          type: array
+          description: The fields sent (never their values).
+          items:
+            type: string
+        via:
+          type: string
+          enum: [session, token, system]
+        ip:
+          type: string
+          nullable: true
+
+    AuditList:
+      type: object
+      required: [data, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntry"
+        total:
+          type: integer
 
     NotificationSettings:
       type: object

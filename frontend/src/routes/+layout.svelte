@@ -21,7 +21,7 @@
 		{ href: '/goals', label: 'Growth' },
 		{ href: '/time-off', label: 'Time Off' }
 	];
-	const navItems = $derived(can('admin') ? [...baseNav, { href: '/users', label: 'Accounts' }] : baseNav);
+	const navItems = $derived(can('admin') ? [...baseNav, { href: '/users', label: 'Accounts' }, { href: '/audit', label: 'Audit' }] : baseNav);
 
 	// Every page but /login needs a signed-in account.
 	// Pages that work signed out.

@@ -325,6 +325,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your personal access tokens */
+        get: operations["listApiTokens"];
+        put?: never;
+        /**
+         * Make a personal access token (shown once)
+         * @description Send it as "Authorization: Bearer <token>". A read token can only GET; a write token can do what your account can. Tokens can't manage tokens. Needs a signed-in session.
+         */
+        post: operations["createApiToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/tokens/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke one of your tokens */
+        delete: operations["revokeApiToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who changed what across the app, newest first (admins) */
+        get: operations["listAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -2352,6 +2407,54 @@ export interface components {
             /** @description The matching part of the description or comment. */
             snippet?: string | null;
         };
+        ApiToken: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description The first characters, to tell tokens apart. */
+            prefix: string;
+            /** @enum {string} */
+            scope: "read" | "write";
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: date-time */
+            lastUsedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ApiTokenCreated: components["schemas"]["ApiToken"] & {
+            token: string;
+        };
+        ApiTokenInput: {
+            name: string;
+            /** @enum {string} */
+            scope: "read" | "write";
+            /** @description Missing = never expires. */
+            expiresInDays?: number;
+        };
+        ApiTokenList: {
+            data: components["schemas"]["ApiToken"][];
+        };
+        AuditEntry: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            at: string;
+            actor: string;
+            /** @description e.g. "update project", "sign in", "failed sign in". */
+            action: string;
+            resource: string;
+            entityId?: string | null;
+            /** @description The fields sent (never their values). */
+            fields: string[];
+            /** @enum {string} */
+            via: "session" | "token" | "system";
+            ip?: string | null;
+        };
+        AuditList: {
+            data: components["schemas"]["AuditEntry"][];
+            total: number;
+        };
         NotificationSettings: {
             /** @description Per notification type; a missing type gets both. */
             types: {
@@ -3736,6 +3839,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SearchResults"];
+                };
+            };
+        };
+    };
+    listApiTokens: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tokens (never the secret) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiTokenList"];
+                };
+            };
+        };
+    };
+    createApiToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApiTokenInput"];
+            };
+        };
+        responses: {
+            /** @description The token, with its secret */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiTokenCreated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    revokeApiToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAudit: {
+        parameters: {
+            query?: {
+                resource?: string;
+                /** @description Text in the actor or action. */
+                q?: string;
+                page?: components["parameters"]["PageParam"];
+                pageSize?: components["parameters"]["PageSizeParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditList"];
                 };
             };
         };

@@ -9,6 +9,81 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ApiTokenScope.
+const (
+	ApiTokenScopeRead  ApiTokenScope = "read"
+	ApiTokenScopeWrite ApiTokenScope = "write"
+)
+
+// Valid indicates whether the value is a known member of the ApiTokenScope enum.
+func (e ApiTokenScope) Valid() bool {
+	switch e {
+	case ApiTokenScopeRead:
+		return true
+	case ApiTokenScopeWrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ApiTokenCreatedScope.
+const (
+	ApiTokenCreatedScopeRead  ApiTokenCreatedScope = "read"
+	ApiTokenCreatedScopeWrite ApiTokenCreatedScope = "write"
+)
+
+// Valid indicates whether the value is a known member of the ApiTokenCreatedScope enum.
+func (e ApiTokenCreatedScope) Valid() bool {
+	switch e {
+	case ApiTokenCreatedScopeRead:
+		return true
+	case ApiTokenCreatedScopeWrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ApiTokenInputScope.
+const (
+	ApiTokenInputScopeRead  ApiTokenInputScope = "read"
+	ApiTokenInputScopeWrite ApiTokenInputScope = "write"
+)
+
+// Valid indicates whether the value is a known member of the ApiTokenInputScope enum.
+func (e ApiTokenInputScope) Valid() bool {
+	switch e {
+	case ApiTokenInputScopeRead:
+		return true
+	case ApiTokenInputScopeWrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditEntryVia.
+const (
+	AuditEntryViaSession AuditEntryVia = "session"
+	AuditEntryViaSystem  AuditEntryVia = "system"
+	AuditEntryViaToken   AuditEntryVia = "token"
+)
+
+// Valid indicates whether the value is a known member of the AuditEntryVia enum.
+func (e AuditEntryVia) Valid() bool {
+	switch e {
+	case AuditEntryViaSession:
+		return true
+	case AuditEntryViaSystem:
+		return true
+	case AuditEntryViaToken:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BoardSettingsCardColor.
 const (
 	BoardSettingsCardColorNone     BoardSettingsCardColor = "none"
@@ -1143,6 +1218,55 @@ func (e WorkItemTypeColor) Valid() bool {
 	}
 }
 
+// ApiToken defines model for ApiToken.
+type ApiToken struct {
+	CreatedAt  time.Time          `json:"createdAt"`
+	ExpiresAt  *time.Time         `json:"expiresAt"`
+	Id         openapi_types.UUID `json:"id"`
+	LastUsedAt *time.Time         `json:"lastUsedAt"`
+	Name       string             `json:"name"`
+
+	// Prefix The first characters, to tell tokens apart.
+	Prefix string        `json:"prefix"`
+	Scope  ApiTokenScope `json:"scope"`
+}
+
+// ApiTokenScope defines model for ApiToken.Scope.
+type ApiTokenScope string
+
+// ApiTokenCreated defines model for ApiTokenCreated.
+type ApiTokenCreated struct {
+	CreatedAt  time.Time          `json:"createdAt"`
+	ExpiresAt  *time.Time         `json:"expiresAt"`
+	Id         openapi_types.UUID `json:"id"`
+	LastUsedAt *time.Time         `json:"lastUsedAt"`
+	Name       string             `json:"name"`
+
+	// Prefix The first characters, to tell tokens apart.
+	Prefix string               `json:"prefix"`
+	Scope  ApiTokenCreatedScope `json:"scope"`
+	Token  string               `json:"token"`
+}
+
+// ApiTokenCreatedScope defines model for ApiTokenCreated.Scope.
+type ApiTokenCreatedScope string
+
+// ApiTokenInput defines model for ApiTokenInput.
+type ApiTokenInput struct {
+	// ExpiresInDays Missing = never expires.
+	ExpiresInDays *int               `json:"expiresInDays,omitempty"`
+	Name          string             `json:"name"`
+	Scope         ApiTokenInputScope `json:"scope"`
+}
+
+// ApiTokenInputScope defines model for ApiTokenInput.Scope.
+type ApiTokenInputScope string
+
+// ApiTokenList defines model for ApiTokenList.
+type ApiTokenList struct {
+	Data []ApiToken `json:"data"`
+}
+
 // ApplyProcess Give exactly one of templateId and fromProjectId.
 type ApplyProcess struct {
 	FromProjectId *openapi_types.UUID `json:"fromProjectId,omitempty"`
@@ -1194,6 +1318,31 @@ type Attachment struct {
 // AttachmentList defines model for AttachmentList.
 type AttachmentList struct {
 	Data []Attachment `json:"data"`
+}
+
+// AuditEntry defines model for AuditEntry.
+type AuditEntry struct {
+	// Action e.g. "update project", "sign in", "failed sign in".
+	Action   string    `json:"action"`
+	Actor    string    `json:"actor"`
+	At       time.Time `json:"at"`
+	EntityId *string   `json:"entityId"`
+
+	// Fields The fields sent (never their values).
+	Fields   []string           `json:"fields"`
+	Id       openapi_types.UUID `json:"id"`
+	Ip       *string            `json:"ip"`
+	Resource string             `json:"resource"`
+	Via      AuditEntryVia      `json:"via"`
+}
+
+// AuditEntryVia defines model for AuditEntry.Via.
+type AuditEntryVia string
+
+// AuditList defines model for AuditList.
+type AuditList struct {
+	Data  []AuditEntry `json:"data"`
+	Total int          `json:"total"`
 }
 
 // AuthMe defines model for AuthMe.
@@ -2949,6 +3098,16 @@ type DownloadAttachmentParams struct {
 	Inline *string `form:"inline,omitempty" json:"inline,omitempty"`
 }
 
+// ListAuditParams defines parameters for ListAudit.
+type ListAuditParams struct {
+	Resource *string `form:"resource,omitempty" json:"resource,omitempty"`
+
+	// Q Text in the actor or action.
+	Q        *string        `form:"q,omitempty" json:"q,omitempty"`
+	Page     *PageParam     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSizeParam `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
+
 // GetCapacityParams defines parameters for GetCapacity.
 type GetCapacityParams struct {
 	// Month YYYY-MM; defaults to the current month.
@@ -3160,6 +3319,9 @@ type UpdateLeaveRequestJSONRequestBody = LeaveRequestUpdate
 
 // PutNotificationSettingsJSONRequestBody defines body for PutNotificationSettings for application/json ContentType.
 type PutNotificationSettingsJSONRequestBody = NotificationSettings
+
+// CreateApiTokenJSONRequestBody defines body for CreateApiToken for application/json ContentType.
+type CreateApiTokenJSONRequestBody = ApiTokenInput
 
 // CreateMilestoneJSONRequestBody defines body for CreateMilestone for application/json ContentType.
 type CreateMilestoneJSONRequestBody = MilestoneCreate

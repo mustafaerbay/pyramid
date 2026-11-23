@@ -102,11 +102,24 @@ func (h *Handler) requireAuth() gin.HandlerFunc {
 			return
 		}
 		u, ok := h.sessionUser(c)
+		via := "session"
+		if !ok {
+			var tok *apiToken
+			if u, tok, ok = h.tokenUser(c); ok {
+				via = "token"
+				m := c.Request.Method
+				if tok.Scope == "read" && m != http.MethodGet && m != http.MethodHead && !readOnlyPOST[c.FullPath()] {
+					c.AbortWithStatusJSON(http.StatusForbidden, api.Error{Message: "this token can only read"})
+					return
+				}
+			}
+		}
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, api.Error{Message: "please sign in"})
 			return
 		}
 		c.Set(ctxUser, u)
+		c.Set(ctxVia, via)
 		c.Next()
 	}
 }
@@ -243,6 +256,7 @@ func (h *Handler) Login(c *gin.Context) {
 		bcrypt.CompareHashAndPassword([]byte(*u.PasswordHash), []byte(in.Password)) == nil
 	if !ok {
 		h.logins.fail(key)
+		h.audit(c, nil, normEmail(in.Email), "failed sign in", "session", nil, nil)
 		c.JSON(http.StatusUnauthorized, api.Error{Message: "wrong email or password"})
 		return
 	}
@@ -259,6 +273,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 	h.setSession(c, u)
+	h.audit(c, &u, u.Email, "sign in", "session", nil, nil)
 	c.JSON(http.StatusOK, me)
 }
 

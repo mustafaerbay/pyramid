@@ -3,6 +3,7 @@
 	import { session } from '$lib/auth.svelte';
 	import { ROLE_OPTIONS } from '$lib/roles';
 	import NotificationSettings from '$lib/components/NotificationSettings.svelte';
+	import ApiTokens from '$lib/components/ApiTokens.svelte';
 
 	let current = $state('');
 	let next = $state('');
@@ -51,6 +52,8 @@
 	{/if}
 
 	<NotificationSettings />
+
+	<ApiTokens />
 
 	<form class="space-y-4 rounded-lg border border-slate-200 bg-white p-4 sm:p-6" onsubmit={submit}>
 		<h2 class="text-lg font-semibold tracking-tight">Change password</h2>

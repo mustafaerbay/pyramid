@@ -770,6 +770,34 @@ CREATE TABLE project_hooks (
 );
 CREATE INDEX project_hooks_project ON project_hooks(project_id);
 
+-- Personal access tokens (only a SHA-256 hash is kept; scope read or write)
+CREATE TABLE api_tokens (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name         TEXT NOT NULL,
+    prefix       TEXT NOT NULL,
+    token_hash   TEXT NOT NULL UNIQUE,
+    scope        TEXT NOT NULL DEFAULT 'read',
+    expires_at   TIMESTAMPTZ,
+    last_used_at TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Admin audit log: every change made through the API (which fields, never values) and sign-ins
+CREATE TABLE audit_log (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID REFERENCES users(id) ON DELETE SET NULL,
+    actor      TEXT NOT NULL,
+    action     TEXT NOT NULL,
+    resource   TEXT NOT NULL,
+    entity_id  TEXT,
+    fields     JSONB NOT NULL DEFAULT '[]',
+    via        TEXT NOT NULL DEFAULT 'session',
+    ip         TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX audit_log_created ON audit_log(created_at DESC);
+
 -- Audit / activity trail (polymorphic target + JSON diff)
 CREATE TABLE activity_log (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

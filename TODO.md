@@ -40,13 +40,13 @@ Notes say what was built where it is simpler than ADO.
 
 ## 2. Integration and platform
 
-- [ ] **API tokens** — personal access tokens for scripts and integrations
+- [x] **API tokens** — personal access tokens for scripts and integrations
 - [x] **Webhooks** — outgoing service hooks on item / sprint / comment events
 - [ ] **Git linking** — GitHub / GitLab webhooks link commits and PRs that mention
       an item (`CAD-12`, `#12` in a project's repo) and show them on the item
 - [ ] **Two-factor sign-in and SSO** — TOTP 2FA; OpenID Connect sign-in
       (Entra ID, Google, Keycloak …) when configured
-- [ ] **Audit log** — who changed what across the app (accounts, projects,
+- [x] **Audit log** — who changed what across the app (accounts, projects,
       settings), for admins
 - [ ] **Turkish interface** — Türkçe / English switch
 
