@@ -6,6 +6,7 @@
 	import { describeChange, type Names } from '$lib/history';
 	import Markdown from './Markdown.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
+	import GitEventRow from './GitEventRow.svelte';
 
 	type Task = components['schemas']['Task'];
 	type Comment = components['schemas']['TaskComment'];
@@ -17,7 +18,12 @@
 		milestoneOptions = []
 	}: { task: Task; projectTasks?: Task[]; milestoneOptions?: { id: string; name: string }[] } = $props();
 
-	let tab = $state<'comments' | 'history' | 'files'>('comments');
+	let tab = $state<'comments' | 'history' | 'files' | 'dev'>('comments');
+	let dev = $state<components['schemas']['GitEvent'][]>([]);
+	$effect(() => {
+		const id = task.id;
+		api.GET('/api/v1/git-activity', { params: { query: { taskId: id } } }).then((r) => (dev = r.data?.data ?? []));
+	});
 	let files = $state<components['schemas']['Attachment'][]>([]);
 	let uploading = $state(false);
 	async function loadFiles() {
@@ -152,13 +158,13 @@
 
 <div class="mt-6 border-t border-slate-200 pt-4">
 	<div class="mb-3 flex flex-wrap items-center gap-1 text-sm" role="tablist">
-		{#each [['comments', `Comments (${comments.length})`], ['files', `Files (${files.length})`], ['history', 'History']] as [key, label] (key)}
+		{#each [['comments', `Comments (${comments.length})`], ['files', `Files (${files.length})`], ...(dev.length ? [['dev', `Development (${dev.length})`]] : []), ['history', 'History']] as [key, label] (key)}
 			<button
 				type="button"
 				role="tab"
 				aria-selected={tab === key}
 				class="rounded-md px-3 py-1.5 font-medium {tab === key ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-700'}"
-				onclick={() => (tab = key as 'comments' | 'history' | 'files')}>{label}</button
+				onclick={() => (tab = key as 'comments' | 'history' | 'files' | 'dev')}>{label}</button
 			>
 		{/each}
 		<button
@@ -174,7 +180,11 @@
 		<p class="mb-2 text-sm text-red-700" role="alert">{error}</p>
 	{/if}
 
-	{#if tab === 'files'}
+	{#if tab === 'dev'}
+		<ul class="space-y-2">
+			{#each dev as e (e.id)}<li><GitEventRow {e} /></li>{/each}
+		</ul>
+	{:else if tab === 'files'}
 		{#if files.length === 0}<p class="text-sm text-slate-500">No files yet.</p>{/if}
 		<ul class="space-y-2">
 			{#each files as f (f.id)}

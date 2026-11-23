@@ -34,6 +34,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/api/v1/auth/options", h.GetAuthOptions)
 	r.POST("/api/v1/auth/forgot", h.ForgotPassword)
 	r.POST("/api/v1/auth/reset", h.ResetPassword)
+	r.POST("/api/v1/git/hooks/:id", h.ReceiveGitHook)
 
 	v1 := r.Group("/api/v1", h.requireAuth(), h.denyViewerWrites(), h.auditTrail())
 	manager := h.requireRole(api.SystemRoleManager)
@@ -103,6 +104,10 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.PATCH("/project-hooks/:id", manager, h.UpdateProjectHook)
 		v1.DELETE("/project-hooks/:id", manager, h.DeleteProjectHook)
 		v1.POST("/project-hooks/:id/test", manager, h.TestProjectHook)
+		v1.GET("/project-repos", h.ListProjectRepos)
+		v1.POST("/project-repos", manager, h.CreateProjectRepo)
+		v1.DELETE("/project-repos/:id", manager, h.DeleteProjectRepo)
+		v1.GET("/git-activity", h.ListGitActivity)
 		v1.GET("/me/tokens", h.ListApiTokens)
 		v1.POST("/me/tokens", h.CreateApiToken)
 		v1.DELETE("/me/tokens/:id", h.RevokeApiToken)

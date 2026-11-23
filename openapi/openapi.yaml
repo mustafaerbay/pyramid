@@ -536,6 +536,121 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuditList"
+  /api/v1/project-repos:
+    get:
+      operationId: listProjectRepos
+      tags: [git]
+      summary: A project's linked repositories
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Repositories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRepoList"
+    post:
+      operationId: createProjectRepo
+      tags: [git]
+      summary: Link a GitHub or GitLab repository (managers); the answer has its webhook secret, shown once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectRepoInput"
+      responses:
+        "201":
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectRepo"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/project-repos/{id}:
+    delete:
+      operationId: deleteProjectRepo
+      tags: [git]
+      summary: Unlink a repository and forget its activity (managers)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Unlinked
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/git-activity:
+    get:
+      operationId: listGitActivity
+      tags: [git]
+      summary: Recent commits, pull requests and pipeline runs of a project, a repository or an item
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: repoId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: taskId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: kind
+          in: query
+          schema:
+            $ref: "#/components/schemas/GitEventKind"
+      responses:
+        "200":
+          description: Newest first, up to 100
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GitEventList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/git/hooks/{id}:
+    post:
+      operationId: receiveGitHook
+      tags: [git]
+      summary: Webhook endpoint for a linked repository (GitHub or GitLab)
+      description: >
+        GitHub: content type application/json, the repository's secret,
+        events push, pull_request and workflow_run. GitLab: the secret as
+        the token, events push, merge request and pipeline. Items are
+        linked when a commit message, title, branch or description mentions
+        KEY-12 or #12.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "202":
+          description: Taken
+        "401":
+          description: Bad signature or token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -4825,6 +4940,118 @@ components:
             $ref: "#/components/schemas/AuditEntry"
         total:
           type: integer
+
+    ProjectRepo:
+      type: object
+      required: [id, projectId, provider, name, url, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [github, gitlab]
+        name:
+          type: string
+          description: owner/repo
+        url:
+          type: string
+        secret:
+          type: string
+          description: Only in the answer to linking it.
+        lastEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    ProjectRepoInput:
+      type: object
+      required: [projectId, provider, url]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [github, gitlab]
+        url:
+          type: string
+          description: The repository's web address, e.g. https://github.com/acme/shop
+
+    ProjectRepoList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectRepo"
+
+    GitEventKind:
+      type: string
+      enum: [commit, pull_request, pipeline]
+
+    GitEvent:
+      type: object
+      required: [id, repoId, repoName, projectId, kind, title, items, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        repoId:
+          type: string
+          format: uuid
+        repoName:
+          type: string
+        projectId:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/GitEventKind"
+        externalId:
+          type: string
+          description: Commit SHA, pull request number or pipeline id.
+        title:
+          type: string
+        url:
+          type: string
+          nullable: true
+        author:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+          description: "Pull requests: open, merged, closed. Pipelines: running, success, failed, cancelled."
+        ref:
+          type: string
+          nullable: true
+        sha:
+          type: string
+          nullable: true
+        items:
+          type: array
+          description: Numbers of the project's items it mentions.
+          items:
+            type: integer
+        occurredAt:
+          type: string
+          format: date-time
+
+    GitEventList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/GitEvent"
 
     NotificationSettings:
       type: object

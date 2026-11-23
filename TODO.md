@@ -42,7 +42,7 @@ Notes say what was built where it is simpler than ADO.
 
 - [x] **API tokens** — personal access tokens for scripts and integrations
 - [x] **Webhooks** — outgoing service hooks on item / sprint / comment events
-- [ ] **Git linking** — GitHub / GitLab webhooks link commits and PRs that mention
+- [x] **Git linking** — GitHub / GitLab webhooks link commits and PRs that mention
       an item (`CAD-12`, `#12` in a project's repo) and show them on the item
 - [ ] **Two-factor sign-in and SSO** — TOTP 2FA; OpenID Connect sign-in
       (Entra ID, Google, Keycloak …) when configured
@@ -55,9 +55,9 @@ Notes say what was built where it is simpler than ADO.
 - [ ] **Wiki** — Markdown pages per project with a page tree and history
 - [ ] **Test Plans** — test plans, suites and cases with steps; test runs with
       pass/fail per step; failing step → bug
-- [ ] **Repos** — repositories linked to a project (GitHub / GitLab), with their
+- [x] **Repos** — repositories linked to a project (GitHub / GitLab), with their
       recent commits and pull requests from the Git webhooks (Pyramid doesn't host Git)
-- [ ] **Pipelines** — CI/CD run status per project from GitHub Actions / GitLab CI
+- [x] **Pipelines** — CI/CD run status per project from GitHub Actions / GitLab CI
       webhooks, linked to items and commits (Pyramid doesn't run builds)
 - [ ] **Artifacts** — with the [arti](../arti) artifact repository: link a project
       to its arti packages, show versions and release notes, tie Pyramid versions

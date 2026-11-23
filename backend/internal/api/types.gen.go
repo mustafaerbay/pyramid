@@ -390,6 +390,27 @@ func (e EmploymentType) Valid() bool {
 	}
 }
 
+// Defines values for GitEventKind.
+const (
+	GitEventKindCommit      GitEventKind = "commit"
+	GitEventKindPipeline    GitEventKind = "pipeline"
+	GitEventKindPullRequest GitEventKind = "pull_request"
+)
+
+// Valid indicates whether the value is a known member of the GitEventKind enum.
+func (e GitEventKind) Valid() bool {
+	switch e {
+	case GitEventKindCommit:
+		return true
+	case GitEventKindPipeline:
+		return true
+	case GitEventKindPullRequest:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GoalScope.
 const (
 	GoalScopeCompany    GoalScope = "company"
@@ -753,6 +774,42 @@ func (e ProjectPriority) Valid() bool {
 	case ProjectPriorityLow:
 		return true
 	case ProjectPriorityMedium:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectRepoProvider.
+const (
+	ProjectRepoProviderGithub ProjectRepoProvider = "github"
+	ProjectRepoProviderGitlab ProjectRepoProvider = "gitlab"
+)
+
+// Valid indicates whether the value is a known member of the ProjectRepoProvider enum.
+func (e ProjectRepoProvider) Valid() bool {
+	switch e {
+	case ProjectRepoProviderGithub:
+		return true
+	case ProjectRepoProviderGitlab:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectRepoInputProvider.
+const (
+	ProjectRepoInputProviderGithub ProjectRepoInputProvider = "github"
+	ProjectRepoInputProviderGitlab ProjectRepoInputProvider = "gitlab"
+)
+
+// Valid indicates whether the value is a known member of the ProjectRepoInputProvider enum.
+func (e ProjectRepoInputProvider) Valid() bool {
+	switch e {
+	case ProjectRepoInputProviderGithub:
+		return true
+	case ProjectRepoInputProviderGitlab:
 		return true
 	default:
 		return false
@@ -1630,6 +1687,38 @@ type ForgotPassword struct {
 	Email string `json:"email"`
 }
 
+// GitEvent defines model for GitEvent.
+type GitEvent struct {
+	Author *string `json:"author"`
+
+	// ExternalId Commit SHA, pull request number or pipeline id.
+	ExternalId *string            `json:"externalId,omitempty"`
+	Id         openapi_types.UUID `json:"id"`
+
+	// Items Numbers of the project's items it mentions.
+	Items      []int              `json:"items"`
+	Kind       GitEventKind       `json:"kind"`
+	OccurredAt time.Time          `json:"occurredAt"`
+	ProjectId  openapi_types.UUID `json:"projectId"`
+	Ref        *string            `json:"ref"`
+	RepoId     openapi_types.UUID `json:"repoId"`
+	RepoName   string             `json:"repoName"`
+	Sha        *string            `json:"sha"`
+
+	// State Pull requests: open, merged, closed. Pipelines: running, success, failed, cancelled.
+	State *string `json:"state"`
+	Title string  `json:"title"`
+	Url   *string `json:"url"`
+}
+
+// GitEventKind defines model for GitEventKind.
+type GitEventKind string
+
+// GitEventList defines model for GitEventList.
+type GitEventList struct {
+	Data []GitEvent `json:"data"`
+}
+
 // Goal defines model for Goal.
 type Goal struct {
 	CreatedAt     time.Time           `json:"createdAt"`
@@ -2302,6 +2391,42 @@ type ProjectMemberUpdateAccess string
 
 // ProjectPriority defines model for ProjectPriority.
 type ProjectPriority string
+
+// ProjectRepo defines model for ProjectRepo.
+type ProjectRepo struct {
+	CreatedAt   time.Time          `json:"createdAt"`
+	Id          openapi_types.UUID `json:"id"`
+	LastEventAt *time.Time         `json:"lastEventAt"`
+
+	// Name owner/repo
+	Name      string              `json:"name"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	Provider  ProjectRepoProvider `json:"provider"`
+
+	// Secret Only in the answer to linking it.
+	Secret *string `json:"secret,omitempty"`
+	Url    string  `json:"url"`
+}
+
+// ProjectRepoProvider defines model for ProjectRepo.Provider.
+type ProjectRepoProvider string
+
+// ProjectRepoInput defines model for ProjectRepoInput.
+type ProjectRepoInput struct {
+	ProjectId openapi_types.UUID       `json:"projectId"`
+	Provider  ProjectRepoInputProvider `json:"provider"`
+
+	// Url The repository's web address, e.g. https://github.com/acme/shop
+	Url string `json:"url"`
+}
+
+// ProjectRepoInputProvider defines model for ProjectRepoInput.Provider.
+type ProjectRepoInputProvider string
+
+// ProjectRepoList defines model for ProjectRepoList.
+type ProjectRepoList struct {
+	Data []ProjectRepo `json:"data"`
+}
 
 // ProjectRole defines model for ProjectRole.
 type ProjectRole string
@@ -3125,6 +3250,17 @@ type ListContributionsParams struct {
 	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
 }
 
+// ListGitActivityParams defines parameters for ListGitActivity.
+type ListGitActivityParams struct {
+	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
+	RepoId    *openapi_types.UUID `form:"repoId,omitempty" json:"repoId,omitempty"`
+	TaskId    *openapi_types.UUID `form:"taskId,omitempty" json:"taskId,omitempty"`
+	Kind      *GitEventKind       `form:"kind,omitempty" json:"kind,omitempty"`
+}
+
+// ReceiveGitHookJSONBody defines body for ReceiveGitHook for application/json ContentType.
+type ReceiveGitHookJSONBody = map[string]any
+
 // ListGoalsParams defines parameters for ListGoals.
 type ListGoalsParams struct {
 	Page     *PageParam     `form:"page,omitempty" json:"page,omitempty"`
@@ -3188,6 +3324,11 @@ type ListProjectMembersParams struct {
 	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
 	PersonId  *openapi_types.UUID `form:"personId,omitempty" json:"personId,omitempty"`
 	Role      *ProjectRole        `form:"role,omitempty" json:"role,omitempty"`
+}
+
+// ListProjectReposParams defines parameters for ListProjectRepos.
+type ListProjectReposParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
 }
 
 // ListProjectTeamsParams defines parameters for ListProjectTeams.
@@ -3299,6 +3440,9 @@ type CreateDeliveryPlanJSONRequestBody = DeliveryPlanInput
 // UpdateDeliveryPlanJSONRequestBody defines body for UpdateDeliveryPlan for application/json ContentType.
 type UpdateDeliveryPlanJSONRequestBody = DeliveryPlanInput
 
+// ReceiveGitHookJSONRequestBody defines body for ReceiveGitHook for application/json ContentType.
+type ReceiveGitHookJSONRequestBody = ReceiveGitHookJSONBody
+
 // CreateGoalJSONRequestBody defines body for CreateGoal for application/json ContentType.
 type CreateGoalJSONRequestBody = GoalCreate
 
@@ -3355,6 +3499,9 @@ type CreateProjectMemberJSONRequestBody = ProjectMemberCreate
 
 // UpdateProjectMemberJSONRequestBody defines body for UpdateProjectMember for application/json ContentType.
 type UpdateProjectMemberJSONRequestBody = ProjectMemberUpdate
+
+// CreateProjectRepoJSONRequestBody defines body for CreateProjectRepo for application/json ContentType.
+type CreateProjectRepoJSONRequestBody = ProjectRepoInput
 
 // CreateProjectTeamJSONRequestBody defines body for CreateProjectTeam for application/json ContentType.
 type CreateProjectTeamJSONRequestBody = ProjectTeamInput

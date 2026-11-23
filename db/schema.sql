@@ -770,6 +770,36 @@ CREATE TABLE project_hooks (
 );
 CREATE INDEX project_hooks_project ON project_hooks(project_id);
 
+-- Repositories linked to projects, and what their webhooks report
+CREATE TABLE project_repos (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    provider   TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    url        TEXT NOT NULL,
+    secret     TEXT NOT NULL,
+    last_event_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE git_events (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    repo_id     UUID NOT NULL REFERENCES project_repos(id) ON DELETE CASCADE,
+    project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    kind        TEXT NOT NULL,
+    external_id TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    url         TEXT,
+    author      TEXT,
+    state       TEXT,
+    ref         TEXT,
+    sha         TEXT,
+    items       JSONB NOT NULL DEFAULT '[]',
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (repo_id, kind, external_id)
+);
+CREATE INDEX git_events_project ON git_events(project_id, occurred_at DESC);
+
 -- Personal access tokens (only a SHA-256 hash is kept; scope read or write)
 CREATE TABLE api_tokens (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

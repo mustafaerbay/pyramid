@@ -1620,6 +1620,7 @@
 					<h2 class="text-lg font-semibold tracking-tight">
 						Tasks <a href="/projects/{projectId}/sprints" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Sprints →</a>
 						<a href="/projects/{projectId}/backlog" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Backlog →</a>
+						<a href="/projects/{projectId}/code" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Code →</a>
 						<a href="/projects/{projectId}/analytics" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Analytics →</a>
 						<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={exportTasks}>Export CSV</button>
 						<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={exportXlsx}>Excel</button>

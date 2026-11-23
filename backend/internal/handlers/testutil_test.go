@@ -136,6 +136,35 @@ CREATE TABLE item_templates (
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE project_repos (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	provider TEXT NOT NULL,
+	name TEXT NOT NULL,
+	url TEXT NOT NULL,
+	secret TEXT NOT NULL,
+	last_event_at DATETIME,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE git_events (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	repo_id TEXT NOT NULL,
+	project_id TEXT NOT NULL,
+	kind TEXT NOT NULL,
+	external_id TEXT NOT NULL,
+	title TEXT NOT NULL,
+	url TEXT,
+	author TEXT,
+	state TEXT,
+	ref TEXT,
+	sha TEXT,
+	items TEXT NOT NULL DEFAULT '[]',
+	occurred_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	UNIQUE (repo_id, kind, external_id)
+);
+
 CREATE TABLE api_tokens (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	user_id TEXT NOT NULL,

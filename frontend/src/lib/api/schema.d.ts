@@ -380,6 +380,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/project-repos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's linked repositories */
+        get: operations["listProjectRepos"];
+        put?: never;
+        /** Link a GitHub or GitLab repository (managers); the answer has its webhook secret, shown once */
+        post: operations["createProjectRepo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project-repos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink a repository and forget its activity (managers) */
+        delete: operations["deleteProjectRepo"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/git-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent commits, pull requests and pipeline runs of a project, a repository or an item */
+        get: operations["listGitActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/git/hooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Webhook endpoint for a linked repository (GitHub or GitLab)
+         * @description GitHub: content type application/json, the repository's secret, events push, pull_request and workflow_run. GitLab: the secret as the token, events push, merge request and pipeline. Items are linked when a commit message, title, branch or description mentions KEY-12 or #12.
+         */
+        post: operations["receiveGitHook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -2455,6 +2527,62 @@ export interface components {
             data: components["schemas"]["AuditEntry"][];
             total: number;
         };
+        ProjectRepo: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** @enum {string} */
+            provider: "github" | "gitlab";
+            /** @description owner/repo */
+            name: string;
+            url: string;
+            /** @description Only in the answer to linking it. */
+            secret?: string;
+            /** Format: date-time */
+            lastEventAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ProjectRepoInput: {
+            /** Format: uuid */
+            projectId: string;
+            /** @enum {string} */
+            provider: "github" | "gitlab";
+            /** @description The repository's web address, e.g. https://github.com/acme/shop */
+            url: string;
+        };
+        ProjectRepoList: {
+            data: components["schemas"]["ProjectRepo"][];
+        };
+        /** @enum {string} */
+        GitEventKind: "commit" | "pull_request" | "pipeline";
+        GitEvent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            repoId: string;
+            repoName: string;
+            /** Format: uuid */
+            projectId: string;
+            kind: components["schemas"]["GitEventKind"];
+            /** @description Commit SHA, pull request number or pipeline id. */
+            externalId?: string;
+            title: string;
+            url?: string | null;
+            author?: string | null;
+            /** @description Pull requests: open, merged, closed. Pipelines: running, success, failed, cancelled. */
+            state?: string | null;
+            ref?: string | null;
+            sha?: string | null;
+            /** @description Numbers of the project's items it mentions. */
+            items: number[];
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        GitEventList: {
+            data: components["schemas"]["GitEvent"][];
+        };
         NotificationSettings: {
             /** @description Per notification type; a missing type gets both. */
             types: {
@@ -3933,6 +4061,134 @@ export interface operations {
                     "application/json": components["schemas"]["AuditList"];
                 };
             };
+        };
+    };
+    listProjectRepos: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Repositories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRepoList"];
+                };
+            };
+        };
+    };
+    createProjectRepo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectRepoInput"];
+            };
+        };
+        responses: {
+            /** @description Linked */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRepo"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteProjectRepo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unlinked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listGitActivity: {
+        parameters: {
+            query?: {
+                projectId?: string;
+                repoId?: string;
+                taskId?: string;
+                kind?: components["schemas"]["GitEventKind"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Newest first, up to 100 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitEventList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    receiveGitHook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Taken */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad signature or token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listNotifications: {
