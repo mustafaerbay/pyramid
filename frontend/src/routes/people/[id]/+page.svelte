@@ -94,6 +94,8 @@
 		(workload?.months ?? []).map((m) => ({
 			month: m.month,
 			planned: m.plannedManDays,
+			capacity: m.capacityManDays,
+			leaveDays: m.leaveDays,
 			segments: m.projects.map((p) => ({
 				key: p.projectId,
 				label: projectName(p.projectId),
@@ -105,9 +107,11 @@
 
 	const capacity = $derived(workload?.capacityManDays ?? person?.monthlyCapacityManDays ?? 20);
 	const current = $derived(workload?.months.find((m) => m.month === selected) ?? null);
+	// The selected month's capacity after approved leave.
+	const monthCapacity = $derived(current?.capacityManDays ?? capacity);
 	const planned = $derived(current?.plannedManDays ?? 0);
-	const free = $derived(Math.max(capacity - planned, 0));
-	const pct = $derived(capacity > 0 ? (planned / capacity) * 100 : 0);
+	const free = $derived(Math.max(monthCapacity - planned, 0));
+	const pct = $derived(monthCapacity > 0 ? (planned / monthCapacity) * 100 : planned > 0 ? Infinity : 0);
 	const band = $derived(loadBand(pct));
 	const donut = $derived([
 		...(current?.projects ?? []).map((p) => ({
@@ -180,7 +184,7 @@
 			{#if workload}
 				<MonthlyLoadChart {months} {capacity} {selected} onSelect={(m) => (selected = m)} />
 
-				{#if colorOf.size > 0}
+				{#if colorOf.size > 0 || months.some((m) => m.leaveDays > 0)}
 					<div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
 						{#each [...colorOf] as [pid, color] (pid)}
 							<span class="inline-flex items-center gap-1.5">
@@ -190,6 +194,11 @@
 						<span class="inline-flex items-center gap-1.5">
 							<span class="w-3 border-t border-dashed border-slate-400"></span>Capacity
 						</span>
+						{#if months.some((m) => m.leaveDays > 0)}
+							<span class="inline-flex items-center gap-1.5">
+								<span class="w-3 border-t-2 border-amber-500"></span>Capacity after leave
+							</span>
+						{/if}
 					</div>
 				{/if}
 			{:else}
@@ -201,17 +210,25 @@
 			<div class="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
 				<div class="rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
 					<h2 class="text-lg font-semibold tracking-tight">{monthLabel(selected)}</h2>
-					<p class="mb-4 text-sm text-slate-500">{current.workingDays} working days</p>
+					<p class="mb-4 text-sm text-slate-500">
+						{current.workingDays} working days
+						{#if current.leaveDays > 0}
+							· <span class="font-medium text-amber-700">{current.leaveDays} on leave</span>
+							· capacity {formatManDays(monthCapacity)} of {formatManDays(capacity)} md
+						{/if}
+					</p>
 					<DonutChart
 						data={donut}
 						size={150}
 						strokeWidth={18}
-						centerValue="{formatManDays(planned)} / {formatManDays(capacity)}"
-						centerLabel="{Math.round(pct)}% full"
+						centerValue="{formatManDays(planned)} / {formatManDays(monthCapacity)}"
+						centerLabel={Number.isFinite(pct) ? `${Math.round(pct)}% full` : 'on leave'}
 					/>
 					<p class="mt-3 text-sm font-medium {band.text}">
-						{#if planned > capacity}
-							Over capacity by {formatManDays(planned - capacity)} man-days
+						{#if monthCapacity === 0 && planned === 0 && current.leaveDays > 0}
+							On leave all month
+						{:else if planned > monthCapacity}
+							Over capacity by {formatManDays(planned - monthCapacity)} man-days
 						{:else}
 							{band.label} · {formatManDays(free)} man-days free
 						{/if}

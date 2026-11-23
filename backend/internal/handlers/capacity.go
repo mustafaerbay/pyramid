@@ -21,13 +21,47 @@ import (
 // models.SpreadManDays). Cancelled tasks and cancelled projects don't count;
 // done tasks do (the work still happened in that month).
 type monthPlan struct {
+	month     time.Time
 	byPerson  map[uuid.UUID]float64
 	byProject map[uuid.UUID]float64
 	total     float64
+	leave     map[uuid.UUID][]models.DateRange // approved leave touching the month
+}
+
+// capacity is p's capacity in the plan's month after approved leave, and
+// the number of leave days taken out.
+func (mp monthPlan) capacity(p models.Person) (float64, int) {
+	leave := models.LeaveDaysInMonth(mp.leave[p.ID], mp.month)
+	return models.MonthCapacity(p.Capacity(), models.WorkingDaysInMonth(mp.month), leave), leave
+}
+
+// approvedLeave returns every person's approved leave that overlaps
+// [from, to]. Pending, rejected and cancelled requests don't count.
+func (h *Handler) approvedLeave(from, to time.Time, personID *uuid.UUID) (map[uuid.UUID][]models.DateRange, error) {
+	q := h.db.Where("status = ?", api.LeaveStatusApproved).
+		Where("start_date <= ? AND end_date >= ?", to, from)
+	if personID != nil {
+		q = q.Where("person_id = ?", *personID)
+	}
+	var rows []models.LeaveRequest
+	if err := q.Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := map[uuid.UUID][]models.DateRange{}
+	for _, l := range rows {
+		out[l.PersonID] = append(out[l.PersonID], models.DateRange{From: l.StartDate, To: l.EndDate})
+	}
+	return out, nil
 }
 
 func (h *Handler) monthPlan(month time.Time) (monthPlan, error) {
-	plan := monthPlan{byPerson: map[uuid.UUID]float64{}, byProject: map[uuid.UUID]float64{}}
+	month = models.MonthStart(month)
+	plan := monthPlan{month: month, byPerson: map[uuid.UUID]float64{}, byProject: map[uuid.UUID]float64{}}
+	leave, err := h.approvedLeave(month, month.AddDate(0, 1, -1), nil)
+	if err != nil {
+		return plan, err
+	}
+	plan.leave = leave
 	var rows []struct {
 		PersonID  uuid.UUID
 		ProjectID uuid.UUID
@@ -35,7 +69,7 @@ func (h *Handler) monthPlan(month time.Time) (monthPlan, error) {
 		StartDate *time.Time
 		DueDate   *time.Time
 	}
-	err := h.db.Table("task_assignees AS ta").
+	err = h.db.Table("task_assignees AS ta").
 		Select("ta.person_id, t.project_id, ta.man_days, t.start_date, t.due_date").
 		Joins("JOIN tasks t ON t.id = ta.task_id").
 		Joins("JOIN projects p ON p.id = t.project_id").
@@ -84,7 +118,8 @@ func (h *Handler) GetCapacity(c *gin.Context) {
 	}
 
 	var people []models.Person
-	if err := h.db.Where("status = ?", api.PersonStatusActive).Order("first_name, last_name").Find(&people).Error; err != nil {
+	// People on leave stay in: their approved leave takes their capacity out.
+	if err := h.db.Where("status IN ?", []api.PersonStatus{api.PersonStatusActive, api.PersonStatusOnLeave}).Order("first_name, last_name").Find(&people).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load people", Details: strptr(err.Error())})
 		return
 	}
@@ -97,10 +132,10 @@ func (h *Handler) GetCapacity(c *gin.Context) {
 		Projects:       make([]api.ProjectLoad, 0, len(plan.byProject)),
 	}
 	for _, p := range people {
-		cap := p.Capacity()
+		cap, leave := plan.capacity(p)
 		out.CapacityManDays += cap
 		out.People = append(out.People, api.PersonCapacity{
-			PersonId: p.ID, CapacityManDays: cap, PlannedManDays: plan.byPerson[p.ID],
+			PersonId: p.ID, CapacityManDays: cap, LeaveDays: leave, PlannedManDays: plan.byPerson[p.ID],
 		})
 	}
 	for id, md := range plan.byProject {
@@ -161,6 +196,13 @@ func (h *Handler) GetPersonWorkload(c *gin.Context) {
 		return
 	}
 
+	jan := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
+	leave, err := h.approvedLeave(jan, jan.AddDate(1, 0, -1), &person.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
+		return
+	}
+
 	toDate := func(t *time.Time) *openapi_types.Date {
 		if t == nil {
 			return nil
@@ -176,11 +218,15 @@ func (h *Handler) GetPersonWorkload(c *gin.Context) {
 	}
 	for i := range out.Months {
 		month := time.Date(year, time.Month(i+1), 1, 0, 0, 0, 0, time.UTC)
+		working := models.WorkingDaysInMonth(month)
+		leaveDays := models.LeaveDaysInMonth(leave[person.ID], month)
 		m := api.PersonWorkloadMonth{
-			Month:       month.Format("2006-01"),
-			WorkingDays: models.WorkingDaysInMonth(month),
-			Projects:    []api.ProjectLoad{},
-			Tasks:       []api.PersonWorkloadTask{},
+			Month:           month.Format("2006-01"),
+			WorkingDays:     working,
+			LeaveDays:       leaveDays,
+			CapacityManDays: models.MonthCapacity(person.Capacity(), working, leaveDays),
+			Projects:        []api.ProjectLoad{},
+			Tasks:           []api.PersonWorkloadTask{},
 		}
 		byProject := map[uuid.UUID]float64{}
 		for _, r := range rows {

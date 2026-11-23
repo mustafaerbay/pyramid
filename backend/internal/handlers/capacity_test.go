@@ -5,8 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/mustafaerbay/pyramid/backend/internal/api"
+	"github.com/mustafaerbay/pyramid/backend/internal/models"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -232,5 +234,117 @@ func TestPersonWorkload_NotFoundAndBadYear(t *testing.T) {
 		if status := doJSON(t, r, http.MethodGet, "/api/v1/people/"+p.Id.String()+"/workload?year="+y, nil, nil); status != http.StatusBadRequest {
 			t.Errorf("year=%s: %d, want 400", y, status)
 		}
+	}
+}
+
+// addLeave creates a leave request and moves it to status.
+func addLeave(t *testing.T, r *gin.Engine, person uuid.UUID, from, to string, status api.LeaveStatus) {
+	t.Helper()
+	var l api.LeaveRequest
+	if code := doJSON(t, r, http.MethodPost, "/api/v1/leave-requests", api.LeaveRequestCreate{
+		PersonId: person, StartDate: *mdDate(from), EndDate: *mdDate(to),
+	}, &l); code != http.StatusCreated {
+		t.Fatalf("create leave: %d", code)
+	}
+	if code := doJSON(t, r, http.MethodPatch, "/api/v1/leave-requests/"+l.Id.String(), api.LeaveRequestUpdate{Status: &status}, nil); code != http.StatusOK {
+		t.Fatalf("set leave status: %d", code)
+	}
+}
+
+func TestCapacity_ApprovedLeaveReducesCapacity(t *testing.T) {
+	r, _ := newTestRouter(t)
+
+	var onLeave, pending, away api.Person
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "A", LastName: "A", Email: "a@x.dev", MonthlyCapacityManDays: f64(21)}, &onLeave)
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "P", LastName: "P", Email: "p@x.dev"}, &pending)
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "W", LastName: "W", Email: "w@x.dev"}, &away)
+	status := api.PersonStatusOnLeave
+	doJSON(t, r, http.MethodPatch, "/api/v1/people/"+away.Id.String(), api.PersonUpdate{Status: &status}, nil)
+
+	// November 2026 has 21 working days.
+	addLeave(t, r, onLeave.Id, "2026-11-09", "2026-11-13", api.LeaveStatusApproved) // 5 days
+	addLeave(t, r, onLeave.Id, "2026-11-07", "2026-11-08", api.LeaveStatusApproved) // weekend: 0
+	addLeave(t, r, pending.Id, "2026-11-02", "2026-11-06", api.LeaveStatusPending)  // not counted
+	addLeave(t, r, pending.Id, "2026-11-16", "2026-11-20", api.LeaveStatusRejected) // not counted
+	addLeave(t, r, away.Id, "2026-10-01", "2026-11-13", api.LeaveStatusApproved)    // 10 days in Nov
+
+	var rep api.CapacityReport
+	if code := doJSON(t, r, http.MethodGet, "/api/v1/capacity?month=2026-11", nil, &rep); code != http.StatusOK {
+		t.Fatalf("status = %d", code)
+	}
+	people := map[uuid.UUID]api.PersonCapacity{}
+	for _, p := range rep.People {
+		people[p.PersonId] = p
+	}
+	if p := people[onLeave.Id]; p.LeaveDays != 5 || p.CapacityManDays != 16 {
+		t.Errorf("A = %+v, want 5 leave days, capacity 16 (21 × 16/21)", p)
+	}
+	if p := people[pending.Id]; p.LeaveDays != 0 || p.CapacityManDays != 20 {
+		t.Errorf("P = %+v, want pending/rejected leave ignored", p)
+	}
+	p, ok := people[away.Id]
+	if !ok {
+		t.Fatalf("on-leave person missing from report: %+v", rep.People)
+	}
+	if want := 20.0 * 11 / 21; p.LeaveDays != 10 || p.CapacityManDays != want {
+		t.Errorf("W = %+v, want 10 leave days, capacity %v", p, want)
+	}
+	if want := 16 + 20 + 20.0*11/21; rep.CapacityManDays != want {
+		t.Errorf("total capacity = %v, want %v", rep.CapacityManDays, want)
+	}
+
+	// October: only W's leave (Oct 1–30 weekdays = 22) is in October.
+	doJSON(t, r, http.MethodGet, "/api/v1/capacity?month=2026-10", nil, &rep)
+	for _, p := range rep.People {
+		if p.PersonId == away.Id && (p.LeaveDays != 22 || p.CapacityManDays != 0) {
+			t.Errorf("W in October = %+v, want 22 leave days, capacity 0", p)
+		}
+	}
+}
+
+func TestPersonWorkload_MonthCapacityAfterLeave(t *testing.T) {
+	r, _ := newTestRouter(t)
+	var me api.Person
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "Me", LastName: "M", Email: "me@x.dev", MonthlyCapacityManDays: f64(21)}, &me)
+	addLeave(t, r, me.Id, "2026-11-09", "2026-11-13", api.LeaveStatusApproved)
+	addLeave(t, r, me.Id, "2026-12-01", "2026-12-04", api.LeaveStatusPending)
+
+	var wl api.PersonWorkload
+	doJSON(t, r, http.MethodGet, "/api/v1/people/"+me.Id.String()+"/workload?year=2026", nil, &wl)
+	if wl.CapacityManDays != 21 {
+		t.Errorf("base capacity = %v, want 21", wl.CapacityManDays)
+	}
+	nov, dec := wl.Months[10], wl.Months[11]
+	if nov.LeaveDays != 5 || nov.CapacityManDays != 16 {
+		t.Errorf("nov = %d leave, %v capacity; want 5, 16", nov.LeaveDays, nov.CapacityManDays)
+	}
+	if dec.LeaveDays != 0 || dec.CapacityManDays != 21 {
+		t.Errorf("dec = %d leave, %v capacity; want 0, 21 (pending ignored)", dec.LeaveDays, dec.CapacityManDays)
+	}
+}
+
+func TestPeople_WorkloadPct_UsesCapacityAfterLeave(t *testing.T) {
+	r, _ := newTestRouter(t)
+	var me api.Person
+	doJSON(t, r, http.MethodPost, "/api/v1/people", api.PersonCreate{FirstName: "Me", LastName: "M", Email: "me@x.dev", MonthlyCapacityManDays: f64(10)}, &me)
+	var project api.Project
+	doJSON(t, r, http.MethodPost, "/api/v1/projects", api.ProjectCreate{Key: "A", Name: "A"}, &project)
+	today := time.Now().UTC()
+	doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{
+		ProjectId: project.Id, Title: "Due today", DueDate: &openapi_types.Date{Time: today},
+		Assignments: &[]api.TaskAssignment{{PersonId: me.Id, ManDays: 5}},
+	}, nil)
+	// Leave for the first 7 days of this month.
+	first := models.MonthStart(today)
+	addLeave(t, r, me.Id, first.Format("2006-01-02"), first.AddDate(0, 0, 6).Format("2006-01-02"), api.LeaveStatusApproved)
+
+	working := models.WorkingDaysInMonth(today)
+	leave := models.LeaveDaysInMonth([]models.DateRange{{From: first, To: first.AddDate(0, 0, 6)}}, today)
+	want := 5 / models.MonthCapacity(10, working, leave) * 100
+
+	var one api.Person
+	doJSON(t, r, http.MethodGet, "/api/v1/people/"+me.Id.String(), nil, &one)
+	if one.WorkloadPct == nil || *one.WorkloadPct != want {
+		t.Errorf("workloadPct = %v, want %v", one.WorkloadPct, want)
 	}
 }

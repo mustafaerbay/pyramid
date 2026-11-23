@@ -169,11 +169,13 @@
 
 	const byPerson = $derived(new Map((report?.people ?? []).map((p) => [p.personId, p])));
 
-	function workloadOf(person: Person): { planned: number; capacity: number; pct: number } {
+	// The report's capacity already has approved leave taken out.
+	function workloadOf(person: Person): { planned: number; capacity: number; pct: number; leaveDays: number } {
 		const r = byPerson.get(person.id);
 		const capacity = r?.capacityManDays ?? person.monthlyCapacityManDays ?? 20;
 		const planned = r?.plannedManDays ?? (month === thisMonth ? (person.monthManDays ?? 0) : 0);
-		return { planned, capacity, pct: capacity > 0 ? (planned / capacity) * 100 : 0 };
+		const pct = capacity > 0 ? (planned / capacity) * 100 : planned > 0 ? 999 : 0;
+		return { planned, capacity, pct, leaveDays: r?.leaveDays ?? 0 };
 	}
 
 	function prevPage() {
@@ -305,6 +307,9 @@
 							<span class="text-xs font-medium tabular-nums {band.text}">
 								{formatManDays(w.planned)} / {formatManDays(w.capacity)} md
 							</span>
+							{#if w.leaveDays > 0}
+								<span class="text-xs whitespace-nowrap text-amber-700">{w.leaveDays}d leave</span>
+							{/if}
 						</div>
 					</a>
 					<div class="m-actions">
@@ -355,7 +360,9 @@
 							<td class="px-4 py-3">
 								<div
 									class="flex items-center gap-2"
-									title="{band.label}: {formatManDays(w.planned)} of {formatManDays(w.capacity)} man-days ({Math.round(w.pct)}%)"
+									title="{band.label}: {formatManDays(w.planned)} of {formatManDays(w.capacity)} man-days ({Math.round(w.pct)}%){w.leaveDays
+										? `, ${w.leaveDays} leave days`
+										: ''}"
 								>
 									<div
 										class="h-2 w-24 overflow-hidden rounded-full bg-slate-100"
@@ -371,6 +378,9 @@
 									<span class="text-xs whitespace-nowrap tabular-nums font-medium {band.text}">
 										{formatManDays(w.planned)} / {formatManDays(w.capacity)} md
 									</span>
+									{#if w.leaveDays > 0}
+										<span class="text-xs whitespace-nowrap text-amber-700">{w.leaveDays}d leave</span>
+									{/if}
 								</div>
 							</td>
 							<td

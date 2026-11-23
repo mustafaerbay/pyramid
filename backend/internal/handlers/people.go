@@ -103,12 +103,12 @@ func (h *Handler) GetPerson(c *gin.Context) {
 }
 
 // withWorkload converts p and fills this month's man-days and workload %
-// (planned ÷ capacity; 0 when capacity is 0).
+// (planned ÷ this month's capacity after leave; 0 when capacity is 0).
 func withWorkload(p models.Person, plan monthPlan) api.Person {
 	out := p.ToAPI()
 	md := plan.byPerson[p.ID]
 	pct := 0.0
-	if cap := p.Capacity(); cap > 0 {
+	if cap, _ := plan.capacity(p); cap > 0 {
 		pct = md / cap * 100
 	}
 	out.MonthManDays = &md

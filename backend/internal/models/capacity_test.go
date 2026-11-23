@@ -78,3 +78,50 @@ func TestWorkingDaysInMonth(t *testing.T) {
 		t.Fatalf("Feb 2026 has %d weekdays, want 20", got)
 	}
 }
+
+func TestLeaveDaysInMonth(t *testing.T) {
+	r := func(from, to string) DateRange { return DateRange{From: *d(from), To: *d(to)} }
+	cases := []struct {
+		name   string
+		ranges []DateRange
+		month  string
+		want   int
+	}{
+		{"no leave", nil, "2026-11", 0},
+		// Mon 2026-11-09 .. Fri 2026-11-13
+		{"one working week", []DateRange{r("2026-11-09", "2026-11-13")}, "2026-11", 5},
+		// Sat 2026-11-07 .. Sun 2026-11-08
+		{"weekend only", []DateRange{r("2026-11-07", "2026-11-08")}, "2026-11", 0},
+		// Mon 2026-10-26 .. Fri 2026-11-06: 5 weekdays in each month
+		{"crosses into the month", []DateRange{r("2026-10-26", "2026-11-06")}, "2026-11", 5},
+		{"crosses out of the month", []DateRange{r("2026-10-26", "2026-11-06")}, "2026-10", 5},
+		{"other month", []DateRange{r("2026-12-01", "2026-12-04")}, "2026-11", 0},
+		{"covers the whole month", []DateRange{r("2026-10-01", "2026-12-31")}, "2026-11", 21},
+		{"overlapping ranges count once", []DateRange{r("2026-11-09", "2026-11-13"), r("2026-11-12", "2026-11-17")}, "2026-11", 7},
+	}
+	for _, c := range cases {
+		if got := LeaveDaysInMonth(c.ranges, month(c.month)); got != c.want {
+			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+func TestMonthCapacity(t *testing.T) {
+	cases := []struct {
+		capacity       float64
+		working, leave int
+		want           float64
+	}{
+		{20, 21, 0, 20},
+		{20, 20, 5, 15},
+		{20, 21, 21, 0},
+		{20, 21, 30, 0}, // never negative
+		{20, 0, 0, 0},   // no working days
+		{0, 21, 3, 0},
+	}
+	for _, c := range cases {
+		if got := MonthCapacity(c.capacity, c.working, c.leave); !near(got, c.want) {
+			t.Errorf("MonthCapacity(%v, %d, %d) = %v, want %v", c.capacity, c.working, c.leave, got, c.want)
+		}
+	}
+}

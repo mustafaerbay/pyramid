@@ -467,7 +467,7 @@ func (e VersionStatus) Valid() bool {
 
 // CapacityReport defines model for CapacityReport.
 type CapacityReport struct {
-	// CapacityManDays Sum of monthlyCapacityManDays over active people.
+	// CapacityManDays Sum of the people's capacity for this month (active and on-leave people), after taking out their approved leave days.
 	CapacityManDays float64 `json:"capacityManDays"`
 
 	// Month YYYY-MM
@@ -742,15 +742,19 @@ type Person struct {
 	UpdatedAt              time.Time       `json:"updatedAt"`
 	WeeklyCapacityHours    *float64        `json:"weeklyCapacityHours"`
 
-	// WorkloadPct monthManDays ÷ monthlyCapacityManDays × 100 for the current month. Can exceed 100 when over-planned. Computed server-side; returned by list and get.
+	// WorkloadPct monthManDays ÷ this month's capacity × 100, where this month's capacity is monthlyCapacityManDays reduced by approved leave days. Can exceed 100 when over-planned. Computed server-side; returned by list and get.
 	WorkloadPct *float64 `json:"workloadPct,omitempty"`
 }
 
 // PersonCapacity defines model for PersonCapacity.
 type PersonCapacity struct {
-	CapacityManDays float64            `json:"capacityManDays"`
-	PersonId        openapi_types.UUID `json:"personId"`
-	PlannedManDays  float64            `json:"plannedManDays"`
+	// CapacityManDays monthlyCapacityManDays × (working days − leave days) ÷ working days.
+	CapacityManDays float64 `json:"capacityManDays"`
+
+	// LeaveDays Mon–Fri days of approved leave in this month.
+	LeaveDays      int                `json:"leaveDays"`
+	PersonId       openapi_types.UUID `json:"personId"`
+	PlannedManDays float64            `json:"plannedManDays"`
 }
 
 // PersonCreate defines model for PersonCreate.
@@ -799,7 +803,7 @@ type PersonUpdate struct {
 
 // PersonWorkload defines model for PersonWorkload.
 type PersonWorkload struct {
-	// CapacityManDays The person's monthly capacity.
+	// CapacityManDays The person's monthly capacity before leave.
 	CapacityManDays float64               `json:"capacityManDays"`
 	Months          []PersonWorkloadMonth `json:"months"`
 	PersonId        openapi_types.UUID    `json:"personId"`
@@ -808,6 +812,12 @@ type PersonWorkload struct {
 
 // PersonWorkloadMonth defines model for PersonWorkloadMonth.
 type PersonWorkloadMonth struct {
+	// CapacityManDays Capacity for this month after approved leave: monthly capacity × (working days − leave days) ÷ working days.
+	CapacityManDays float64 `json:"capacityManDays"`
+
+	// LeaveDays Mon–Fri days of approved leave in this month.
+	LeaveDays int `json:"leaveDays"`
+
 	// Month YYYY-MM
 	Month          string               `json:"month"`
 	PlannedManDays float64              `json:"plannedManDays"`

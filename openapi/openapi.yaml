@@ -1445,7 +1445,8 @@ components:
           format: double
           readOnly: true
           description: >
-            monthManDays ÷ monthlyCapacityManDays × 100 for the current month.
+            monthManDays ÷ this month's capacity × 100, where this month's
+            capacity is monthlyCapacityManDays reduced by approved leave days.
             Can exceed 100 when over-planned. Computed server-side; returned
             by list and get.
         createdAt:
@@ -2477,7 +2478,9 @@ components:
         capacityManDays:
           type: number
           format: double
-          description: Sum of monthlyCapacityManDays over active people.
+          description: >
+            Sum of the people's capacity for this month (active and on-leave
+            people), after taking out their approved leave days.
         plannedManDays:
           type: number
           format: double
@@ -2493,7 +2496,7 @@ components:
 
     PersonCapacity:
       type: object
-      required: [personId, capacityManDays, plannedManDays]
+      required: [personId, capacityManDays, leaveDays, plannedManDays]
       properties:
         personId:
           type: string
@@ -2501,6 +2504,11 @@ components:
         capacityManDays:
           type: number
           format: double
+          description: >
+            monthlyCapacityManDays × (working days − leave days) ÷ working days.
+        leaveDays:
+          type: integer
+          description: Mon–Fri days of approved leave in this month.
         plannedManDays:
           type: number
           format: double
@@ -2528,7 +2536,7 @@ components:
         capacityManDays:
           type: number
           format: double
-          description: The person's monthly capacity.
+          description: The person's monthly capacity before leave.
         months:
           type: array
           items:
@@ -2536,13 +2544,22 @@ components:
 
     PersonWorkloadMonth:
       type: object
-      required: [month, workingDays, plannedManDays, projects, tasks]
+      required: [month, workingDays, leaveDays, capacityManDays, plannedManDays, projects, tasks]
       properties:
         month:
           type: string
           description: YYYY-MM
         workingDays:
           type: integer
+        leaveDays:
+          type: integer
+          description: Mon–Fri days of approved leave in this month.
+        capacityManDays:
+          type: number
+          format: double
+          description: >
+            Capacity for this month after approved leave: monthly capacity ×
+            (working days − leave days) ÷ working days.
         plannedManDays:
           type: number
           format: double

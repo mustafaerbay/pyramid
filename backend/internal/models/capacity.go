@@ -83,3 +83,36 @@ func SpreadManDays(manDays float64, start, due *time.Time, m time.Time) float64 
 	}
 	return manDays * float64(weekdaysBetween(from, to)) / float64(total)
 }
+
+// DateRange is an inclusive [From, To] span of calendar days.
+type DateRange struct{ From, To time.Time }
+
+// LeaveDaysInMonth counts the Mon–Fri days of the month containing m that
+// fall in at least one of ranges (overlapping ranges count a day once).
+func LeaveDaysInMonth(ranges []DateRange, m time.Time) int {
+	first := MonthStart(m)
+	last := first.AddDate(0, 1, -1)
+	n := 0
+	for day := first; !day.After(last); day = day.AddDate(0, 0, 1) {
+		if !isWeekday(day) {
+			continue
+		}
+		for _, r := range ranges {
+			if !day.Before(dateOnly(r.From)) && !day.After(dateOnly(r.To)) {
+				n++
+				break
+			}
+		}
+	}
+	return n
+}
+
+// MonthCapacity is a person's capacity for one month after leave: the
+// monthly capacity scaled by the share of working days they are not on
+// leave. Never negative; 0 when the month has no working days.
+func MonthCapacity(capacity float64, workingDays, leaveDays int) float64 {
+	if workingDays <= 0 || leaveDays >= workingDays {
+		return 0
+	}
+	return capacity * float64(workingDays-leaveDays) / float64(workingDays)
+}

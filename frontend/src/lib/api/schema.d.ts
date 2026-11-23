@@ -572,7 +572,7 @@ export interface components {
             readonly monthManDays?: number;
             /**
              * Format: double
-             * @description monthManDays ÷ monthlyCapacityManDays × 100 for the current month. Can exceed 100 when over-planned. Computed server-side; returned by list and get.
+             * @description monthManDays ÷ this month's capacity × 100, where this month's capacity is monthlyCapacityManDays reduced by approved leave days. Can exceed 100 when over-planned. Computed server-side; returned by list and get.
              */
             readonly workloadPct?: number;
             /** Format: date-time */
@@ -1075,7 +1075,7 @@ export interface components {
             workingDays: number;
             /**
              * Format: double
-             * @description Sum of monthlyCapacityManDays over active people.
+             * @description Sum of the people's capacity for this month (active and on-leave people), after taking out their approved leave days.
              */
             capacityManDays: number;
             /**
@@ -1089,8 +1089,13 @@ export interface components {
         PersonCapacity: {
             /** Format: uuid */
             personId: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description monthlyCapacityManDays × (working days − leave days) ÷ working days.
+             */
             capacityManDays: number;
+            /** @description Mon–Fri days of approved leave in this month. */
+            leaveDays: number;
             /** Format: double */
             plannedManDays: number;
         };
@@ -1106,7 +1111,7 @@ export interface components {
             year: number;
             /**
              * Format: double
-             * @description The person's monthly capacity.
+             * @description The person's monthly capacity before leave.
              */
             capacityManDays: number;
             months: components["schemas"]["PersonWorkloadMonth"][];
@@ -1115,6 +1120,13 @@ export interface components {
             /** @description YYYY-MM */
             month: string;
             workingDays: number;
+            /** @description Mon–Fri days of approved leave in this month. */
+            leaveDays: number;
+            /**
+             * Format: double
+             * @description Capacity for this month after approved leave: monthly capacity × (working days − leave days) ÷ working days.
+             */
+            capacityManDays: number;
             /** Format: double */
             plannedManDays: number;
             projects: components["schemas"]["ProjectLoad"][];
