@@ -10,7 +10,7 @@ Notes say what was built where it is simpler than ADO.
       sprints; backlog, board and sprints filter by team
 - [x] **Per-project permissions** — restricted projects: only their members can
       change them; members can be read-only on a project
-- [ ] **Process templates** — save a project's process (workflow, types, fields,
+- [x] **Process templates** — save a project's process (workflow, types, fields,
       rules, board settings) and apply it to other projects; copy from a project
 - [x] **Work item rules** — per state: fields that must be filled; default
       values for new items; read-only fields

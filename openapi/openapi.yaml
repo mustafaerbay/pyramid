@@ -1258,6 +1258,71 @@ paths:
                 $ref: "#/components/schemas/SprintReport"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/process-templates:
+    get:
+      operationId: listProcessTemplates
+      tags: [projects]
+      summary: Saved processes
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessTemplateList"
+    post:
+      operationId: createProcessTemplate
+      tags: [projects]
+      summary: Save a project's process as a template (managers and admins)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessTemplateCreate"
+      responses:
+        "201":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/process-templates/{id}:
+    delete:
+      operationId: deleteProcessTemplate
+      tags: [projects]
+      summary: Delete a template (managers and admins)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/projects/{id}/apply-process:
+    post:
+      operationId: applyProcess
+      tags: [projects]
+      summary: Give the project a template's (or another project's) process
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyProcess"
+      responses:
+        "200":
+          description: The project with its new process
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /api/v1/project-teams:
     get:
       operationId: listProjectTeams
@@ -4148,6 +4213,79 @@ components:
           description: Project team members and anyone with work in the sprint.
           items:
             $ref: "#/components/schemas/SprintCapacity"
+
+    Process:
+      type: object
+      required: [workflow, workItemTypes, customFields, rules, boardSettings]
+      properties:
+        workflow:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowState"
+        workItemTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkItemTypeDef"
+        customFields:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomField"
+        rules:
+          $ref: "#/components/schemas/WorkItemRules"
+        boardSettings:
+          $ref: "#/components/schemas/BoardSettings"
+
+    ProcessTemplate:
+      type: object
+      required: [id, name, description, process, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        process:
+          $ref: "#/components/schemas/Process"
+        createdAt:
+          type: string
+          format: date-time
+
+    ProcessTemplateCreate:
+      type: object
+      required: [name, fromProjectId]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+        fromProjectId:
+          type: string
+          format: uuid
+
+    ProcessTemplateList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessTemplate"
+
+    ApplyProcess:
+      type: object
+      description: Give exactly one of templateId and fromProjectId.
+      properties:
+        templateId:
+          type: string
+          format: uuid
+        fromProjectId:
+          type: string
+          format: uuid
 
     ProjectTeam:
       type: object

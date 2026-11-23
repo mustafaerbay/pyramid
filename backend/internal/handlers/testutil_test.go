@@ -353,6 +353,15 @@ CREATE TABLE project_team_members (
 	PRIMARY KEY (team_id, person_id)
 );
 
+CREATE TABLE process_templates (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	name TEXT NOT NULL,
+	description TEXT,
+	process TEXT NOT NULL,
+	created_by TEXT,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_labels (
 	task_id TEXT NOT NULL,
 	label_id TEXT NOT NULL,

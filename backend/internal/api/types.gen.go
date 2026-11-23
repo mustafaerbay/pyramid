@@ -780,6 +780,12 @@ func (e WorkItemTypeColor) Valid() bool {
 	}
 }
 
+// ApplyProcess Give exactly one of templateId and fromProjectId.
+type ApplyProcess struct {
+	FromProjectId *openapi_types.UUID `json:"fromProjectId,omitempty"`
+	TemplateId    *openapi_types.UUID `json:"templateId,omitempty"`
+}
+
 // Area defines model for Area.
 type Area struct {
 	Id openapi_types.UUID `json:"id"`
@@ -1312,6 +1318,38 @@ type PersonWorkloadTask struct {
 	Status       TaskStatus          `json:"status"`
 	TaskId       openapi_types.UUID  `json:"taskId"`
 	Title        string              `json:"title"`
+}
+
+// Process defines model for Process.
+type Process struct {
+	BoardSettings BoardSettings `json:"boardSettings"`
+	CustomFields  []CustomField `json:"customFields"`
+
+	// Rules Field names are custom field keys or the built-ins assignees, dueDate, startDate, storyPoints, manDays, description, area, sprint, tags.
+	Rules         WorkItemRules     `json:"rules"`
+	WorkItemTypes []WorkItemTypeDef `json:"workItemTypes"`
+	Workflow      []WorkflowState   `json:"workflow"`
+}
+
+// ProcessTemplate defines model for ProcessTemplate.
+type ProcessTemplate struct {
+	CreatedAt   time.Time          `json:"createdAt"`
+	Description *string            `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        string             `json:"name"`
+	Process     Process            `json:"process"`
+}
+
+// ProcessTemplateCreate defines model for ProcessTemplateCreate.
+type ProcessTemplateCreate struct {
+	Description   *string            `json:"description,omitempty"`
+	FromProjectId openapi_types.UUID `json:"fromProjectId"`
+	Name          string             `json:"name"`
+}
+
+// ProcessTemplateList defines model for ProcessTemplateList.
+type ProcessTemplateList struct {
+	Data []ProcessTemplate `json:"data"`
 }
 
 // Project defines model for Project.
@@ -2388,6 +2426,9 @@ type CreatePersonJSONRequestBody = PersonCreate
 // UpdatePersonJSONRequestBody defines body for UpdatePerson for application/json ContentType.
 type UpdatePersonJSONRequestBody = PersonUpdate
 
+// CreateProcessTemplateJSONRequestBody defines body for CreateProcessTemplate for application/json ContentType.
+type CreateProcessTemplateJSONRequestBody = ProcessTemplateCreate
+
 // CreateProjectKickoffJSONRequestBody defines body for CreateProjectKickoff for application/json ContentType.
 type CreateProjectKickoffJSONRequestBody = ProjectKickoffCreate
 
@@ -2411,6 +2452,9 @@ type CreateProjectJSONRequestBody = ProjectCreate
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = ProjectUpdate
+
+// ApplyProcessJSONRequestBody defines body for ApplyProcess for application/json ContentType.
+type ApplyProcessJSONRequestBody = ApplyProcess
 
 // CreateSavedQueryJSONRequestBody defines body for CreateSavedQuery for application/json ContentType.
 type CreateSavedQueryJSONRequestBody = SavedQueryInput

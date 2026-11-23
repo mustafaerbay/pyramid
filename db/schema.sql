@@ -678,6 +678,17 @@ CREATE TABLE notifications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Saved processes (workflow, types, fields, rules, board) to reuse
+CREATE TABLE process_templates (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        TEXT NOT NULL,
+    description TEXT,
+    process     JSONB NOT NULL,
+    created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX idx_process_templates_name ON process_templates(lower(name));
+
 -- Saved work item queries (private to their owner, or shared)
 CREATE TABLE saved_queries (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),

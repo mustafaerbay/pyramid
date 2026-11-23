@@ -30,6 +30,7 @@
 	import TypesManager from '$lib/components/TypesManager.svelte';
 	import TeamsManager from '$lib/components/TeamsManager.svelte';
 	import RulesManager from '$lib/components/RulesManager.svelte';
+	import ProcessManager from '$lib/components/ProcessManager.svelte';
 	import { teamFilter } from '$lib/teams';
 	import { download } from '$lib/csv';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
@@ -325,6 +326,7 @@
 	let managingTypes = $state(false);
 	let managingTeams = $state(false);
 	let managingRules = $state(false);
+	let managingProcess = $state(false);
 	async function saveRules(rules: components['schemas']['WorkItemRules']): Promise<string | null> {
 		if (!project) return 'No project';
 		const { data, error: err } = await api.PATCH('/api/v1/projects/{id}', { params: { path: { id: project.id } }, body: { rules } });
@@ -1662,6 +1664,7 @@
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTypes = true)}>Types…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingTeams = true)}>Teams…</button>
 						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingRules = true)}>Rules…</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (managingProcess = true)}>Process…</button>
 					{/if}
 					{#if can('manager') && project}
 						<label class="flex items-center gap-1 text-xs text-slate-600" title="Only project members with write access (and managers) can change a restricted project">
@@ -2248,4 +2251,16 @@
 
 {#if managingRules && project}
 	<RulesManager rules={project.rules} states={project.workflow} fields={project.customFields} onSave={saveRules} onClose={() => (managingRules = false)} />
+{/if}
+
+{#if managingProcess && project}
+	<ProcessManager
+		{project}
+		onApplied={(p) => {
+			project = p;
+			flash('success', 'Process applied.');
+			loadTasks();
+		}}
+		onClose={() => (managingProcess = false)}
+	/>
 {/if}

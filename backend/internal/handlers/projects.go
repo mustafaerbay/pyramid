@@ -102,7 +102,12 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "invalid request body", Details: strptr(err.Error())})
 		return
 	}
+	h.updateProject(c, p, in)
+}
 
+// updateProject checks and saves a project change, answering the request.
+// PATCH /projects/{id} and applying a process template both use it.
+func (h *Handler) updateProject(c *gin.Context, p models.Project, in api.ProjectUpdate) {
 	if in.CustomFields != nil {
 		if err := models.ValidateFields(*in.CustomFields); err != nil {
 			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})

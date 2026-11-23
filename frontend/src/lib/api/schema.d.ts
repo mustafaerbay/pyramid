@@ -667,6 +667,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/process-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Saved processes */
+        get: operations["listProcessTemplates"];
+        put?: never;
+        /** Save a project's process as a template (managers and admins) */
+        post: operations["createProcessTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/process-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a template (managers and admins) */
+        delete: operations["deleteProcessTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/apply-process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give the project a template's (or another project's) process */
+        post: operations["applyProcess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/project-teams": {
         parameters: {
             query?: never;
@@ -2067,6 +2119,38 @@ export interface components {
             days: components["schemas"]["SprintDay"][];
             /** @description Project team members and anyone with work in the sprint. */
             capacity: components["schemas"]["SprintCapacity"][];
+        };
+        Process: {
+            workflow: components["schemas"]["WorkflowState"][];
+            workItemTypes: components["schemas"]["WorkItemTypeDef"][];
+            customFields: components["schemas"]["CustomField"][];
+            rules: components["schemas"]["WorkItemRules"];
+            boardSettings: components["schemas"]["BoardSettings"];
+        };
+        ProcessTemplate: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description: string | null;
+            process: components["schemas"]["Process"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ProcessTemplateCreate: {
+            name: string;
+            description?: string;
+            /** Format: uuid */
+            fromProjectId: string;
+        };
+        ProcessTemplateList: {
+            data: components["schemas"]["ProcessTemplate"][];
+        };
+        /** @description Give exactly one of templateId and fromProjectId. */
+        ApplyProcess: {
+            /** Format: uuid */
+            templateId?: string;
+            /** Format: uuid */
+            fromProjectId?: string;
         };
         ProjectTeam: {
             /** Format: uuid */
@@ -4113,6 +4197,99 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    listProcessTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessTemplateList"];
+                };
+            };
+        };
+    };
+    createProcessTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessTemplateCreate"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    deleteProcessTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    applyProcess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyProcess"];
+            };
+        };
+        responses: {
+            /** @description The project with its new process */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     listProjectTeams: {

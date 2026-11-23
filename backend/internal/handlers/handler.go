@@ -98,6 +98,11 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.PATCH("/queries/:id", h.UpdateSavedQuery)
 		v1.DELETE("/queries/:id", h.DeleteSavedQuery)
 
+		v1.GET("/process-templates", h.ListProcessTemplates)
+		v1.POST("/process-templates", manager, h.CreateProcessTemplate)
+		v1.DELETE("/process-templates/:id", manager, h.DeleteProcessTemplate)
+		v1.POST("/projects/:id/apply-process", h.ApplyProcess)
+
 		v1.GET("/project-teams", h.ListProjectTeams)
 		v1.POST("/project-teams", h.CreateProjectTeam)
 		v1.PATCH("/project-teams/:id", h.UpdateProjectTeam)
