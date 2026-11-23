@@ -18,6 +18,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
 	import MetricCard from '$lib/components/MetricCard.svelte';
+	import TagChips from '$lib/components/TagChips.svelte';
+	import { hasAllTags, tagColor } from '$lib/tags';
 	import { fitText, formatManDays, shortfalls } from '$lib/capacity';
 	import { badgeToneClass, healthDotClass as healthDotClassMap, type BadgeTone } from '$lib/badgeTones';
 	import { projectRoleLabel, projectRoleTone } from '$lib/projectRoles';
@@ -153,6 +155,11 @@
 
 	// '' = everyone, '__unassigned__' = the unassigned sentinel, else a personId.
 	let taskAssigneeFilter = $state('');
+	// Tasks must carry every selected tag.
+	let taskTagFilters = $state<string[]>([]);
+	function addTagFilter(tag: string) {
+		if (!taskTagFilters.some((t) => t.toLowerCase() === tag.toLowerCase())) taskTagFilters = [...taskTagFilters, tag];
+	}
 
 	let contributionsTotal = $state<number | null>(null);
 	let recentContributions = $state<Contribution[]>([]);
@@ -335,6 +342,13 @@
 	}
 	const projectManDays = $derived(manDaySums(tasks));
 
+	// Every tag used in this project, for the tag filter.
+	const projectTags = $derived(
+		[...new Map(tasks.flatMap((t) => t.tags).map((tag) => [tag.toLowerCase(), tag])).values()].sort((a, b) =>
+			a.localeCompare(b, undefined, { sensitivity: 'base' })
+		)
+	);
+
 	const taskGroups = $derived(
 		(() => {
 			const matchesFilters = (t: Task) => {
@@ -346,6 +360,7 @@
 					!t.assigneeIds.includes(taskAssigneeFilter)
 				)
 					return false;
+				if (!hasAllTags(t.tags, taskTagFilters)) return false;
 				return true;
 			};
 
@@ -1372,6 +1387,43 @@
 							<option value={person.id}>{person.name}</option>
 						{/each}
 					</select>
+					{#if projectTags.length > 0}
+						<select
+							class="input w-auto"
+							aria-label="Filter by tag"
+							value=""
+							onchange={(e) => {
+								if (e.currentTarget.value) addTagFilter(e.currentTarget.value);
+								e.currentTarget.value = '';
+							}}
+						>
+							<option value="">Filter by tag…</option>
+							{#each projectTags.filter((t) => !hasAllTags(taskTagFilters, [t])) as tag (tag)}
+								<option value={tag}>{tag}</option>
+							{/each}
+						</select>
+					{/if}
+					{#if taskTagFilters.length > 0}
+						<div class="flex flex-wrap items-center gap-1.5" aria-label="Selected tags">
+							{#each taskTagFilters as tag (tag)}
+								<button
+									type="button"
+									class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset {tagColor(tag)}"
+									aria-label="Remove tag filter {tag}"
+									onclick={() => (taskTagFilters = taskTagFilters.filter((t) => t !== tag))}
+								>
+									{tag} <span aria-hidden="true">×</span>
+								</button>
+							{/each}
+							<button
+								type="button"
+								class="px-1 text-xs text-slate-500 hover:text-slate-700 hover:underline"
+								onclick={() => (taskTagFilters = [])}
+							>
+								Clear tags
+							</button>
+						</div>
+					{/if}
 				</div>
 
 				<div class="space-y-4">
@@ -1407,6 +1459,9 @@
 												onclick={() => openEditTask(task)}
 											>
 												<span class="font-medium text-slate-800">{task.title}</span>
+												{#if task.tags.length}
+													<span class="mt-1 block"><TagChips tags={task.tags} /></span>
+												{/if}
 												<span class="mt-0.5 block text-xs text-slate-500">
 													{assigneesLabel(task.assigneeIds)}{task.manDays > 0 ? ` · ${formatManDays(task.manDays)} md` : ''}{task.dueDate ? ` · Due ${task.dueDate}` : ''}
 												</span>
@@ -1470,6 +1525,9 @@
 													>
 														{task.title}
 													</button>
+													{#if task.tags.length}
+														<div class="mt-1"><TagChips tags={task.tags} onSelect={addTagFilter} /></div>
+													{/if}
 												</td>
 												<td class="px-4 py-2.5 text-slate-600" title={assigneesLabel(task.assigneeIds)}>
 													<span class="line-clamp-1">{assigneesLabel(task.assigneeIds)}</span>

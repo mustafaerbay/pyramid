@@ -2,6 +2,7 @@
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import { formatManDays, splitEvenly } from '$lib/capacity';
+	import TagInput from './TagInput.svelte';
 
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
@@ -43,6 +44,8 @@
 
 	let title = $state(initial?.title ?? '');
 	let description = $state(initial?.description ?? '');
+	// svelte-ignore state_referenced_locally
+	let tags = $state<string[]>([...(initial?.tags ?? [])]);
 	// svelte-ignore state_referenced_locally
 	let milestoneId = $state(initial?.milestoneId ?? initialMilestoneId ?? '');
 	// svelte-ignore state_referenced_locally
@@ -153,7 +156,8 @@
 						status,
 						priority,
 						startDate: startDate || undefined,
-						dueDate: dueDate || undefined
+						dueDate: dueDate || undefined,
+						tags
 					}
 				});
 				if (error) {
@@ -173,7 +177,8 @@
 						status,
 						priority,
 						startDate: startDate || undefined,
-						dueDate: dueDate || undefined
+						dueDate: dueDate || undefined,
+						tags
 					}
 				});
 				if (error) {
@@ -230,6 +235,11 @@
 				<span class="mb-1 block font-medium text-slate-700">Description</span>
 				<textarea class="input" rows="2" bind:value={description}></textarea>
 			</label>
+
+			<div class="block text-sm">
+				<span class="mb-1 block font-medium text-slate-700">Tags</span>
+				<TagInput bind:tags />
+			</div>
 
 			<label class="block text-sm">
 				<span class="mb-1 block font-medium text-slate-700">Milestone</span>

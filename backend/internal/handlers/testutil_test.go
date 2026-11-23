@@ -205,6 +205,19 @@ CREATE TABLE task_assignees (
 	PRIMARY KEY (task_id, person_id)
 );
 
+CREATE TABLE labels (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	name TEXT NOT NULL,
+	color TEXT NOT NULL DEFAULT '#888888',
+	project_id TEXT
+);
+
+CREATE TABLE task_labels (
+	task_id TEXT NOT NULL,
+	label_id TEXT NOT NULL,
+	PRIMARY KEY (task_id, label_id)
+);
+
 CREATE TABLE goals (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	title TEXT NOT NULL,

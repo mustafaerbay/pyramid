@@ -1042,6 +1042,11 @@ type ProjectUpdate struct {
 // SeniorityLevel defines model for SeniorityLevel.
 type SeniorityLevel string
 
+// TagList defines model for TagList.
+type TagList struct {
+	Data []string `json:"data"`
+}
+
 // Task defines model for Task.
 type Task struct {
 	// AssigneeIds People assigned to this task. Empty array means unassigned.
@@ -1070,8 +1075,11 @@ type Task struct {
 	// StartDate Planned start; man-days are spread over the working days from startDate to dueDate.
 	StartDate *openapi_types.Date `json:"startDate"`
 	Status    TaskStatus          `json:"status"`
-	Title     string              `json:"title"`
-	UpdatedAt time.Time           `json:"updatedAt"`
+
+	// Tags The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects.
+	Tags      []string  `json:"tags"`
+	Title     string    `json:"title"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // TaskAssignment defines model for TaskAssignment.
@@ -1097,7 +1105,10 @@ type TaskCreate struct {
 	ProjectId       openapi_types.UUID  `json:"projectId"`
 	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
 	Status          *TaskStatus         `json:"status,omitempty"`
-	Title           string              `json:"title"`
+
+	// Tags Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
+	Tags  *[]string `json:"tags,omitempty"`
+	Title string    `json:"title"`
 }
 
 // TaskList defines model for TaskList.
@@ -1126,7 +1137,10 @@ type TaskUpdate struct {
 	Priority        *TaskPriority       `json:"priority,omitempty"`
 	StartDate       *openapi_types.Date `json:"startDate,omitempty"`
 	Status          *TaskStatus         `json:"status,omitempty"`
-	Title           *string             `json:"title,omitempty"`
+
+	// Tags Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
+	Tags  *[]string `json:"tags,omitempty"`
+	Title *string   `json:"title,omitempty"`
 }
 
 // Version defines model for Version.
@@ -1304,6 +1318,9 @@ type ListTasksParams struct {
 	// AssigneeId Only tasks that have this person among their assignees.
 	AssigneeId *openapi_types.UUID `form:"assigneeId,omitempty" json:"assigneeId,omitempty"`
 	Status     *TaskStatus         `form:"status,omitempty" json:"status,omitempty"`
+
+	// Tag Only tasks that carry this tag (ignoring case).
+	Tag *string `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
 // ListVersionsParams defines parameters for ListVersions.

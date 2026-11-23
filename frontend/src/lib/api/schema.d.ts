@@ -335,6 +335,26 @@ export interface paths {
         patch: operations["updateWeeklySummary"];
         trace?: never;
     };
+    "/api/v1/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tags
+         * @description Every tag used on at least one task, sorted alphabetically (case-insensitive). Feeds the tag suggestions in the task form.
+         */
+        get: operations["listTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tasks": {
         parameters: {
             query?: never;
@@ -1014,6 +1034,8 @@ export interface components {
             startDate?: string | null;
             /** Format: date */
             dueDate?: string | null;
+            /** @description The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects. */
+            tags: string[];
             /** Format: date-time */
             completedAt?: string | null;
             /** Format: date-time */
@@ -1040,6 +1062,8 @@ export interface components {
             startDate?: string;
             /** Format: date */
             dueDate?: string;
+            /** @description Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling. */
+            tags?: string[];
         };
         TaskUpdate: {
             /** Format: uuid */
@@ -1058,6 +1082,11 @@ export interface components {
             startDate?: string;
             /** Format: date */
             dueDate?: string;
+            /** @description Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling. */
+            tags?: string[];
+        };
+        TagList: {
+            data: string[];
         };
         TaskAssignment: {
             /** Format: uuid */
@@ -2308,6 +2337,27 @@ export interface operations {
             default: components["responses"]["DefaultError"];
         };
     };
+    listTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tag names */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagList"];
+                };
+            };
+            default: components["responses"]["DefaultError"];
+        };
+    };
     listTasks: {
         parameters: {
             query?: {
@@ -2318,6 +2368,8 @@ export interface operations {
                 /** @description Only tasks that have this person among their assignees. */
                 assigneeId?: string;
                 status?: components["schemas"]["TaskStatus"];
+                /** @description Only tasks that carry this tag (ignoring case). */
+                tag?: string;
             };
             header?: never;
             path?: never;

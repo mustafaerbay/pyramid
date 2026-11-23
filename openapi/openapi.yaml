@@ -812,6 +812,21 @@ paths:
         default:
           $ref: "#/components/responses/DefaultError"
 
+  /api/v1/tags:
+    get:
+      operationId: listTags
+      tags: [tasks]
+      summary: List tags
+      description: Every tag used on at least one task, sorted alphabetically (case-insensitive). Feeds the tag suggestions in the task form.
+      responses:
+        "200":
+          description: Tag names
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagList"
+        default:
+          $ref: "#/components/responses/DefaultError"
   /api/v1/tasks:
     get:
       operationId: listTasks
@@ -848,6 +863,12 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/TaskStatus"
+        - name: tag
+          in: query
+          required: false
+          description: Only tasks that carry this tag (ignoring case).
+          schema:
+            type: string
       responses:
         "200":
           description: A page of tasks
@@ -2297,7 +2318,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, number, title, status, priority, assigneeIds, assignments, manDays, createdAt, updatedAt]
+      required: [id, projectId, number, title, status, priority, assigneeIds, assignments, manDays, tags, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -2353,6 +2374,11 @@ components:
           type: string
           format: date
           nullable: true
+        tags:
+          type: array
+          description: The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects.
+          items:
+            type: string
         completedAt:
           type: string
           format: date-time
@@ -2407,6 +2433,17 @@ components:
         dueDate:
           type: string
           format: date
+        tags:
+          type: array
+          description: >
+            Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates
+            (ignoring case) are dropped; at most 20 tags. A tag that
+            matches an existing one ignoring case reuses its spelling.
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
 
     TaskUpdate:
       type: object
@@ -2450,6 +2487,26 @@ components:
         dueDate:
           type: string
           format: date
+        tags:
+          type: array
+          description: >
+            Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates
+            (ignoring case) are dropped; at most 20 tags. A tag that
+            matches an existing one ignoring case reuses its spelling.
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+
+    TagList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            type: string
 
     TaskAssignment:
       type: object

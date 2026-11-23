@@ -48,6 +48,9 @@ type Task struct {
 	// AvailableDays is each assignee's working days in [StartDate, DueDate]
 	// outside approved leave (nil without both dates). Filled by the handler.
 	AvailableDays map[uuid.UUID]*int `gorm:"-"`
+	// Tags are the task's labels (labels/task_labels tables), sorted.
+	// Filled by the handler; ToAPI turns nil into [].
+	Tags []string `gorm:"-"`
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -63,6 +66,25 @@ type TaskAssignee struct {
 }
 
 func (TaskAssignee) TableName() string { return "task_assignees" }
+
+// Label is a tag in the labels table. Tasks only use global labels
+// (ProjectID nil), shared by every project.
+type Label struct {
+	ID        uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Name      string     `gorm:"not null"`
+	Color     string     `gorm:"not null;default:#888888"`
+	ProjectID *uuid.UUID `gorm:"type:uuid"`
+}
+
+func (Label) TableName() string { return "labels" }
+
+// TaskLabel links a task to a label.
+type TaskLabel struct {
+	TaskID  uuid.UUID `gorm:"type:uuid;primaryKey"`
+	LabelID uuid.UUID `gorm:"type:uuid;primaryKey"`
+}
+
+func (TaskLabel) TableName() string { return "task_labels" }
 
 // ToAPI converts the persistence model into the generated API DTO. The
 // caller must have already populated t.AssigneeIDs (see the field comment).
@@ -89,8 +111,12 @@ func (t Task) ToAPI() api.Task {
 		ManDays:         total,
 		EstimateManDays: t.EstimateManDays,
 		MilestoneId:     t.MilestoneID,
+		Tags:            t.Tags,
 		CreatedAt:       t.CreatedAt,
 		UpdatedAt:       t.UpdatedAt,
+	}
+	if out.Tags == nil {
+		out.Tags = []string{}
 	}
 	if total == 0 && t.EstimateManDays != nil {
 		out.ManDays = *t.EstimateManDays

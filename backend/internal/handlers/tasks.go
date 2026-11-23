@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -38,6 +39,12 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	if s := c.Query("status"); s != "" {
 		q = q.Where("status = ?", s)
 	}
+	if tag := strings.TrimSpace(c.Query("tag")); tag != "" {
+		q = q.Where("id IN (?)", h.db.Table("task_labels").
+			Select("task_labels.task_id").
+			Joins("JOIN labels ON labels.id = task_labels.label_id").
+			Where("LOWER(labels.name) = LOWER(?)", tag))
+	}
 
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
@@ -62,6 +69,10 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	ptrs := make([]*models.Task, len(tasks))
 	for i := range tasks {
 		ptrs[i] = &tasks[i]
+	}
+	if err := h.attachTags(ptrs...); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load tags", Details: strptr(err.Error())})
+		return
 	}
 	if err := h.attachAvailability(ptrs...); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
@@ -193,6 +204,14 @@ func (h *Handler) CreateTask(c *gin.Context) {
 			return
 		}
 	}
+	var tags []string
+	if in.Tags != nil {
+		var err error
+		if tags, err = normalizeTags(*in.Tags); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 
 	// Per-project sequential number (PYR-42 style), assigned here since it
 	// needs a DB read the model constructor shouldn't own.
@@ -223,6 +242,11 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		}
 	}
 
+	if err := h.replaceTags(&t, tags); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to tag task", Details: strptr(err.Error())})
+		return
+	}
+
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -243,6 +267,10 @@ func (h *Handler) GetTask(c *gin.Context) {
 	}
 	if err := h.attachAssigneesOne(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task assignees", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.attachTags(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load tags", Details: strptr(err.Error())})
 		return
 	}
 	if err := h.attachAvailability(&t); err != nil {
@@ -296,6 +324,14 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 			return
 		}
 	}
+	var tags []string
+	if in.Tags != nil {
+		var err error
+		if tags, err = normalizeTags(*in.Tags); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+			return
+		}
+	}
 	if err := h.db.Save(&t).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task", Details: strptr(err.Error())})
 		return
@@ -318,6 +354,16 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		}
 	} else if err := h.attachAssigneesOne(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load task assignees", Details: strptr(err.Error())})
+		return
+	}
+	// tags: present (even empty) replaces the set, absent leaves it alone.
+	if in.Tags != nil {
+		if err := h.replaceTags(&t, tags); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update tags", Details: strptr(err.Error())})
+			return
+		}
+	} else if err := h.attachTags(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load tags", Details: strptr(err.Error())})
 		return
 	}
 	if err := h.attachAvailability(&t); err != nil {
