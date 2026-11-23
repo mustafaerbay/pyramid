@@ -17,7 +17,7 @@ api.use({
 		if (response.status !== 401 || typeof window === 'undefined') return;
 		const path = new URL(request.url).pathname;
 		if (path.endsWith('/auth/login') || path.endsWith('/auth/me')) return;
-		if (window.location.pathname === '/login') return;
+		if (['/login', '/forgot', '/reset'].includes(window.location.pathname)) return;
 		const next = window.location.pathname + window.location.search;
 		window.location.href = `/login?next=${encodeURIComponent(next)}`;
 	}

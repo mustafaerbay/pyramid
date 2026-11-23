@@ -75,6 +75,57 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /api/v1/auth/options:
+    get:
+      operationId: getAuthOptions
+      tags: [auth]
+      summary: What the sign-in page can offer
+      security: []
+      responses:
+        "200":
+          description: Options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthOptions"
+  /api/v1/auth/forgot:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Email a one-time reset link (always answers the same)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPassword"
+      responses:
+        "204":
+          description: If the email has an account and email is on, a link was sent
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/reset:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Set a new password with a reset link's token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPassword"
+      responses:
+        "204":
+          description: Password set; sign in with it
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /api/v1/auth/logout:
     post:
       operationId: logout
@@ -3541,6 +3592,31 @@ components:
         admin: everything, including accounts. manager: everything but
         accounts. member: can't change people or approve leave. viewer:
         read-only.
+
+    AuthOptions:
+      type: object
+      required: [emailReset]
+      properties:
+        emailReset:
+          type: boolean
+          description: Whether "forgot password" can email a link (SMTP is set up).
+
+    ForgotPassword:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+    ResetPassword:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
 
     LoginRequest:
       type: object

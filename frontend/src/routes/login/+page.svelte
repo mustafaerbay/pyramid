@@ -44,6 +44,6 @@
 			<input class="input" type="password" autocomplete="current-password" required bind:value={password} />
 		</label>
 		<button type="submit" class="btn-primary w-full" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
-		<p class="text-center text-xs text-slate-500">Forgot your password? Ask an admin to set a new one.</p>
+		<p class="text-center text-xs text-slate-500"><a href="/forgot" class="hover:underline">Forgot your password?</a></p>
 	</form>
 </div>

@@ -779,6 +779,12 @@ type AuthMe struct {
 	User   User   `json:"user"`
 }
 
+// AuthOptions defines model for AuthOptions.
+type AuthOptions struct {
+	// EmailReset Whether "forgot password" can email a link (SMTP is set up).
+	EmailReset bool `json:"emailReset"`
+}
+
 // BoardSettings defines model for BoardSettings.
 type BoardSettings struct {
 	// CardColor Colour the edge of each card by this field.
@@ -906,6 +912,11 @@ type FlowItem struct {
 
 	// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
 	Type TaskType `json:"type"`
+}
+
+// ForgotPassword defines model for ForgotPassword.
+type ForgotPassword struct {
+	Email string `json:"email"`
 }
 
 // Goal defines model for Goal.
@@ -1514,6 +1525,12 @@ type QueryResult struct {
 
 	// Truncated True when more than 500 items matched; only the first 500 are returned.
 	Truncated bool `json:"truncated"`
+}
+
+// ResetPassword defines model for ResetPassword.
+type ResetPassword struct {
+	NewPassword string `json:"newPassword"`
+	Token       string `json:"token"`
 }
 
 // SavedQuery defines model for SavedQuery.
@@ -2201,11 +2218,17 @@ type CreateAreaJSONRequestBody = AreaCreate
 // UpdateAreaJSONRequestBody defines body for UpdateArea for application/json ContentType.
 type UpdateAreaJSONRequestBody = AreaUpdate
 
+// ForgotPasswordJSONRequestBody defines body for ForgotPassword for application/json ContentType.
+type ForgotPasswordJSONRequestBody = ForgotPassword
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = PasswordChange
+
+// ResetPasswordJSONRequestBody defines body for ResetPassword for application/json ContentType.
+type ResetPasswordJSONRequestBody = ResetPassword
 
 // CreateContributionJSONRequestBody defines body for CreateContribution for application/json ContentType.
 type CreateContributionJSONRequestBody = ContributionCreate

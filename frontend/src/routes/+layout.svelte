@@ -22,7 +22,8 @@
 	const navItems = $derived(can('admin') ? [...baseNav, { href: '/users', label: 'Accounts' }] : baseNav);
 
 	// Every page but /login needs a signed-in account.
-	const onLogin = $derived(page.url.pathname === '/login');
+	// Pages that work signed out.
+	const onLogin = $derived(['/login', '/forgot', '/reset'].includes(page.url.pathname));
 	$effect(() => {
 		if (onLogin || session.checked) return;
 		loadMe().then((me) => {
@@ -59,7 +60,7 @@
 	const currentLabel = $derived(navItems.find((i) => isActive(i.href))?.label ?? '');
 </script>
 
-<svelte:head><title>{onLogin ? 'Sign in · Pyramid' : 'Pyramid'}</title></svelte:head>
+<svelte:head><title>{onLogin ? (page.url.pathname === '/login' ? 'Sign in · Pyramid' : 'Password · Pyramid') : 'Pyramid'}</title></svelte:head>
 
 {#if onLogin}
 	<div class="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">{@render children()}</div>

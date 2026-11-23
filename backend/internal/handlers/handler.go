@@ -29,8 +29,11 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 
 	r.GET("/health", h.GetHealth)
 
-	// Signing in is the one API call that needs no session.
+	// Signing in (and resetting a forgotten password) need no session.
 	r.POST("/api/v1/auth/login", h.Login)
+	r.GET("/api/v1/auth/options", h.GetAuthOptions)
+	r.POST("/api/v1/auth/forgot", h.ForgotPassword)
+	r.POST("/api/v1/auth/reset", h.ResetPassword)
 
 	v1 := r.Group("/api/v1", h.requireAuth(), h.denyViewerWrites())
 	manager := h.requireRole(api.SystemRoleManager)

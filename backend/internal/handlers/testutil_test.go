@@ -327,6 +327,14 @@ CREATE TABLE attachments (
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE password_resets (
+	token_hash TEXT PRIMARY KEY,
+	user_id TEXT NOT NULL,
+	expires_at DATETIME NOT NULL,
+	used_at DATETIME,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE task_labels (
 	task_id TEXT NOT NULL,
 	label_id TEXT NOT NULL,
