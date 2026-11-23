@@ -90,7 +90,6 @@
 			dueBefore
 		}) as Filters
 	);
-	const singleProject = $derived(projectIds.length === 1 ? projectIds[0] : null);
 	const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? 'Project';
 	const chart = $derived(groupResults(results, groupBy, { person: (id) => people[id] ?? 'Someone', project: projectName }));
 
@@ -108,18 +107,26 @@
 		});
 	});
 
-	// Sprints and areas only make sense inside one project.
+	// Sprints and areas of the picked projects (all projects when none are
+	// picked), named "Project · Sprint". Picks from dropped projects go.
 	$effect(() => {
-		const pid = singleProject;
-		if (!pid) {
-			sprints = [];
-			areas = [];
-			sprintIds = [];
-			areaIds = [];
-			return;
-		}
-		api.GET('/api/v1/sprints', { params: { query: { projectId: pid } } }).then((r) => (sprints = (r.data?.data ?? []).map((s) => ({ id: s.id, name: s.name }))));
-		api.GET('/api/v1/areas', { params: { query: { projectId: pid } } }).then((r) => (areas = r.data?.data ?? []));
+		const ids = projectIds.length ? projectIds : projects.map((p) => p.id);
+		if (ids.length === 0) return;
+		Promise.all(
+			ids.map((pid) =>
+				Promise.all([
+					api.GET('/api/v1/sprints', { params: { query: { projectId: pid } } }),
+					api.GET('/api/v1/areas', { params: { query: { projectId: pid } } })
+				]).then(([sp, ar]) => ({ pid, sp: sp.data?.data ?? [], ar: ar.data?.data ?? [] }))
+			)
+		).then((rows) => {
+			const many = ids.length > 1;
+			const pre = (pid: string) => (many ? `${projectName(pid)} · ` : '');
+			sprints = rows.flatMap((r) => r.sp.map((x) => ({ id: x.id, name: pre(r.pid) + x.name })));
+			areas = rows.flatMap((r) => r.ar.map((x) => ({ id: x.id, path: pre(r.pid) + x.path })));
+			sprintIds = sprintIds.filter((id) => sprints.some((x) => x.id === id));
+			areaIds = areaIds.filter((id) => areas.some((x) => x.id === id));
+		});
 	});
 
 	// Run whenever the filters change (debounced).
@@ -161,11 +168,11 @@
 		current = q;
 		saveName = q.name;
 		saveShared = q.shared;
-		// Sprint/area lists load after the project; set them once they're there.
+		// Sprint/area lists reload for the new projects; set them after.
 		setTimeout(() => {
 			sprintIds = [...(f.sprintIds ?? [])];
 			areaIds = [...(f.areaIds ?? [])];
-		}, 300);
+		}, 800);
 	}
 	function reset() {
 		projectIds = [];
@@ -238,8 +245,10 @@
 			<label class="mt-1 flex items-center gap-1.5 text-xs text-slate-600"><input type="checkbox" bind:checked={unassigned} /> Only unassigned</label>
 		</div>
 		<ChipSelect label="Tags" options={tags.map((t) => ({ value: t, label: t }))} bind:values={tagValues} />
-		{#if singleProject}
+		{#if sprints.length}
 			<ChipSelect label="Sprints" options={sprints.map((s) => ({ value: s.id, label: s.name }))} bind:values={sprintIds} />
+		{/if}
+		{#if areas.length}
 			<ChipSelect label="Areas" options={areas.map((a) => ({ value: a.id, label: a.path }))} bind:values={areaIds} />
 		{/if}
 		<input class="input" placeholder="Title contains…" aria-label="Title contains" bind:value={text} />
