@@ -52,7 +52,7 @@ Notes say what was built where it is simpler than ADO.
 
 ## 3. Other ADO areas
 
-- [ ] **Wiki** — Markdown pages per project with a page tree and history
+- [x] **Wiki** — Markdown pages per project with a page tree and history
 - [ ] **Test Plans** — test plans, suites and cases with steps; test runs with
       pass/fail per step; failing step → bug
 - [x] **Repos** — repositories linked to a project (GitHub / GitLab), with their

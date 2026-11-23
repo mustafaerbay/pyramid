@@ -521,6 +521,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wiki-pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A project's wiki pages (no bodies), in tree order */
+        get: operations["listWikiPages"];
+        put?: never;
+        /** Add a wiki page */
+        post: operations["createWikiPage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wiki-pages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One wiki page with its text */
+        get: operations["getWikiPage"];
+        put?: never;
+        post?: never;
+        /** Delete a page; its sub-pages move up to its parent */
+        delete: operations["deleteWikiPage"];
+        options?: never;
+        head?: never;
+        /** Change a page's title, text or place (the old title and text are kept in its history) */
+        patch: operations["updateWikiPage"];
+        trace?: never;
+    };
+    "/api/v1/wiki-pages/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Earlier versions of a page, newest first */
+        get: operations["listWikiRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -2710,6 +2764,60 @@ export interface components {
         ArtifactVersionList: {
             data: components["schemas"]["ArtifactVersion"][];
         };
+        WikiPage: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            parentId: string | null;
+            title: string;
+            /** @description Markdown; only when one page is asked for. */
+            body?: string;
+            position: number;
+            /** Format: uuid */
+            updatedBy?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        WikiPageInput: {
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            parentId?: string | null;
+            title: string;
+            body?: string;
+        };
+        WikiPageUpdate: {
+            title?: string;
+            body?: string;
+            /** Format: uuid */
+            parentId?: string | null;
+            position?: number;
+            /**
+             * Format: date-time
+             * @description The updatedAt you started editing from; a newer save answers 409.
+             */
+            baseUpdatedAt?: string;
+        };
+        WikiPageList: {
+            data: components["schemas"]["WikiPage"][];
+        };
+        WikiRevision: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            body: string;
+            /** Format: uuid */
+            authorId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        WikiRevisionList: {
+            data: components["schemas"]["WikiRevision"][];
+        };
         NotificationSettings: {
             /** @description Per notification type; a missing type gets both. */
             types: {
@@ -4445,6 +4553,157 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listWikiPages: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pages */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiPageList"];
+                };
+            };
+        };
+    };
+    createWikiPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WikiPageInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getWikiPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiPage"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteWikiPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateWikiPage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WikiPageUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description Someone else saved it since you opened it */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWikiRevisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiRevisionList"];
+                };
+            };
             404: components["responses"]["NotFound"];
         };
     };

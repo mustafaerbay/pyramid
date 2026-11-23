@@ -181,6 +181,27 @@ CREATE TABLE artifact_links (
 	PRIMARY KEY (package_id, artifact_version)
 );
 
+CREATE TABLE wiki_pages (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	project_id TEXT NOT NULL,
+	parent_id TEXT,
+	title TEXT NOT NULL,
+	body TEXT NOT NULL DEFAULT '',
+	position REAL NOT NULL DEFAULT 0,
+	updated_by TEXT,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE wiki_revisions (
+	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
+	page_id TEXT NOT NULL,
+	title TEXT NOT NULL,
+	body TEXT NOT NULL,
+	author_id TEXT,
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE api_tokens (
 	id TEXT PRIMARY KEY DEFAULT ` + idDefaultDDL + `,
 	user_id TEXT NOT NULL,

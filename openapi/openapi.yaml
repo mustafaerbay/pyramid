@@ -751,6 +751,116 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/wiki-pages:
+    get:
+      operationId: listWikiPages
+      tags: [wiki]
+      summary: A project's wiki pages (no bodies), in tree order
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Pages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WikiPageList"
+    post:
+      operationId: createWikiPage
+      tags: [wiki]
+      summary: Add a wiki page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WikiPageInput"
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WikiPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /api/v1/wiki-pages/{id}:
+    get:
+      operationId: getWikiPage
+      tags: [wiki]
+      summary: One wiki page with its text
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: The page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WikiPage"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateWikiPage
+      tags: [wiki]
+      summary: Change a page's title, text or place (the old title and text are kept in its history)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WikiPageUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WikiPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Someone else saved it since you opened it
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteWikiPage
+      tags: [wiki]
+      summary: Delete a page; its sub-pages move up to its parent
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/wiki-pages/{id}/revisions:
+    get:
+      operationId: listWikiRevisions
+      tags: [wiki]
+      summary: Earlier versions of a page, newest first
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Revisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WikiRevisionList"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -5265,6 +5375,115 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ArtifactVersion"
+
+    WikiPage:
+      type: object
+      required: [id, projectId, parentId, title, position, updatedAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        body:
+          type: string
+          description: Markdown; only when one page is asked for.
+        position:
+          type: number
+        updatedBy:
+          type: string
+          format: uuid
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    WikiPageInput:
+      type: object
+      required: [projectId, title]
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        body:
+          type: string
+          maxLength: 200000
+
+    WikiPageUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        body:
+          type: string
+          maxLength: 200000
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        position:
+          type: number
+        baseUpdatedAt:
+          type: string
+          format: date-time
+          description: The updatedAt you started editing from; a newer save answers 409.
+
+    WikiPageList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WikiPage"
+
+    WikiRevision:
+      type: object
+      required: [id, title, body, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        authorId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    WikiRevisionList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WikiRevision"
 
     NotificationSettings:
       type: object

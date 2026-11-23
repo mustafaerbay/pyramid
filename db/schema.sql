@@ -815,6 +815,28 @@ CREATE TABLE artifact_links (
     PRIMARY KEY (package_id, artifact_version)
 );
 
+-- Project wiki: Markdown pages in a tree; every save keeps the previous text as a revision
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    parent_id  UUID REFERENCES wiki_pages(id) ON DELETE SET NULL,
+    title      TEXT NOT NULL,
+    body       TEXT NOT NULL DEFAULT '',
+    position   DOUBLE PRECISION NOT NULL DEFAULT 0,
+    updated_by UUID REFERENCES people(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX wiki_pages_project ON wiki_pages(project_id);
+CREATE TABLE wiki_revisions (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    page_id    UUID NOT NULL REFERENCES wiki_pages(id) ON DELETE CASCADE,
+    title      TEXT NOT NULL,
+    body       TEXT NOT NULL,
+    author_id  UUID REFERENCES people(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX wiki_revisions_page ON wiki_revisions(page_id, created_at DESC);
+
 -- Personal access tokens (only a SHA-256 hash is kept; scope read or write)
 CREATE TABLE api_tokens (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

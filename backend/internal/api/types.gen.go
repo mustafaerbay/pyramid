@@ -3231,6 +3231,57 @@ type WeeklySummaryUpdate struct {
 	WeekOf  *openapi_types.Date `json:"weekOf,omitempty"`
 }
 
+// WikiPage defines model for WikiPage.
+type WikiPage struct {
+	// Body Markdown; only when one page is asked for.
+	Body      *string             `json:"body,omitempty"`
+	CreatedAt time.Time           `json:"createdAt"`
+	Id        openapi_types.UUID  `json:"id"`
+	ParentId  *openapi_types.UUID `json:"parentId"`
+	Position  float32             `json:"position"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	Title     string              `json:"title"`
+	UpdatedAt time.Time           `json:"updatedAt"`
+	UpdatedBy *openapi_types.UUID `json:"updatedBy"`
+}
+
+// WikiPageInput defines model for WikiPageInput.
+type WikiPageInput struct {
+	Body      *string             `json:"body,omitempty"`
+	ParentId  *openapi_types.UUID `json:"parentId"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+	Title     string              `json:"title"`
+}
+
+// WikiPageList defines model for WikiPageList.
+type WikiPageList struct {
+	Data []WikiPage `json:"data"`
+}
+
+// WikiPageUpdate defines model for WikiPageUpdate.
+type WikiPageUpdate struct {
+	// BaseUpdatedAt The updatedAt you started editing from; a newer save answers 409.
+	BaseUpdatedAt *time.Time          `json:"baseUpdatedAt,omitempty"`
+	Body          *string             `json:"body,omitempty"`
+	ParentId      *openapi_types.UUID `json:"parentId"`
+	Position      *float32            `json:"position,omitempty"`
+	Title         *string             `json:"title,omitempty"`
+}
+
+// WikiRevision defines model for WikiRevision.
+type WikiRevision struct {
+	AuthorId  *openapi_types.UUID `json:"authorId"`
+	Body      string              `json:"body"`
+	CreatedAt time.Time           `json:"createdAt"`
+	Id        openapi_types.UUID  `json:"id"`
+	Title     string              `json:"title"`
+}
+
+// WikiRevisionList defines model for WikiRevisionList.
+type WikiRevisionList struct {
+	Data []WikiRevision `json:"data"`
+}
+
 // WorkItemRules Field names are custom field keys or the built-ins assignees, dueDate, startDate, storyPoints, manDays, description, area, sprint, tags.
 type WorkItemRules struct {
 	// Defaults Values new items get when they don't say otherwise (priority, storyPoints or a custom field key).
@@ -3482,6 +3533,11 @@ type ListWeeklySummariesParams struct {
 	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
 }
 
+// ListWikiPagesParams defines parameters for ListWikiPages.
+type ListWikiPagesParams struct {
+	ProjectId openapi_types.UUID `form:"projectId" json:"projectId"`
+}
+
 // CreateAreaJSONRequestBody defines body for CreateArea for application/json ContentType.
 type CreateAreaJSONRequestBody = AreaCreate
 
@@ -3658,3 +3714,9 @@ type CreateWeeklySummaryJSONRequestBody = WeeklySummaryCreate
 
 // UpdateWeeklySummaryJSONRequestBody defines body for UpdateWeeklySummary for application/json ContentType.
 type UpdateWeeklySummaryJSONRequestBody = WeeklySummaryUpdate
+
+// CreateWikiPageJSONRequestBody defines body for CreateWikiPage for application/json ContentType.
+type CreateWikiPageJSONRequestBody = WikiPageInput
+
+// UpdateWikiPageJSONRequestBody defines body for UpdateWikiPage for application/json ContentType.
+type UpdateWikiPageJSONRequestBody = WikiPageUpdate
