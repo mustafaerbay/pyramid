@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api/client';
 	import { parseCsv } from '$lib/csv';
+	import { readXlsx } from '$lib/xlsx';
 	import { runLimited } from '$lib/bulk';
 	import { EXPORT_HEADER, importWaves, rowsToTasks, type ImportRow, type Lookups } from '$lib/taskCsv';
 
@@ -19,7 +20,14 @@
 			return;
 		}
 		fileName = file.name;
-		parsed = rowsToTasks(parseCsv(await file.text()), projectId, lookups);
+		let rows: string[][];
+		try {
+			rows = /\.xlsx$/i.test(file.name) ? (await readXlsx(new Uint8Array(await file.arrayBuffer()))).filter((r) => r.some((c) => c.trim())) : parseCsv(await file.text());
+		} catch (err) {
+			parsed = { ok: [], errors: [{ line: 0, message: (err as Error).message || 'Could not read the file.' }] };
+			return;
+		}
+		parsed = rowsToTasks(rows, projectId, lookups);
 	}
 
 	async function run() {
@@ -61,14 +69,14 @@
 <div class="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Import CSV">
 	<div class="max-h-[90vh] w-full overflow-y-auto rounded-t-xl bg-white p-5 shadow-xl sm:max-w-2xl sm:rounded-xl">
 		<div class="mb-1 flex items-center justify-between">
-			<h2 class="text-lg font-semibold">Import work items from CSV</h2>
+			<h2 class="text-lg font-semibold">Import work items from CSV or Excel</h2>
 			<button type="button" class="btn-ghost px-2" aria-label="Close" onclick={onClose}>✕</button>
 		</div>
 		<p class="mb-3 text-sm text-slate-500">
 			Needs a <b>Title</b> column. Also read: {EXPORT_HEADER.slice(3).join(', ')}. People by email or name, several split with
 			";". Parent as #number, the title of an existing item, or the title of another row in the file. A file exported from Pyramid imports as is.
 		</p>
-		<input type="file" accept=".csv,text/csv" class="block w-full text-sm" onchange={read} disabled={busy} />
+		<input type="file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="block w-full text-sm" onchange={read} disabled={busy} />
 
 		{#if parsed}
 			<div class="mt-4 space-y-2 text-sm">

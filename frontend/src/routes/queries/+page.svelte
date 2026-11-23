@@ -12,7 +12,8 @@
 	import QueryChart, { type ChartKind } from '$lib/components/QueryChart.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
 	import BulkBar from '$lib/components/BulkBar.svelte';
-	import { download } from '$lib/csv';
+	import { download, downloadBytes, parseCsv, XLSX_TYPE } from '$lib/csv';
+	import { writeXlsx } from '$lib/xlsx';
 	import { tasksToCsv } from '$lib/taskCsv';
 
 	type Task = components['schemas']['Task'];
@@ -70,10 +71,12 @@
 		else next.add(id);
 		selected = next;
 	}
-	function exportCsv() {
+	function exportCsv(xlsx = false) {
 		const rows = selectedTasks.length ? selectedTasks : results;
-		download(
-			`pyramid-${(current?.name ?? 'query').replace(/[^\w-]+/g, '-').toLowerCase()}.csv`,
+		const name = `pyramid-${(current?.name ?? 'query').replace(/[^\w-]+/g, '-').toLowerCase()}`;
+		const save = (text: string) =>
+			xlsx ? downloadBytes(`${name}.xlsx`, writeXlsx(parseCsv(text), 'Query'), XLSX_TYPE) : download(`${name}.csv`, text);
+		save(
 			tasksToCsv(rows, {
 				people: Object.entries(people).map(([id, name]) => ({ id, name, email: '' })),
 				tasks: results.map((t) => ({ id: t.id, number: t.number, title: t.title })),
@@ -344,7 +347,8 @@
 				<span class="flex items-center gap-2">
 					{#if truncated}<span class="text-xs text-amber-700">Showing the first 500</span>{/if}
 					{#if results.length}
-						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={exportCsv}>Export CSV{selected.size ? ` (${selected.size})` : ''}</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => exportCsv()}>Export CSV{selected.size ? ` (${selected.size})` : ''}</button>
+						<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => exportCsv(true)}>Excel</button>
 					{/if}
 				</span>
 			</div>

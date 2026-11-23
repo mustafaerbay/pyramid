@@ -59,3 +59,15 @@ export function download(filename: string, text: string) {
 	a.click();
 	setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Offers bytes (e.g. an .xlsx workbook) as a file download. */
+export function downloadBytes(filename: string, bytes: Uint8Array, type: string) {
+	const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type }));
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	a.click();
+	setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

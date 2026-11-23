@@ -35,7 +35,8 @@
 	import HooksManager from '$lib/components/HooksManager.svelte';
 	import { cloneBody, descendants, templateFields } from '$lib/clone';
 	import { teamFilter } from '$lib/teams';
-	import { download } from '$lib/csv';
+	import { download, downloadBytes, parseCsv, XLSX_TYPE } from '$lib/csv';
+	import { writeXlsx } from '$lib/xlsx';
 	import { tasksToCsv, type Lookups } from '$lib/taskCsv';
 	import { areaIdsUnder, areaLabel } from '$lib/areas';
 	import { TYPE_OPTIONS, childType, type WorkItemType } from '$lib/workItems';
@@ -389,6 +390,10 @@
 		areas,
 		customFields: project?.customFields ?? []
 	});
+	function exportXlsx() {
+		const csv = tasksToCsv(tasks.filter(matchesTaskFilters), { ...csvLookups, project: () => project?.name ?? '' });
+		downloadBytes(`${(project?.key ?? 'project').toLowerCase()}-items.xlsx`, writeXlsx(parseCsv(csv), project?.key ?? 'Items'), XLSX_TYPE);
+	}
 	function exportTasks() {
 		download(
 			`${(project?.key ?? 'project').toLowerCase()}-items.csv`,
@@ -1617,8 +1622,9 @@
 						<a href="/projects/{projectId}/backlog" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Backlog →</a>
 						<a href="/projects/{projectId}/analytics" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline">Analytics →</a>
 						<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={exportTasks}>Export CSV</button>
+						<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={exportXlsx}>Excel</button>
 						{#if can('member')}
-							<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={() => (importing = true)}>Import CSV</button>
+							<button type="button" class="ml-2 text-sm font-normal text-slate-500 hover:text-slate-800 hover:underline" onclick={() => (importing = true)}>Import CSV / Excel</button>
 						{/if}
 					</h2>
 					<p class="mt-0.5 text-sm text-slate-500">

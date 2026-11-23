@@ -36,7 +36,7 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Clone, move and templates** — copy an item (with children), move it to
       another project, item templates with pre-filled fields
 - [x] **Full-text search** — titles, descriptions and comments, from the header
-- [ ] **Excel** — .xlsx export and import next to CSV
+- [x] **Excel** — .xlsx export and import next to CSV
 
 ## 2. Integration and platform
 
