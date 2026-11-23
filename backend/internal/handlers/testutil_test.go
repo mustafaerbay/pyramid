@@ -362,6 +362,15 @@ CREATE TABLE process_templates (
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE sprint_capacity (
+	sprint_id TEXT NOT NULL,
+	person_id TEXT NOT NULL,
+	days_off INTEGER NOT NULL DEFAULT 0,
+	per_day REAL,
+	activity TEXT,
+	PRIMARY KEY (sprint_id, person_id)
+);
+
 CREATE TABLE task_labels (
 	task_id TEXT NOT NULL,
 	label_id TEXT NOT NULL,

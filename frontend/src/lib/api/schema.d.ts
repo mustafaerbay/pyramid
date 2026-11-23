@@ -650,6 +650,23 @@ export interface paths {
         patch: operations["updateSprint"];
         trace?: never;
     };
+    "/api/v1/sprints/{id}/capacity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the sprint's capacity settings (replaces them all) */
+        put: operations["setSprintCapacity"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sprints/{id}/report": {
         parameters: {
             query?: never;
@@ -2098,6 +2115,23 @@ export interface components {
             /** Format: double */
             doneManDays: number;
         };
+        /** @enum {string} */
+        SprintActivity: "development" | "testing" | "design" | "documentation" | "deployment" | "requirements";
+        SprintCapacitySetting: {
+            /** Format: uuid */
+            personId: string;
+            /** @description Working days off in this sprint besides approved leave. */
+            daysOff?: number;
+            /**
+             * Format: double
+             * @description Man-days a working day (null = from the person's monthly capacity).
+             */
+            perDay?: number | null;
+            activity?: components["schemas"]["SprintActivity"] | null;
+        };
+        SprintCapacitySettings: {
+            data: components["schemas"]["SprintCapacitySetting"][];
+        };
         SprintCapacity: {
             /** Format: uuid */
             personId: string;
@@ -2112,6 +2146,11 @@ export interface components {
              */
             plannedManDays: number;
             leaveDays: number;
+            /** @description Extra days off set for this sprint. */
+            daysOff: number;
+            /** Format: double */
+            perDay: number | null;
+            activity: components["schemas"]["SprintActivity"] | null;
         };
         SprintReport: {
             sprint: components["schemas"]["Sprint"];
@@ -4174,6 +4213,33 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    setSprintCapacity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SprintCapacitySettings"];
+            };
+        };
+        responses: {
+            /** @description The report with the new capacity */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SprintReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     getSprintReport: {

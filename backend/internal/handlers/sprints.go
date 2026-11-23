@@ -417,6 +417,17 @@ func (h *Handler) GetSprintReport(c *gin.Context) {
 			personIDs = append(personIDs, id)
 		}
 	}
+	var settings []sprintCapacityRow
+	h.db.Where("sprint_id = ?", s.ID).Find(&settings)
+	setting := map[uuid.UUID]sprintCapacityRow{}
+	for _, st := range settings {
+		setting[st.PersonID] = st
+		if !seen[st.PersonID] {
+			seen[st.PersonID] = true
+			personIDs = append(personIDs, st.PersonID)
+		}
+	}
+	workdays := models.Weekdays(s.StartDate, s.EndDate)
 	capacity := []api.SprintCapacity{}
 	if len(personIDs) > 0 {
 		var people []models.Person
@@ -431,8 +442,23 @@ func (h *Handler) GetSprintReport(c *gin.Context) {
 		}
 		for _, p := range people {
 			avail, leaveDays := models.SprintCapacity(p.Capacity(), s.StartDate, s.EndDate, leave[p.ID])
+			st := setting[p.ID]
+			days := workdays - leaveDays
+			left := max(days-st.DaysOff, 0)
+			switch {
+			case st.PerDay != nil:
+				avail = float64(left) * *st.PerDay
+			case days > 0:
+				avail = avail * float64(left) / float64(days)
+			}
+			var act *api.SprintActivity
+			if st.Activity != nil {
+				a := api.SprintActivity(*st.Activity)
+				act = &a
+			}
 			capacity = append(capacity, api.SprintCapacity{
 				PersonId: p.ID, AvailableManDays: avail, PlannedManDays: planned[p.ID], LeaveDays: leaveDays,
+				DaysOff: st.DaysOff, PerDay: st.PerDay, Activity: act,
 			})
 		}
 	}
@@ -443,4 +469,67 @@ func (h *Handler) GetSprintReport(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, api.SprintReport{Sprint: s.ToAPI(stats[s.ID]), Days: days, Capacity: capacity})
+}
+
+type sprintCapacityRow struct {
+	SprintID uuid.UUID `gorm:"type:uuid;primaryKey"`
+	PersonID uuid.UUID `gorm:"type:uuid;primaryKey"`
+	DaysOff  int
+	PerDay   *float64
+	Activity *string
+}
+
+func (sprintCapacityRow) TableName() string { return "sprint_capacity" }
+
+// SetSprintCapacity implements PUT /api/v1/sprints/{id}/capacity.
+func (h *Handler) SetSprintCapacity(c *gin.Context) {
+	s, ok := h.loadSprint(c)
+	if !ok || !h.canWriteProject(c, s.ProjectID) {
+		return
+	}
+	var in api.SprintCapacitySettings
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: "invalid request body"})
+		return
+	}
+	rows := make([]sprintCapacityRow, 0, len(in.Data))
+	for _, x := range in.Data {
+		r := sprintCapacityRow{SprintID: s.ID, PersonID: x.PersonId, PerDay: x.PerDay}
+		if x.DaysOff != nil {
+			r.DaysOff = *x.DaysOff
+		}
+		if r.DaysOff < 0 || r.DaysOff > 60 {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "days off must be 0–60"})
+			return
+		}
+		if r.PerDay != nil && (*r.PerDay < 0 || *r.PerDay > 1.5) {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "man-days a day must be 0–1.5"})
+			return
+		}
+		if x.Activity != nil {
+			if !x.Activity.Valid() {
+				c.JSON(http.StatusBadRequest, api.Error{Message: "unknown activity"})
+				return
+			}
+			a := string(*x.Activity)
+			r.Activity = &a
+		}
+		rows = append(rows, r)
+	}
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("sprint_id = ?", s.ID).Delete(&sprintCapacityRow{}).Error; err != nil {
+			return err
+		}
+		for _, r := range rows {
+			if err := tx.Create(&r).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save capacity", Details: strptr(err.Error())})
+		return
+	}
+	h.GetSprintReport(c)
 }

@@ -364,6 +364,16 @@ CREATE TABLE project_team_members (
 );
 ALTER TABLE sprints ADD FOREIGN KEY (team_id) REFERENCES project_teams(id) ON DELETE SET NULL;
 
+-- Per-sprint capacity settings: extra days off, man-days per day, activity
+CREATE TABLE sprint_capacity (
+    sprint_id  UUID NOT NULL REFERENCES sprints(id) ON DELETE CASCADE,
+    person_id  UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    days_off   INTEGER NOT NULL DEFAULT 0 CHECK (days_off >= 0 AND days_off <= 60),
+    per_day    NUMERIC(4,2) CHECK (per_day >= 0 AND per_day <= 1.5),
+    activity   TEXT,
+    PRIMARY KEY (sprint_id, person_id)
+);
+
 -- Area paths: a project's areas, "Web/Checkout" style
 CREATE TABLE areas (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -119,6 +119,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.PATCH("/sprints/:id", h.UpdateSprint)
 		v1.DELETE("/sprints/:id", h.DeleteSprint)
 		v1.GET("/sprints/:id/report", h.GetSprintReport)
+		v1.PUT("/sprints/:id/capacity", h.SetSprintCapacity)
 
 		v1.GET("/capacity", h.GetCapacity)
 		v1.GET("/people/:id/workload", h.GetPersonWorkload)

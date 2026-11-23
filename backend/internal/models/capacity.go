@@ -189,3 +189,6 @@ func SprintCapacity(capacity float64, start, end time.Time, leave []DateRange) (
 	}
 	return available, leaveDays
 }
+
+// Weekdays counts Mon–Fri days in [from, to].
+func Weekdays(from, to time.Time) int { return weekdaysBetween(dateOnly(from), dateOnly(to)) }

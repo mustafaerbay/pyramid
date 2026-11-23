@@ -1242,6 +1242,28 @@ paths:
           description: Deleted
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/sprints/{id}/capacity:
+    put:
+      operationId: setSprintCapacity
+      tags: [sprints]
+      summary: Set the sprint's capacity settings (replaces them all)
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SprintCapacitySettings"
+      responses:
+        "200":
+          description: The report with the new capacity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SprintReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /api/v1/sprints/{id}/report:
     get:
       operationId: getSprintReport
@@ -4179,9 +4201,46 @@ components:
           type: number
           format: double
 
+    SprintActivity:
+      type: string
+      enum: [development, testing, design, documentation, deployment, requirements]
+
+    SprintCapacitySetting:
+      type: object
+      required: [personId]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        daysOff:
+          type: integer
+          minimum: 0
+          maximum: 60
+          description: Working days off in this sprint besides approved leave.
+        perDay:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 1.5
+          description: Man-days a working day (null = from the person's monthly capacity).
+        activity:
+          allOf:
+            - $ref: "#/components/schemas/SprintActivity"
+          nullable: true
+
+    SprintCapacitySettings:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SprintCapacitySetting"
+
     SprintCapacity:
       type: object
-      required: [personId, availableManDays, plannedManDays, leaveDays]
+      required: [personId, availableManDays, plannedManDays, leaveDays, daysOff, perDay, activity]
       properties:
         personId:
           type: string
@@ -4196,6 +4255,17 @@ components:
           description: Their man-days on items in this sprint.
         leaveDays:
           type: integer
+        daysOff:
+          type: integer
+          description: Extra days off set for this sprint.
+        perDay:
+          type: number
+          format: double
+          nullable: true
+        activity:
+          allOf:
+            - $ref: "#/components/schemas/SprintActivity"
+          nullable: true
 
     SprintReport:
       type: object

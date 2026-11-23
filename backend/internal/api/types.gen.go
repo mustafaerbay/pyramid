@@ -570,6 +570,36 @@ func (e SeniorityLevel) Valid() bool {
 	}
 }
 
+// Defines values for SprintActivity.
+const (
+	SprintActivityDeployment    SprintActivity = "deployment"
+	SprintActivityDesign        SprintActivity = "design"
+	SprintActivityDevelopment   SprintActivity = "development"
+	SprintActivityDocumentation SprintActivity = "documentation"
+	SprintActivityRequirements  SprintActivity = "requirements"
+	SprintActivityTesting       SprintActivity = "testing"
+)
+
+// Valid indicates whether the value is a known member of the SprintActivity enum.
+func (e SprintActivity) Valid() bool {
+	switch e {
+	case SprintActivityDeployment:
+		return true
+	case SprintActivityDesign:
+		return true
+	case SprintActivityDevelopment:
+		return true
+	case SprintActivityDocumentation:
+		return true
+	case SprintActivityRequirements:
+		return true
+	case SprintActivityTesting:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SprintStatus.
 const (
 	SprintStatusActive    SprintStatus = "active"
@@ -1730,15 +1760,41 @@ type Sprint struct {
 	UpdatedAt time.Time           `json:"updatedAt"`
 }
 
+// SprintActivity defines model for SprintActivity.
+type SprintActivity string
+
 // SprintCapacity defines model for SprintCapacity.
 type SprintCapacity struct {
+	Activity *SprintActivity `json:"activity"`
+
 	// AvailableManDays Working days in the sprint outside approved leave, at the person's monthly capacity.
-	AvailableManDays float64            `json:"availableManDays"`
-	LeaveDays        int                `json:"leaveDays"`
-	PersonId         openapi_types.UUID `json:"personId"`
+	AvailableManDays float64 `json:"availableManDays"`
+
+	// DaysOff Extra days off set for this sprint.
+	DaysOff   int                `json:"daysOff"`
+	LeaveDays int                `json:"leaveDays"`
+	PerDay    *float64           `json:"perDay"`
+	PersonId  openapi_types.UUID `json:"personId"`
 
 	// PlannedManDays Their man-days on items in this sprint.
 	PlannedManDays float64 `json:"plannedManDays"`
+}
+
+// SprintCapacitySetting defines model for SprintCapacitySetting.
+type SprintCapacitySetting struct {
+	Activity *SprintActivity `json:"activity"`
+
+	// DaysOff Working days off in this sprint besides approved leave.
+	DaysOff *int `json:"daysOff,omitempty"`
+
+	// PerDay Man-days a working day (null = from the person's monthly capacity).
+	PerDay   *float64           `json:"perDay"`
+	PersonId openapi_types.UUID `json:"personId"`
+}
+
+// SprintCapacitySettings defines model for SprintCapacitySettings.
+type SprintCapacitySettings struct {
+	Data []SprintCapacitySetting `json:"data"`
 }
 
 // SprintCreate defines model for SprintCreate.
@@ -2470,6 +2526,9 @@ type CreateSprintJSONRequestBody = SprintCreate
 
 // UpdateSprintJSONRequestBody defines body for UpdateSprint for application/json ContentType.
 type UpdateSprintJSONRequestBody = SprintUpdate
+
+// SetSprintCapacityJSONRequestBody defines body for SetSprintCapacity for application/json ContentType.
+type SetSprintCapacityJSONRequestBody = SprintCapacitySettings
 
 // UpdateTaskCommentJSONRequestBody defines body for UpdateTaskComment for application/json ContentType.
 type UpdateTaskCommentJSONRequestBody = TaskCommentInput

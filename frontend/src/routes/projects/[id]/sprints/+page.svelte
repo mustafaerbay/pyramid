@@ -8,6 +8,7 @@
 	import BurndownChart from '$lib/components/BurndownChart.svelte';
 	import VelocityChart from '$lib/components/VelocityChart.svelte';
 	import TypeBadge from '$lib/components/TypeBadge.svelte';
+	import SprintTaskboard from '$lib/components/SprintTaskboard.svelte';
 
 	type Sprint = components['schemas']['Sprint'];
 	type SprintStatus = components['schemas']['SprintStatus'];
@@ -25,6 +26,48 @@
 	let metric = $state<Metric>('manDays');
 	let mode = $state<'burndown' | 'burnup'>('burndown');
 	let backlogFilter = $state('');
+	let workflow = $state<components['schemas']['WorkflowState'][]>([]);
+	async function moveState(t: Task, state: string) {
+		const { data, error } = await api.PATCH('/api/v1/tasks/{id}', { params: { path: { id: t.id } }, body: { state } });
+		if (error || !data) return flash('error', error?.message ?? 'Could not move it.');
+		tasks = tasks.map((x) => (x.id === data.id ? data : x));
+		loadReport();
+	}
+	// Per-sprint capacity settings, edited in place.
+	let capEdit = $state(false);
+	let capDraft = $state<Record<string, { daysOff: number; perDay: string; activity: string }>>({});
+	function startCapEdit() {
+		capDraft = Object.fromEntries(
+			(report?.capacity ?? []).map((c) => [c.personId, { daysOff: c.daysOff, perDay: c.perDay == null ? '' : String(c.perDay), activity: c.activity ?? '' }])
+		);
+		capEdit = true;
+	}
+	async function saveCap() {
+		if (!selected) return;
+		const data = Object.entries(capDraft).map(([personId, d]) => ({
+			personId,
+			daysOff: Number(d.daysOff) || 0,
+			perDay: d.perDay === '' ? null : Number(d.perDay),
+			activity: (d.activity || null) as components['schemas']['SprintActivity'] | null
+		}));
+		const res = await api.PUT('/api/v1/sprints/{id}/capacity', { params: { path: { id: selected.id } }, body: { data } });
+		if (res.error || !res.data) return flash('error', res.error?.message ?? 'Could not save capacity.');
+		report = res.data;
+		capEdit = false;
+	}
+	const ACTIVITIES = ['development', 'testing', 'design', 'documentation', 'deployment', 'requirements'];
+	const byActivity = $derived(
+		Object.entries(
+			(report?.capacity ?? []).reduce(
+				(a, c) => {
+					const k = c.activity ?? 'unset';
+					a[k] = (a[k] ?? 0) + c.availableManDays;
+					return a;
+				},
+				{} as Record<string, number>
+			)
+		)
+	);
 	let teams = $state<components['schemas']['ProjectTeam'][]>([]);
 	let teamFilter = $state('');
 	const shownSprints = $derived(teamFilter ? sprints.filter((s) => s.teamId === teamFilter) : sprints);
@@ -54,6 +97,7 @@
 			api.GET('/api/v1/people', { params: { query: { page: 1, pageSize: 100 } } })
 		]);
 		projectName = p.data?.name ?? '';
+		workflow = p.data?.workflow ?? [];
 		api.GET('/api/v1/project-teams', { params: { query: { projectId } } }).then((r) => (teams = r.data?.data ?? []));
 		sprints = s.data?.data ?? [];
 		tasks = t.data?.data ?? [];
@@ -267,7 +311,16 @@
 			</div>
 
 			<div class="rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
-				<h3 class="font-semibold">Capacity</h3>
+				<div class="flex items-center justify-between gap-2">
+					<h3 class="font-semibold">Capacity</h3>
+					{#if can('member') && report?.capacity.length}
+						{#if capEdit}
+							<span class="flex gap-1"><button type="button" class="btn-primary px-2 py-1 text-xs" onclick={saveCap}>Save</button><button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => (capEdit = false)}>Cancel</button></span>
+						{:else}
+							<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={startCapEdit}>Adjust</button>
+						{/if}
+					{/if}
+				</div>
 				<p class="mb-3 text-xs text-slate-500">Working days in the sprint, minus approved leave, against each person's planned man-days.</p>
 				{#if report && report.capacity.length > 0}
 					<ul class="space-y-2 text-sm">
@@ -283,16 +336,40 @@
 								<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
 									<div class="h-full rounded-full {over ? 'bg-red-500' : 'bg-indigo-500'}" style="width:{Math.min((c.plannedManDays / Math.max(c.availableManDays, 0.01)) * 100, 100)}%"></div>
 								</div>
+								{#if capEdit && capDraft[c.personId]}
+									<div class="mt-1 flex flex-wrap gap-2 text-xs">
+										<label class="flex items-center gap-1">Days off <input class="input w-16 py-0.5" type="number" min="0" max="60" bind:value={capDraft[c.personId].daysOff} /></label>
+										<label class="flex items-center gap-1">md/day <input class="input w-16 py-0.5" type="number" min="0" max="1.5" step="0.1" placeholder="auto" bind:value={capDraft[c.personId].perDay} /></label>
+										<select class="input w-auto py-0.5" aria-label="Activity" bind:value={capDraft[c.personId].activity}>
+											<option value="">Activity…</option>
+											{#each ACTIVITIES as a (a)}<option value={a}>{a}</option>{/each}
+										</select>
+									</div>
+								{:else if c.daysOff || c.perDay != null || c.activity}
+									<div class="mt-0.5 text-xs text-slate-500">
+										{[c.activity, c.daysOff ? `${c.daysOff}d off` : '', c.perDay != null ? `${c.perDay} md/day` : ''].filter(Boolean).join(' · ')}
+									</div>
+								{/if}
 							</li>
 						{/each}
 					</ul>
 					<p class="mt-3 border-t border-slate-100 pt-2 text-sm font-medium tabular-nums">
 						Team: {formatManDays(capTotals.planned)} / {formatManDays(capTotals.avail)} md
 					</p>
+					{#if byActivity.some(([k]) => k !== 'unset')}
+						<p class="mt-1 text-xs text-slate-500">
+							{byActivity.map(([k, v]) => `${k === 'unset' ? 'no activity' : k} ${formatManDays(v)} md`).join(' · ')}
+						</p>
+					{/if}
 				{:else}
 					<p class="text-sm text-slate-500">Add team members to the project or assign people to sprint items.</p>
 				{/if}
 			</div>
+		</div>
+
+		<div class="rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+			<h3 class="mb-3 font-semibold">Taskboard</h3>
+			<SprintTaskboard items={inSprint} {workflow} {people} onMove={moveState} />
 		</div>
 
 		<div class="grid gap-4 lg:grid-cols-2">

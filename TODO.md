@@ -17,7 +17,7 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Backlog levels and forecast** — Epics / Features / Stories / Tasks
       backlog views with rolled-up points, man-days and % done; forecast of the
       sprint each item lands in from recent velocity
-- [ ] **Sprint taskboard and sprint capacity** — stories as rows, their tasks
+- [x] **Sprint taskboard and sprint capacity** — stories as rows, their tasks
       across the states; per-sprint capacity overrides (days off, hours per day,
       activity) per person
 - [ ] **Board fine settings** — split columns (Doing / Done), definition of done
