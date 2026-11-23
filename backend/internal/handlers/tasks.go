@@ -79,6 +79,10 @@ func (h *Handler) ListTasks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
 		return
 	}
+	if err := h.attachRelated(ptrs...); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load links", Details: strptr(err.Error())})
+		return
+	}
 	if err := h.attachAvailability(ptrs...); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -230,6 +234,14 @@ func (h *Handler) CreateTask(c *gin.Context) {
 			return
 		}
 	}
+	var related []uuid.UUID
+	if in.RelatedIds != nil {
+		related = dedupeIDs(*in.RelatedIds)
+	}
+	if err := h.validateLinks(&t, related); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
 
 	// Per-project sequential number (PYR-42 style), assigned here since it
 	// needs a DB read the model constructor shouldn't own.
@@ -268,6 +280,10 @@ func (h *Handler) CreateTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save dependencies", Details: strptr(err.Error())})
 		return
 	}
+	if err := h.replaceRelated(&t, related); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save links", Details: strptr(err.Error())})
+		return
+	}
 	h.logTask(c, "created", t.ID, nil)
 	h.notifyTaskChange(c, nil, nil, t)
 
@@ -301,6 +317,10 @@ func (h *Handler) GetTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
 		return
 	}
+	if err := h.attachRelated(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load links", Details: strptr(err.Error())})
+		return
+	}
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -331,6 +351,10 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	}
 	if err := h.attachBlockers(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.attachRelated(&t); err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load links", Details: strptr(err.Error())})
 		return
 	}
 	before := taskSnapshot(t)
@@ -406,6 +430,20 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 			return
 		}
 	}
+	if _, ok := raw["duplicateOfId"]; ok {
+		t.DuplicateOfID = nil
+		if !isExplicitNull(raw, "duplicateOfId") {
+			t.DuplicateOfID = in.DuplicateOfId
+		}
+	}
+	var related []uuid.UUID
+	if in.RelatedIds != nil {
+		related = dedupeIDs(*in.RelatedIds)
+	}
+	if err := h.validateLinks(&t, related); err != nil {
+		c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
+		return
+	}
 	if err := h.db.Save(&t).Error; err != nil {
 		c.JSON(http.StatusBadRequest, api.Error{Message: "failed to update task", Details: strptr(err.Error())})
 		return
@@ -449,6 +487,12 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load dependencies", Details: strptr(err.Error())})
 		return
 	}
+	if in.RelatedIds != nil {
+		if err := h.replaceRelated(&t, related); err != nil {
+			c.JSON(http.StatusBadRequest, api.Error{Message: "failed to save links", Details: strptr(err.Error())})
+			return
+		}
+	}
 	if err := h.attachAvailability(&t); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to load leave", Details: strptr(err.Error())})
 		return
@@ -476,6 +520,10 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 	// Postgres cascades these; deleting explicitly keeps other databases
 	// (the SQLite tests) from leaving links to a task that's gone.
 	if err := h.db.Where("task_id = ? OR depends_on_id = ?", c.Param("id"), c.Param("id")).Delete(&models.TaskDependency{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to delete task", Details: strptr(err.Error())})
+		return
+	}
+	if err := h.db.Where("task_id = ? OR other_id = ?", c.Param("id"), c.Param("id")).Delete(&relatedPair{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, api.Error{Message: "failed to delete task", Details: strptr(err.Error())})
 		return
 	}

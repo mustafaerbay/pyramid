@@ -42,6 +42,10 @@ func taskSnapshot(t models.Task) map[string]any {
 	for _, pid := range t.AssigneeIDs {
 		assignments[pid.String()] = t.ManDays[pid]
 	}
+	related := make([]string, len(t.RelatedIDs))
+	for i, r := range t.RelatedIDs {
+		related[i] = r.String()
+	}
 	blockers := make([]string, len(t.BlockedByIDs))
 	for i, b := range t.BlockedByIDs {
 		blockers[i] = b.String()
@@ -68,6 +72,8 @@ func taskSnapshot(t models.Task) map[string]any {
 		"assignments":      assignments,
 		"tags":             tags,
 		"blockedByIds":     blockers,
+		"relatedIds":       related,
+		"duplicateOfId":    id(t.DuplicateOfID),
 	}
 }
 

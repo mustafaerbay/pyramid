@@ -26,7 +26,9 @@ const LABELS: Record<string, string> = {
 	completedManDays: 'Completed',
 	assignments: 'Assignees',
 	tags: 'Tags',
-	blockedByIds: 'Waiting on'
+	blockedByIds: 'Waiting on',
+	relatedIds: 'Related',
+	duplicateOfId: 'Duplicate of'
 };
 
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
@@ -72,6 +74,7 @@ export function describeChange(field: string, change: Change, names: Names): str
 		case 'milestoneId':
 			return `${label}: ${none(from, names.milestone)} → ${none(to, names.milestone)}`;
 		case 'parentId':
+		case 'duplicateOfId':
 			return `${label}: ${none(from, names.task)} → ${none(to, names.task)}`;
 		case 'storyPoints':
 			return `${label}: ${none(from, (x) => formatManDays(Number(x)))} → ${none(to, (x) => formatManDays(Number(x)))}`;
@@ -82,6 +85,7 @@ export function describeChange(field: string, change: Change, names: Names): str
 		case 'tags':
 			return `${label}: ${addedRemoved(from, to, (x) => x)}`;
 		case 'blockedByIds':
+		case 'relatedIds':
 			return `${label}: ${addedRemoved(from, to, names.task)}`;
 		case 'assignments':
 			return `${label}: ${assignments(from, to, names)}`;

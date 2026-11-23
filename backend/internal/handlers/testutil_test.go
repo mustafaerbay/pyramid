@@ -199,6 +199,7 @@ CREATE TABLE tasks (
 	project_id TEXT NOT NULL,
 	number INTEGER NOT NULL,
 	parent_id TEXT,
+	duplicate_of_id TEXT,
 	milestone_id TEXT,
 	type TEXT NOT NULL DEFAULT 'task',
 	title TEXT NOT NULL,
@@ -266,6 +267,12 @@ CREATE TABLE notifications (
 	link_url TEXT,
 	read_at DATETIME,
 	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE task_related (
+	task_id TEXT NOT NULL,
+	other_id TEXT NOT NULL,
+	PRIMARY KEY (task_id, other_id)
 );
 
 CREATE TABLE task_labels (

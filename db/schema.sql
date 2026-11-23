@@ -336,6 +336,7 @@ CREATE TABLE tasks (
     project_id    UUID NOT NULL REFERENCES projects(id)   ON DELETE CASCADE,
     number        INTEGER NOT NULL,                        -- per-project sequential (PYR-42)
     parent_id     UUID REFERENCES tasks(id)      ON DELETE SET NULL,  -- subtasks / epic children
+    duplicate_of_id UUID REFERENCES tasks(id)    ON DELETE SET NULL,  -- this is a copy of that task
     milestone_id  UUID REFERENCES milestones(id) ON DELETE SET NULL,
     sprint_id     UUID REFERENCES sprints(id)    ON DELETE SET NULL,
     title         TEXT NOT NULL,
@@ -390,6 +391,14 @@ CREATE TABLE task_dependencies (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (task_id, depends_on_id),
     CHECK (task_id <> depends_on_id)
+);
+
+-- "Related" links, both ways; each pair stored once (task_id < other_id)
+CREATE TABLE task_related (
+    task_id  UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    other_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    PRIMARY KEY (task_id, other_id),
+    CHECK (task_id < other_id)
 );
 
 -- Threaded comments on tasks

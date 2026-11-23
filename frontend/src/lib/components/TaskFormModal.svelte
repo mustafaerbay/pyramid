@@ -4,6 +4,7 @@
 	import { formatManDays, splitEvenly } from '$lib/capacity';
 	import TagInput from './TagInput.svelte';
 	import TaskActivity from './TaskActivity.svelte';
+	import TaskPicker from './TaskPicker.svelte';
 	import { parentOptions, subtaskSummary } from '$lib/subtasks';
 	import { TYPE_OPTIONS, type WorkItemType } from '$lib/workItems';
 	import { blockerOptions } from '$lib/dependencies';
@@ -77,10 +78,12 @@
 	let blockedByIds = $state<string[]>([...(initial?.blockedByIds ?? [])]);
 	// svelte-ignore state_referenced_locally
 	const blockerChoices = blockerOptions(projectTasks, initial?.id ?? null);
-	const taskRef = (id: string) => {
-		const t = projectTasks.find((x) => x.id === id);
-		return t ? `#${t.number} ${t.title}` : 'Unknown task';
-	};
+	// svelte-ignore state_referenced_locally
+	let relatedIds = $state<string[]>([...(initial?.relatedIds ?? [])]);
+	// svelte-ignore state_referenced_locally
+	let duplicateOfId = $state(initial?.duplicateOfId ?? '');
+	// svelte-ignore state_referenced_locally
+	const linkChoices = projectTasks.filter((t) => t.id !== initial?.id);
 	// A new subtask lands in its parent's milestone unless one is picked.
 	function pickParent(id: string) {
 		parentId = id;
@@ -207,7 +210,9 @@
 						startDate: startDate || undefined,
 						dueDate: dueDate || undefined,
 						tags,
-						blockedByIds
+						blockedByIds,
+						relatedIds,
+						duplicateOfId: duplicateOfId || null
 					}
 				});
 				if (error) {
@@ -234,7 +239,9 @@
 						startDate: startDate || undefined,
 						dueDate: dueDate || undefined,
 						tags,
-						blockedByIds
+						blockedByIds,
+						relatedIds,
+						duplicateOfId: duplicateOfId || undefined
 					}
 				});
 				if (error) {
@@ -330,39 +337,27 @@
 			{/if}
 
 			{#if blockerChoices.length > 0 || blockedByIds.length > 0}
-				<div class="block text-sm">
-					<span class="mb-1 block font-medium text-slate-700">Waiting on</span>
-					{#if blockedByIds.length > 0}
-						<ul class="mb-2 flex flex-wrap gap-1.5">
-							{#each blockedByIds as id (id)}
-								<li class="inline-flex max-w-full items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800 ring-1 ring-inset ring-amber-200">
-									<span class="truncate">{taskRef(id)}</span>
-									<button
-										type="button"
-										class="-mr-1 rounded-full px-1 leading-none opacity-60 hover:opacity-100"
-										aria-label="Stop waiting on {taskRef(id)}"
-										onclick={() => (blockedByIds = blockedByIds.filter((b) => b !== id))}>×</button
-									>
-								</li>
-							{/each}
-						</ul>
-					{/if}
-					<select
-						class="input"
-						aria-label="Add a task this one waits on"
-						value=""
-						onchange={(e) => {
-							const v = e.currentTarget.value;
-							if (v && !blockedByIds.includes(v)) blockedByIds = [...blockedByIds, v];
-							e.currentTarget.value = '';
-						}}
-					>
-						<option value="">Add a task that must finish first…</option>
-						{#each blockerChoices.filter((t) => !blockedByIds.includes(t.id)) as t (t.id)}
+				<TaskPicker
+					label="Waiting on"
+					placeholder="Add a task that must finish first…"
+					bind:ids={blockedByIds}
+					options={blockerChoices}
+					all={projectTasks}
+					tone="amber"
+				/>
+			{/if}
+
+			{#if linkChoices.length > 0}
+				<TaskPicker label="Related" placeholder="Link a related task…" bind:ids={relatedIds} options={linkChoices} all={projectTasks} />
+				<label class="block text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Duplicate of</span>
+					<select class="input" bind:value={duplicateOfId}>
+						<option value="">Not a duplicate</option>
+						{#each linkChoices as t (t.id)}
 							<option value={t.id}>#{t.number} {t.title}</option>
 						{/each}
 					</select>
-				</div>
+				</label>
 			{/if}
 
 			{#if isEdit && initial}

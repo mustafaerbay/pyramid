@@ -1210,6 +1210,9 @@ type Task struct {
 	Description      *string             `json:"description"`
 	DueDate          *openapi_types.Date `json:"dueDate"`
 
+	// DuplicateOfId The task this one is a copy of (same project).
+	DuplicateOfId *openapi_types.UUID `json:"duplicateOfId"`
+
 	// EstimateManDays The task's man-day size as entered on the task itself, before (or without) splitting it across assignees.
 	EstimateManDays *float64           `json:"estimateManDays"`
 	Id              openapi_types.UUID `json:"id"`
@@ -1225,6 +1228,9 @@ type Task struct {
 	ParentId  *openapi_types.UUID `json:"parentId"`
 	Priority  TaskPriority        `json:"priority"`
 	ProjectId openapi_types.UUID  `json:"projectId"`
+
+	// RelatedIds Tasks linked as related (both ways, same project), by task number.
+	RelatedIds []openapi_types.UUID `json:"relatedIds"`
 
 	// RemainingManDays Work left, in man-days (0–9999). Set to 0 when the item is done.
 	RemainingManDays *float64 `json:"remainingManDays"`
@@ -1287,17 +1293,23 @@ type TaskCreate struct {
 	CompletedManDays *float64              `json:"completedManDays"`
 	Description      *string               `json:"description,omitempty"`
 	DueDate          *openapi_types.Date   `json:"dueDate,omitempty"`
-	EstimateManDays  *float64              `json:"estimateManDays,omitempty"`
-	MilestoneId      *openapi_types.UUID   `json:"milestoneId,omitempty"`
+
+	// DuplicateOfId Mark as a copy of that task; null clears.
+	DuplicateOfId   *openapi_types.UUID `json:"duplicateOfId"`
+	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
+	MilestoneId     *openapi_types.UUID `json:"milestoneId,omitempty"`
 
 	// ParentId Put this under that work item (same project; see Task.parentId for the rules).
-	ParentId         *openapi_types.UUID `json:"parentId,omitempty"`
-	Priority         *TaskPriority       `json:"priority,omitempty"`
-	ProjectId        openapi_types.UUID  `json:"projectId"`
-	RemainingManDays *float64            `json:"remainingManDays"`
-	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
-	Status           *TaskStatus         `json:"status,omitempty"`
-	StoryPoints      *float64            `json:"storyPoints"`
+	ParentId  *openapi_types.UUID `json:"parentId,omitempty"`
+	Priority  *TaskPriority       `json:"priority,omitempty"`
+	ProjectId openapi_types.UUID  `json:"projectId"`
+
+	// RelatedIds Replaces the related links when present (empty array clears).
+	RelatedIds       *[]openapi_types.UUID `json:"relatedIds,omitempty"`
+	RemainingManDays *float64              `json:"remainingManDays"`
+	StartDate        *openapi_types.Date   `json:"startDate,omitempty"`
+	Status           *TaskStatus           `json:"status,omitempty"`
+	StoryPoints      *float64              `json:"storyPoints"`
 
 	// Tags Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`
@@ -1365,15 +1377,21 @@ type TaskUpdate struct {
 	CompletedManDays *float64              `json:"completedManDays"`
 	Description      *string               `json:"description,omitempty"`
 	DueDate          *openapi_types.Date   `json:"dueDate,omitempty"`
-	EstimateManDays  *float64              `json:"estimateManDays,omitempty"`
-	MilestoneId      *openapi_types.UUID   `json:"milestoneId"`
+
+	// DuplicateOfId Mark as a copy of that task; null clears.
+	DuplicateOfId   *openapi_types.UUID `json:"duplicateOfId"`
+	EstimateManDays *float64            `json:"estimateManDays,omitempty"`
+	MilestoneId     *openapi_types.UUID `json:"milestoneId"`
 
 	// ParentId Set to put this under that work item (see Task.parentId for the rules), null to make it top-level again, or omit to leave unchanged.
-	ParentId         *openapi_types.UUID `json:"parentId"`
-	Priority         *TaskPriority       `json:"priority,omitempty"`
-	RemainingManDays *float64            `json:"remainingManDays"`
-	StartDate        *openapi_types.Date `json:"startDate,omitempty"`
-	Status           *TaskStatus         `json:"status,omitempty"`
+	ParentId *openapi_types.UUID `json:"parentId"`
+	Priority *TaskPriority       `json:"priority,omitempty"`
+
+	// RelatedIds Replaces the related links when present (empty array clears).
+	RelatedIds       *[]openapi_types.UUID `json:"relatedIds,omitempty"`
+	RemainingManDays *float64              `json:"remainingManDays"`
+	StartDate        *openapi_types.Date   `json:"startDate,omitempty"`
+	Status           *TaskStatus           `json:"status,omitempty"`
 
 	// StoryPoints Send null to clear.
 	StoryPoints *float64 `json:"storyPoints"`

@@ -2592,7 +2592,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, createdAt, updatedAt]
+      required: [id, projectId, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, relatedIds, duplicateOfId, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -2682,6 +2682,17 @@ components:
           items:
             type: string
             format: uuid
+        relatedIds:
+          type: array
+          description: Tasks linked as related (both ways, same project), by task number.
+          items:
+            type: string
+            format: uuid
+        duplicateOfId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The task this one is a copy of (same project).
         tags:
           type: array
           description: The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects.
@@ -2774,6 +2785,18 @@ components:
           items:
             type: string
             format: uuid
+        relatedIds:
+          type: array
+          description: Replaces the related links when present (empty array clears).
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        duplicateOfId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Mark as a copy of that task; null clears.
         tags:
           type: array
           description: >
@@ -2866,6 +2889,18 @@ components:
           items:
             type: string
             format: uuid
+        relatedIds:
+          type: array
+          description: Replaces the related links when present (empty array clears).
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+        duplicateOfId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Mark as a copy of that task; null clears.
         tags:
           type: array
           description: >

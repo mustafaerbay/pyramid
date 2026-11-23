@@ -23,14 +23,16 @@ type Task struct {
 	// assigned by the handler — see handlers.nextTaskNumber.
 	Number int `gorm:"not null"`
 	// ParentID puts this work item under another (same project).
-	ParentID    *uuid.UUID       `gorm:"type:uuid;index"`
-	Type        api.TaskType     `gorm:"type:task_type;not null;default:task"`
-	MilestoneID *uuid.UUID       `gorm:"type:uuid;index"`
-	Title       string           `gorm:"not null"`
-	Description *string          `gorm:"type:text"`
-	Status      api.TaskStatus   `gorm:"type:task_status;not null;default:backlog"`
-	Priority    api.TaskPriority `gorm:"type:task_priority;not null;default:medium"`
-	StartDate   *time.Time       `gorm:"type:date"`
+	ParentID *uuid.UUID   `gorm:"type:uuid;index"`
+	Type     api.TaskType `gorm:"type:task_type;not null;default:task"`
+	// DuplicateOfID marks this as a copy of another task.
+	DuplicateOfID *uuid.UUID       `gorm:"type:uuid"`
+	MilestoneID   *uuid.UUID       `gorm:"type:uuid;index"`
+	Title         string           `gorm:"not null"`
+	Description   *string          `gorm:"type:text"`
+	Status        api.TaskStatus   `gorm:"type:task_status;not null;default:backlog"`
+	Priority      api.TaskPriority `gorm:"type:task_priority;not null;default:medium"`
+	StartDate     *time.Time       `gorm:"type:date"`
 	// EstimateManDays is the task's size as entered on the task itself;
 	// used as the total until assignments carry man-days.
 	EstimateManDays  *float64   `gorm:"type:numeric(7,2)"`
@@ -59,6 +61,8 @@ type Task struct {
 	Tags []string `gorm:"-"`
 	// BlockedByIDs are the tasks this one waits on (task_dependencies).
 	BlockedByIDs []uuid.UUID `gorm:"-"`
+	// RelatedIDs are the tasks linked as related, either way (task_related).
+	RelatedIDs []uuid.UUID `gorm:"-"`
 }
 
 // TableName pins the model to the existing pluralized table.
@@ -142,6 +146,9 @@ func (t Task) ToAPI() api.Task {
 	}
 	out.BlockedByIds = make([]openapi_types.UUID, len(t.BlockedByIDs))
 	copy(out.BlockedByIds, t.BlockedByIDs)
+	out.RelatedIds = make([]openapi_types.UUID, len(t.RelatedIDs))
+	copy(out.RelatedIds, t.RelatedIDs)
+	out.DuplicateOfId = t.DuplicateOfID
 	if total == 0 && t.EstimateManDays != nil {
 		out.ManDays = *t.EstimateManDays
 	}
@@ -171,6 +178,7 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 		ProjectID:        in.ProjectId,
 		MilestoneID:      in.MilestoneId,
 		ParentID:         in.ParentId,
+		DuplicateOfID:    in.DuplicateOfId,
 		Type:             api.TaskTypeTask,
 		StoryPoints:      in.StoryPoints,
 		RemainingManDays: in.RemainingManDays,
