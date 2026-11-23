@@ -61,7 +61,6 @@ func TestSubtasks_RejectsBadParents(t *testing.T) {
 	creates := map[string]uuid.UUID{
 		"missing parent":          missing,
 		"parent in other project": elsewhere.Id,
-		"parent is a subtask":     child.Id,
 	}
 	for name, pid := range creates {
 		status := doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{ProjectId: project, Title: name, ParentId: &pid}, nil)
@@ -76,14 +75,55 @@ func TestSubtasks_RejectsBadParents(t *testing.T) {
 		parent uuid.UUID
 	}{
 		{"own parent", loner.Id, loner.Id},
-		{"task with subtasks under another", parent.Id, loner.Id},
-		{"under a subtask", loner.Id, child.Id},
+		{"under its own child (loop)", parent.Id, child.Id},
 	}
 	for _, p := range patches {
 		status := doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+p.task.String(), map[string]any{"parentId": p.parent}, nil)
 		if status != http.StatusBadRequest {
 			t.Errorf("%s: status %d, want 400", p.name, status)
 		}
+	}
+}
+
+func TestHierarchy_LevelsAndDepth(t *testing.T) {
+	r, _ := newTestRouter(t)
+	project := uuid.New()
+	typ := func(v api.TaskType) *api.TaskType { return &v }
+
+	epic := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "Epic", Type: typ(api.TaskTypeEpic)})
+	feature := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "Feature", Type: typ(api.TaskTypeFeature), ParentId: &epic.Id})
+	story := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "Story", Type: typ(api.TaskTypeStory), ParentId: &feature.Id})
+	bug := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "Bug", Type: typ(api.TaskTypeBug), ParentId: &feature.Id})
+	task := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "Task", ParentId: &story.Id})
+	if task.Type != api.TaskTypeTask || epic.Type != api.TaskTypeEpic {
+		t.Errorf("types = %s, %s", task.Type, epic.Type)
+	}
+	// Same level nests (task under task), four deep is fine.
+	sub := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "Sub", ParentId: &task.Id})
+	_ = bug
+
+	// A higher level can't go under a lower one.
+	if s := doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{ProjectId: project, Title: "F", Type: typ(api.TaskTypeFeature), ParentId: &story.Id}, nil); s != http.StatusBadRequest {
+		t.Errorf("feature under story = %d, want 400", s)
+	}
+	// Changing a type so it outranks its parent is refused too.
+	if s := doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+story.Id.String(), map[string]any{"type": "epic"}, nil); s != http.StatusBadRequest {
+		t.Errorf("story → epic under a feature = %d, want 400", s)
+	}
+	// …as is making a parent lower than its children.
+	if s := doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+feature.Id.String(), map[string]any{"type": "task"}, nil); s != http.StatusBadRequest {
+		t.Errorf("feature → task above stories = %d, want 400", s)
+	}
+	// Depth: epic>feature>story>task>sub is 5 levels; a 6th is refused.
+	if s := doJSON(t, r, http.MethodPost, "/api/v1/tasks", api.TaskCreate{ProjectId: project, Title: "Too deep", ParentId: &sub.Id}, nil); s != http.StatusBadRequest {
+		t.Errorf("6th level = %d, want 400", s)
+	}
+	// Moving a whole branch must keep the depth too: the story branch is
+	// 3 deep (story>task>sub), under sub's level it would be too deep.
+	other := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "Other story", Type: typ(api.TaskTypeStory), ParentId: &feature.Id})
+	o2 := newTask(t, r, api.TaskCreate{ProjectId: project, Title: "o2", ParentId: &other.Id})
+	if s := doJSON(t, r, http.MethodPatch, "/api/v1/tasks/"+task.Id.String(), map[string]any{"parentId": o2.Id}, nil); s != http.StatusBadRequest {
+		t.Errorf("branch moved too deep = %d, want 400", s)
 	}
 }
 

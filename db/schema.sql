@@ -57,7 +57,7 @@ CREATE TYPE version_status   AS ENUM ('planned', 'in_progress', 'released', 'can
 CREATE TYPE sprint_status    AS ENUM ('planned', 'active', 'completed', 'cancelled');
 
 -- Tasks
-CREATE TYPE task_type     AS ENUM ('epic', 'story', 'task', 'bug', 'subtask', 'chore');
+CREATE TYPE task_type     AS ENUM ('epic', 'feature', 'story', 'task', 'bug', 'subtask', 'chore');
 CREATE TYPE task_status   AS ENUM ('backlog', 'todo', 'in_progress', 'in_review', 'blocked', 'done', 'cancelled');
 CREATE TYPE task_priority AS ENUM ('low', 'medium', 'high', 'urgent');
 

@@ -12,6 +12,7 @@ type Change = { from?: unknown; to?: unknown };
 
 const LABELS: Record<string, string> = {
 	title: 'Title',
+	type: 'Type',
 	description: 'Description',
 	status: 'Status',
 	priority: 'Priority',
@@ -61,6 +62,7 @@ export function describeChange(field: string, change: Change, names: Names): str
 			return 'Description edited';
 		case 'title':
 			return `${label}: “${from ?? ''}” → “${to ?? ''}”`;
+		case 'type':
 		case 'status':
 		case 'priority':
 			return `${label}: ${none(from, (x) => x.replace('_', ' '))} → ${none(to, (x) => x.replace('_', ' '))}`;

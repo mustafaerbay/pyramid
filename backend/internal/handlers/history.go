@@ -54,6 +54,7 @@ func taskSnapshot(t models.Task) map[string]any {
 	return map[string]any{
 		"title":           t.Title,
 		"description":     str(t.Description),
+		"type":            string(t.Type),
 		"status":          string(t.Status),
 		"priority":        string(t.Priority),
 		"milestoneId":     id(t.MilestoneID),

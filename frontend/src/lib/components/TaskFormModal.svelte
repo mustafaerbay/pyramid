@@ -5,6 +5,7 @@
 	import TagInput from './TagInput.svelte';
 	import TaskActivity from './TaskActivity.svelte';
 	import { parentOptions, subtaskSummary } from '$lib/subtasks';
+	import { TYPE_OPTIONS, type WorkItemType } from '$lib/workItems';
 	import { blockerOptions } from '$lib/dependencies';
 
 	type Task = components['schemas']['Task'];
@@ -19,6 +20,7 @@
 		initialMilestoneId = null,
 		projectTasks = [],
 		initialParentId = null,
+		initialType = 'task',
 		onAddSubtask,
 		onClose,
 		onSaved,
@@ -39,7 +41,9 @@
 		projectTasks?: Task[];
 		// Prefills the parent when adding a subtask.
 		initialParentId?: string | null;
-		// Shown as "+ Add subtask" on a top-level task in edit mode.
+		// Type for a new item (a child gets one level below its parent).
+		initialType?: WorkItemType;
+		// Shown as "+ Add child" when editing.
 		onAddSubtask?: (parent: Task) => void;
 		onClose: () => void;
 		onSaved: (task: Task) => void;
@@ -63,7 +67,8 @@
 	// svelte-ignore state_referenced_locally
 	let parentId = $state(initial?.parentId ?? initialParentId ?? '');
 	// svelte-ignore state_referenced_locally
-	const parentChoices = parentOptions(projectTasks, initial?.id ?? null);
+	let type = $state<WorkItemType>((initial?.type as WorkItemType) ?? initialType);
+	const parentChoices = $derived(parentOptions(projectTasks, initial?.id ?? null, type));
 	// svelte-ignore state_referenced_locally
 	const subtasks = initial ? projectTasks.filter((t) => t.parentId === initial.id) : [];
 	// svelte-ignore state_referenced_locally
@@ -181,6 +186,7 @@
 						description: description || undefined,
 						// Explicit null (not undefined) so the backend can tell
 						// "clear this" apart from "field wasn't touched".
+						type,
 						milestoneId: milestoneId || null,
 						parentId: parentId || null,
 						// assigneeIds always replaces the full set — sending it
@@ -205,6 +211,7 @@
 				const { data, error } = await api.POST('/api/v1/tasks', {
 					body: {
 						projectId,
+						type,
 						milestoneId: milestoneId || undefined,
 						parentId: parentId || undefined,
 						title,
@@ -264,10 +271,20 @@
 				</div>
 			{/if}
 
-			<label class="block text-sm">
-				<span class="mb-1 block font-medium text-slate-700">Title *</span>
-				<input class="input" bind:value={title} placeholder="e.g. Wire up auth middleware" required />
-			</label>
+			<div class="flex gap-2">
+				<label class="block w-32 shrink-0 text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Type</span>
+					<select class="input" bind:value={type}>
+						{#each TYPE_OPTIONS as o (o.value)}
+							<option value={o.value}>{o.label}</option>
+						{/each}
+					</select>
+				</label>
+				<label class="block min-w-0 flex-1 text-sm">
+					<span class="mb-1 block font-medium text-slate-700">Title *</span>
+					<input class="input" bind:value={title} placeholder="e.g. Wire up auth middleware" required />
+				</label>
+			</div>
 
 			<label class="block text-sm">
 				<span class="mb-1 block font-medium text-slate-700">Description</span>
@@ -337,17 +354,17 @@
 				</div>
 			{/if}
 
-			{#if isEdit && initial && !initial.parentId}
+			{#if isEdit && initial}
 				<div class="rounded-md border border-slate-200 p-3 text-sm">
 					<div class="flex items-center justify-between gap-2">
 						<span class="font-medium text-slate-700">
-							Subtasks{#if summary && summary.count > 0}<span class="ml-1 font-normal text-slate-500"
+							Children{#if summary && summary.count > 0}<span class="ml-1 font-normal text-slate-500"
 									>{summary.done}/{summary.count} done · {formatManDays(summary.manDays)} md</span
 								>{/if}
 						</span>
 						{#if onAddSubtask}
 							<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={() => onAddSubtask(initial)}>
-								+ Add subtask
+								+ Add child
 							</button>
 						{/if}
 					</div>

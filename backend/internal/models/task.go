@@ -22,8 +22,9 @@ type Task struct {
 	// Number is the per-project sequential number (e.g. 42 for "PYR-42"),
 	// assigned by the handler — see handlers.nextTaskNumber.
 	Number int `gorm:"not null"`
-	// ParentID makes this a subtask (same project, one level deep).
+	// ParentID puts this work item under another (same project).
 	ParentID    *uuid.UUID       `gorm:"type:uuid;index"`
+	Type        api.TaskType     `gorm:"type:task_type;not null;default:task"`
 	MilestoneID *uuid.UUID       `gorm:"type:uuid;index"`
 	Title       string           `gorm:"not null"`
 	Description *string          `gorm:"type:text"`
@@ -125,6 +126,7 @@ func (t Task) ToAPI() api.Task {
 		EstimateManDays: t.EstimateManDays,
 		MilestoneId:     t.MilestoneID,
 		ParentId:        t.ParentID,
+		Type:            t.Type,
 		Tags:            t.Tags,
 		CreatedAt:       t.CreatedAt,
 		UpdatedAt:       t.UpdatedAt,
@@ -163,6 +165,7 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 		ProjectID:   in.ProjectId,
 		MilestoneID: in.MilestoneId,
 		ParentID:    in.ParentId,
+		Type:        api.TaskTypeTask,
 		Title:       in.Title,
 		Description: in.Description,
 		Status:      api.TaskStatusBacklog,
@@ -170,6 +173,9 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 	}
 	if in.Status != nil {
 		t.Status = *in.Status
+	}
+	if in.Type != nil {
+		t.Type = *in.Type
 	}
 	if in.Priority != nil {
 		t.Priority = *in.Priority
@@ -209,6 +215,9 @@ func NewTaskFromCreate(in api.TaskCreate) Task {
 func (t *Task) ApplyUpdate(in api.TaskUpdate, clearMilestone bool) {
 	if in.Title != nil {
 		t.Title = *in.Title
+	}
+	if in.Type != nil {
+		t.Type = *in.Type
 	}
 	if in.Description != nil {
 		t.Description = in.Description

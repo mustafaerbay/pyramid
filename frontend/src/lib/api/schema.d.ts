@@ -1206,6 +1206,11 @@ export interface components {
             data: components["schemas"]["WeeklySummary"][];
             pagination: components["schemas"]["Pagination"];
         };
+        /**
+         * @description Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+         * @enum {string}
+         */
+        TaskType: "epic" | "feature" | "story" | "task" | "bug";
         /** @enum {string} */
         TaskStatus: "backlog" | "todo" | "in_progress" | "in_review" | "blocked" | "done" | "cancelled";
         /** @enum {string} */
@@ -1219,11 +1224,12 @@ export interface components {
             milestoneId?: string | null;
             /**
              * Format: uuid
-             * @description The task this one is a subtask of (same project, one level deep). A task that has subtasks doesn't count its own man-days toward capacity; its subtasks carry the work.
+             * @description The work item this one sits under (same project, up to 5 levels, never a loop, never under a lower-level type). A task that has subtasks doesn't count its own man-days toward capacity; its subtasks carry the work.
              */
             parentId?: string | null;
             /** @description Per-project sequential number, e.g. 42 for "PYR-42". */
             number: number;
+            type: components["schemas"]["TaskType"];
             title: string;
             description?: string | null;
             status: components["schemas"]["TaskStatus"];
@@ -1267,9 +1273,10 @@ export interface components {
             milestoneId?: string;
             /**
              * Format: uuid
-             * @description Make this a subtask of that task (same project; the parent can't itself be a subtask).
+             * @description Put this under that work item (same project; see Task.parentId for the rules).
              */
             parentId?: string;
+            type?: components["schemas"]["TaskType"];
             title: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];
@@ -1294,9 +1301,10 @@ export interface components {
             milestoneId?: string | null;
             /**
              * Format: uuid
-             * @description Set to make this a subtask (same project; not allowed when the parent is a subtask or this task has subtasks), null to make it a top-level task again, or omit to leave unchanged.
+             * @description Set to put this under that work item (see Task.parentId for the rules), null to make it top-level again, or omit to leave unchanged.
              */
             parentId?: string | null;
+            type?: components["schemas"]["TaskType"];
             title?: string;
             description?: string;
             status?: components["schemas"]["TaskStatus"];

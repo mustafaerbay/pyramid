@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -356,11 +357,14 @@ func (h *Handler) UpdateTask(c *gin.Context) {
 	clearMilestone := isExplicitNull(raw, "milestoneId")
 
 	t.ApplyUpdate(in, clearMilestone)
-	if _, ok := raw["parentId"]; ok {
+	_, parentSent := raw["parentId"]
+	if parentSent {
 		t.ParentID = nil
 		if !isExplicitNull(raw, "parentId") {
 			t.ParentID = in.ParentId
 		}
+	}
+	if parentSent || in.Type != nil {
 		if err := h.validateParent(&t); err != nil {
 			c.JSON(http.StatusBadRequest, api.Error{Message: err.Error()})
 			return
@@ -477,36 +481,102 @@ func (h *Handler) DeleteTask(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// validateParent checks t.ParentID: the parent must exist in the same
-// project and be top-level, and a task that has subtasks can't become one.
+// Work item levels, top first. A child may not be a higher level than its
+// parent; the same level may nest (old task-under-task subtasks).
+var typeLevel = map[api.TaskType]int{
+	api.TaskTypeEpic: 4, api.TaskTypeFeature: 3, api.TaskTypeStory: 2, api.TaskTypeBug: 2, api.TaskTypeTask: 1,
+}
+
+const maxHierarchyDepth = 5
+
+func level(t api.TaskType) int {
+	if l, ok := typeLevel[t]; ok {
+		return l
+	}
+	return 1
+}
+
+// validateParent checks t's place in the hierarchy (with t's new parent and
+// type): parent in the same project, no loop, no child above its parent's
+// level, at most 5 levels including t's own children.
 func (h *Handler) validateParent(t *models.Task) error {
+	if !t.Type.Valid() && t.Type != "" {
+		return errors.New("unknown work item type")
+	}
+	var rows []struct {
+		ID       uuid.UUID
+		ParentID *uuid.UUID
+		Type     api.TaskType
+	}
+	if err := h.db.Model(&models.Task{}).Select("id, parent_id, type").Where("project_id = ?", t.ProjectID).Scan(&rows).Error; err != nil {
+		return err
+	}
+	parentOf := map[uuid.UUID]*uuid.UUID{}
+	typeOf := map[uuid.UUID]api.TaskType{}
+	children := map[uuid.UUID][]uuid.UUID{}
+	for _, r := range rows {
+		if r.ID == t.ID {
+			continue
+		}
+		parentOf[r.ID] = r.ParentID
+		typeOf[r.ID] = r.Type
+		if r.ParentID != nil {
+			children[*r.ParentID] = append(children[*r.ParentID], r.ID)
+		}
+	}
+
+	if t.ID != uuid.Nil {
+		for _, kid := range children[t.ID] {
+			if level(typeOf[kid]) > level(t.Type) {
+				return fmt.Errorf("a %s can't sit above a %s", t.Type, typeOf[kid])
+			}
+		}
+	}
 	if t.ParentID == nil {
 		return nil
 	}
-	if *t.ParentID == t.ID {
-		return errors.New("a task can't be its own parent")
+	pid := *t.ParentID
+	if pid == t.ID {
+		return errors.New("a work item can't be its own parent")
 	}
-	var parent models.Task
-	if err := h.db.First(&parent, "id = ?", *t.ParentID).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	ptype, ok := typeOf[pid]
+	if !ok {
+		var n int64
+		h.db.Model(&models.Task{}).Where("id = ?", pid).Count(&n)
+		if n == 0 {
 			return errors.New("parent task not found")
 		}
-		return err
-	}
-	if parent.ProjectID != t.ProjectID {
 		return errors.New("parent task must be in the same project")
 	}
-	if parent.ParentID != nil {
-		return errors.New("subtasks can't have subtasks of their own")
+	if level(t.Type) > level(ptype) {
+		return fmt.Errorf("a %s can't go under a %s", t.Type, ptype)
 	}
+	// Walk up from the parent: meeting t is a loop; count the levels above.
+	depth := 0
+	for cur := &pid; cur != nil && depth <= maxHierarchyDepth+1; cur = parentOf[*cur] {
+		if *cur == t.ID {
+			return errors.New("that would put a work item under its own child")
+		}
+		depth++
+	}
+	// Levels t brings along: itself plus its deepest branch.
+	var height func(id uuid.UUID, seen int) int
+	height = func(id uuid.UUID, seen int) int {
+		best := 0
+		if seen > maxHierarchyDepth {
+			return best
+		}
+		for _, kid := range children[id] {
+			best = max(best, height(kid, seen+1))
+		}
+		return best + 1
+	}
+	h1 := 1
 	if t.ID != uuid.Nil {
-		var children int64
-		if err := h.db.Model(&models.Task{}).Where("parent_id = ?", t.ID).Count(&children).Error; err != nil {
-			return err
-		}
-		if children > 0 {
-			return errors.New("a task with subtasks can't become a subtask")
-		}
+		h1 = height(t.ID, 0)
+	}
+	if depth+h1 > maxHierarchyDepth {
+		return fmt.Errorf("work items can be nested at most %d levels deep", maxHierarchyDepth)
 	}
 	return nil
 }

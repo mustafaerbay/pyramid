@@ -516,6 +516,33 @@ func (e TaskStatus) Valid() bool {
 	}
 }
 
+// Defines values for TaskType.
+const (
+	TaskTypeBug     TaskType = "bug"
+	TaskTypeEpic    TaskType = "epic"
+	TaskTypeFeature TaskType = "feature"
+	TaskTypeStory   TaskType = "story"
+	TaskTypeTask    TaskType = "task"
+)
+
+// Valid indicates whether the value is a known member of the TaskType enum.
+func (e TaskType) Valid() bool {
+	switch e {
+	case TaskTypeBug:
+		return true
+	case TaskTypeEpic:
+		return true
+	case TaskTypeFeature:
+		return true
+	case TaskTypeStory:
+		return true
+	case TaskTypeTask:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VersionStatus.
 const (
 	VersionStatusCancelled  VersionStatus = "cancelled"
@@ -1191,7 +1218,7 @@ type Task struct {
 	// Number Per-project sequential number, e.g. 42 for "PYR-42".
 	Number int `json:"number"`
 
-	// ParentId The task this one is a subtask of (same project, one level deep). A task that has subtasks doesn't count its own man-days toward capacity; its subtasks carry the work.
+	// ParentId The work item this one sits under (same project, up to 5 levels, never a loop, never under a lower-level type). A task that has subtasks doesn't count its own man-days toward capacity; its subtasks carry the work.
 	ParentId  *openapi_types.UUID `json:"parentId"`
 	Priority  TaskPriority        `json:"priority"`
 	ProjectId openapi_types.UUID  `json:"projectId"`
@@ -1201,8 +1228,11 @@ type Task struct {
 	Status    TaskStatus          `json:"status"`
 
 	// Tags The task's tags, sorted alphabetically (case-insensitive). Tags are shared across all projects.
-	Tags      []string  `json:"tags"`
-	Title     string    `json:"title"`
+	Tags  []string `json:"tags"`
+	Title string   `json:"title"`
+
+	// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+	Type      TaskType  `json:"type"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
@@ -1250,7 +1280,7 @@ type TaskCreate struct {
 	EstimateManDays *float64              `json:"estimateManDays,omitempty"`
 	MilestoneId     *openapi_types.UUID   `json:"milestoneId,omitempty"`
 
-	// ParentId Make this a subtask of that task (same project; the parent can't itself be a subtask).
+	// ParentId Put this under that work item (same project; see Task.parentId for the rules).
 	ParentId  *openapi_types.UUID `json:"parentId,omitempty"`
 	Priority  *TaskPriority       `json:"priority,omitempty"`
 	ProjectId openapi_types.UUID  `json:"projectId"`
@@ -1260,6 +1290,9 @@ type TaskCreate struct {
 	// Tags Tags to put on the task. Defaults to none. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`
 	Title string    `json:"title"`
+
+	// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+	Type *TaskType `json:"type,omitempty"`
 }
 
 // TaskFieldChange defines model for TaskFieldChange.
@@ -1304,6 +1337,9 @@ type TaskPriority string
 // TaskStatus defines model for TaskStatus.
 type TaskStatus string
 
+// TaskType Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+type TaskType string
+
 // TaskUpdate defines model for TaskUpdate.
 type TaskUpdate struct {
 	// AssigneeIds Replaces the full assignee set when present — send every assignee the task should have, or an empty array to unassign everyone. Omit the field entirely to leave assignees unchanged.
@@ -1319,7 +1355,7 @@ type TaskUpdate struct {
 	EstimateManDays *float64              `json:"estimateManDays,omitempty"`
 	MilestoneId     *openapi_types.UUID   `json:"milestoneId"`
 
-	// ParentId Set to make this a subtask (same project; not allowed when the parent is a subtask or this task has subtasks), null to make it a top-level task again, or omit to leave unchanged.
+	// ParentId Set to put this under that work item (see Task.parentId for the rules), null to make it top-level again, or omit to leave unchanged.
 	ParentId  *openapi_types.UUID `json:"parentId"`
 	Priority  *TaskPriority       `json:"priority,omitempty"`
 	StartDate *openapi_types.Date `json:"startDate,omitempty"`
@@ -1328,6 +1364,9 @@ type TaskUpdate struct {
 	// Tags Replaces the task's full tag set when present (an empty array removes all tags). Omit to leave tags unchanged. Each tag is trimmed, 1–40 characters; duplicates (ignoring case) are dropped; at most 20 tags. A tag that matches an existing one ignoring case reuses its spelling.
 	Tags  *[]string `json:"tags,omitempty"`
 	Title *string   `json:"title,omitempty"`
+
+	// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+	Type *TaskType `json:"type,omitempty"`
 }
 
 // User defines model for User.

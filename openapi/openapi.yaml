@@ -2575,6 +2575,13 @@ components:
           $ref: "#/components/schemas/Pagination"
 
     # ---- Tasks ----
+    TaskType:
+      type: string
+      enum: [epic, feature, story, task, bug]
+      description: >
+        Work item type. Levels from top: epic, feature, story and bug,
+        task. A child can't be a higher level than its parent.
+
     TaskStatus:
       type: string
       enum: [backlog, todo, in_progress, in_review, blocked, done, cancelled]
@@ -2585,7 +2592,7 @@ components:
 
     Task:
       type: object
-      required: [id, projectId, number, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, createdAt, updatedAt]
+      required: [id, projectId, number, type, title, status, priority, assigneeIds, assignments, manDays, tags, blockedByIds, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -2602,12 +2609,15 @@ components:
           format: uuid
           nullable: true
           description: >
-            The task this one is a subtask of (same project, one level deep).
+            The work item this one sits under (same project, up to 5 levels,
+            never a loop, never under a lower-level type).
             A task that has subtasks doesn't count its own man-days toward
             capacity; its subtasks carry the work.
         number:
           type: integer
           description: Per-project sequential number, e.g. 42 for "PYR-42".
+        type:
+          $ref: "#/components/schemas/TaskType"
         title:
           type: string
         description:
@@ -2686,7 +2696,9 @@ components:
         parentId:
           type: string
           format: uuid
-          description: Make this a subtask of that task (same project; the parent can't itself be a subtask).
+          description: Put this under that work item (same project; see Task.parentId for the rules).
+        type:
+          $ref: "#/components/schemas/TaskType"
         title:
           type: string
           minLength: 1
@@ -2753,9 +2765,11 @@ components:
           format: uuid
           nullable: true
           description: >
-            Set to make this a subtask (same project; not allowed when the
-            parent is a subtask or this task has subtasks), null to make it a
-            top-level task again, or omit to leave unchanged.
+            Set to put this under that work item (see Task.parentId for the
+            rules), null to make it top-level again, or omit to leave
+            unchanged.
+        type:
+          $ref: "#/components/schemas/TaskType"
         title:
           type: string
         description:

@@ -36,6 +36,15 @@ describe('subtaskSummary', () => {
 	});
 });
 
+describe('subtaskSummary, several levels', () => {
+	it('rolls man-days up from the items that carry the work', () => {
+		// e > f > (s1: 3 md, s2 > k: 4 md); f and s2 have their own numbers that don't count.
+		const all = [t('e'), t('f', 'e', 'todo', 99), t('s1', 'f', 'todo', 3), t('s2', 'f', 'todo', 50), t('k', 's2', 'todo', 4)];
+		expect(subtaskSummary('e', all).manDays).toBe(7);
+		expect(subtaskSummary('f', all)).toEqual({ count: 2, done: 0, manDays: 7 });
+	});
+});
+
 describe('countsTowardTotals', () => {
 	it('skips a task whose live subtasks carry the work', () => {
 		const all = [t('p', null, 'todo', 10), t('c', 'p', 'todo', 4), t('q', null, 'todo', 1), t('x', 'q', 'cancelled', 1)];
@@ -46,13 +55,31 @@ describe('countsTowardTotals', () => {
 });
 
 describe('parentOptions', () => {
-	it('offers top-level tasks other than the task itself', () => {
-		const all = [t('a'), t('b'), t('a1', 'a')];
-		expect(parentOptions(all, 'b').map((x) => x.id)).toEqual(['a']);
-		expect(parentOptions(all, null).map((x) => x.id)).toEqual(['a', 'b']);
+	it('offers any item that is not itself, below it, or a lower level', () => {
+		const all = [
+			{ ...t('e'), type: 'epic' },
+			{ ...t('f', 'e'), type: 'feature' },
+			{ ...t('s', 'f'), type: 'story' },
+			{ ...t('k', 's'), type: 'task' },
+			{ ...t('x'), type: 'task' }
+		];
+		// A story can go under the epic or feature, not under tasks.
+		expect(parentOptions(all, 's', 'story').map((x) => x.id)).toEqual(['e', 'f']);
+		// The feature can't go under its own story or task (they're below it).
+		expect(parentOptions(all, 'f', 'feature').map((x) => x.id)).toEqual(['e']);
+		// A new task can go anywhere.
+		expect(parentOptions(all, null, 'task').map((x) => x.id)).toEqual(['e', 'f', 's', 'k', 'x']);
 	});
-	it('offers nothing for a task that has subtasks', () => {
-		const all = [t('a'), t('b'), t('a1', 'a')];
-		expect(parentOptions(all, 'a')).toEqual([]);
+});
+
+describe('nestTasks, several levels', () => {
+	it('indents each level under its parent', () => {
+		const all = [t('e'), t('f', 'e'), t('s', 'f'), t('x')];
+		expect(nestTasks(all, all).map((r) => [r.task.id, r.depth])).toEqual([
+			['e', 0],
+			['f', 1],
+			['s', 2],
+			['x', 0]
+		]);
 	});
 });

@@ -7,6 +7,7 @@
 	import { formatManDays } from '$lib/capacity';
 	import { subtaskSummary } from '$lib/subtasks';
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
+	import TypeBadge from '$lib/components/TypeBadge.svelte';
 
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
@@ -107,10 +108,10 @@
 							<p class="mb-0.5 truncate text-xs text-slate-500">↳ {parent.title}</p>
 						{/if}
 						<button type="button" class="block w-full text-left font-medium text-slate-800 hover:underline" onclick={() => onOpen(task)}>
-							{task.title}
+							<TypeBadge type={task.type} /> {task.title}
 						</button>
 						{#if sub.count > 0}
-							<p class="mt-1 text-xs text-slate-500">{sub.done}/{sub.count} subtasks done</p>
+							<p class="mt-1 text-xs text-slate-500">{sub.done}/{sub.count} children done</p>
 						{/if}
 						<DependencyNote {task} all={allTasks} />
 						{#if task.tags.length}

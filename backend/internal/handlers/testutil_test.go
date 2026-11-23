@@ -200,6 +200,7 @@ CREATE TABLE tasks (
 	number INTEGER NOT NULL,
 	parent_id TEXT,
 	milestone_id TEXT,
+	type TEXT NOT NULL DEFAULT 'task',
 	title TEXT NOT NULL,
 	description TEXT,
 	status TEXT NOT NULL DEFAULT 'backlog',

@@ -21,6 +21,8 @@
 	import TagChips from '$lib/components/TagChips.svelte';
 	import TaskBoard from '$lib/components/TaskBoard.svelte';
 	import DependencyNote from '$lib/components/DependencyNote.svelte';
+	import TypeBadge from '$lib/components/TypeBadge.svelte';
+	import { TYPE_OPTIONS, childType, type WorkItemType } from '$lib/workItems';
 	import { boardStatuses } from '$lib/board';
 	import { countsTowardTotals, nestTasks, subtaskSummary } from '$lib/subtasks';
 	import { hasAllTags, tagColor } from '$lib/tags';
@@ -162,6 +164,8 @@
 	let taskAssigneeFilter = $state('');
 	// Tasks must carry every selected tag.
 	let taskTagFilters = $state<string[]>([]);
+	let taskTypeFilter = $state<string>('');
+	let taskModalType = $state<WorkItemType>('task');
 	// List (grouped by milestone) or Kanban board; remembered per browser.
 	let taskView = $state<'list' | 'board'>('list');
 	onMount(() => {
@@ -376,6 +380,7 @@
 		if (taskAssigneeFilter === '__unassigned__' && t.assigneeIds.length > 0) return false;
 		if (taskAssigneeFilter && taskAssigneeFilter !== '__unassigned__' && !t.assigneeIds.includes(taskAssigneeFilter))
 			return false;
+		if (taskTypeFilter && t.type !== taskTypeFilter) return false;
 		return hasAllTags(t.tags, taskTagFilters);
 	}
 
@@ -487,6 +492,7 @@
 		editingTask = null;
 		taskModalMilestoneId = parent.milestoneId ?? null;
 		taskModalParentId = parent.id;
+		taskModalType = childType(parent.type);
 		taskModalMode = 'create';
 	}
 
@@ -504,7 +510,7 @@
 	}
 	function subtaskLabel(task: Task): string {
 		const sub = subtaskSummary(task.id, tasks);
-		return sub.count > 0 ? `${sub.done}/${sub.count} subtasks done` : '';
+		return sub.count > 0 ? `${sub.done}/${sub.count} children done` : '';
 	}
 
 	function handleTaskSaved(saved: Task) {
@@ -1469,6 +1475,12 @@
 							<option value={person.id}>{person.name}</option>
 						{/each}
 					</select>
+					<select class="input w-auto" aria-label="Filter by type" bind:value={taskTypeFilter}>
+						<option value="">All types</option>
+						{#each TYPE_OPTIONS as o (o.value)}
+							<option value={o.value}>{o.label}</option>
+						{/each}
+					</select>
 					{#if projectTags.length > 0}
 						<select
 							class="input w-auto"
@@ -1550,14 +1562,14 @@
 								<ul class="divide-y divide-slate-100 md:hidden">
 									{#each nestTasks(group.tasks, tasks) as row (row.task.id)}
 										{@const task = row.task}
-										<li class="space-y-2 py-3 pr-4 text-sm {row.depth ? 'pl-9' : 'pl-4'}">
+										<li class="space-y-2 py-3 pr-4 text-sm" style="padding-left: {1 + row.depth * 1.25}rem">
 											<button
 												type="button"
 												class="block w-full text-left"
 												onclick={() => openEditTask(task)}
 											>
 												<span class="font-medium text-slate-800"
-													>{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}{task.title}</span
+													>{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} /> {task.title}</span
 												>
 												{#if row.depth === 0 && row.parent}
 													<span class="block text-xs text-slate-500">↳ subtask of {row.parent.title}</span>
@@ -1625,8 +1637,8 @@
 											{@const task = row.task}
 											{@const warnings = fitWarnings(task)}
 											<tr class="hover:bg-slate-50">
-												<td class="py-2.5 pr-4 {row.depth ? 'pl-10' : 'pl-4'}">
-													{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<button
+												<td class="py-2.5 pr-4" style="padding-left: {1 + row.depth * 1.5}rem">
+													{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} /> <button
 														type="button"
 														class="text-left font-medium text-slate-800 hover:underline"
 														onclick={() => openEditTask(task)}
@@ -1896,6 +1908,7 @@
 		initialMilestoneId={taskModalMilestoneId}
 		projectTasks={tasks}
 		initialParentId={taskModalParentId}
+		initialType={taskModalParentId ? taskModalType : 'task'}
 		onAddSubtask={openAddSubtask}
 		onClose={closeTaskModal}
 		onSaved={handleTaskSaved}
