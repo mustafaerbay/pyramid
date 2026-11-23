@@ -35,7 +35,7 @@ Notes say what was built where it is simpler than ADO.
       Teams incoming webhooks per project
 - [x] **Clone, move and templates** — copy an item (with children), move it to
       another project, item templates with pre-filled fields
-- [ ] **Full-text search** — titles, descriptions and comments, from the header
+- [x] **Full-text search** — titles, descriptions and comments, from the header
 - [ ] **Excel** — .xlsx export and import next to CSV
 
 ## 2. Integration and platform

@@ -305,6 +305,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find work items (title, description, comments), projects and people
+         * @description Words are matched anywhere, ignoring case; every word must match. A number like 42 or CAD-42 also finds that item. Up to 30 items.
+         */
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications": {
         parameters: {
             query?: never;
@@ -2303,6 +2323,35 @@ export interface components {
         ItemTemplateList: {
             data: components["schemas"]["ItemTemplate"][];
         };
+        SearchResults: {
+            items: components["schemas"]["SearchItem"][];
+            projects: {
+                /** Format: uuid */
+                id: string;
+                key: string;
+                name: string;
+            }[];
+            people: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            }[];
+        };
+        SearchItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            projectKey: string;
+            number: number;
+            title: string;
+            type: components["schemas"]["TaskType"];
+            status: components["schemas"]["TaskStatus"];
+            /** @enum {string} */
+            matchedIn: "number" | "title" | "description" | "comment";
+            /** @description The matching part of the description or comment. */
+            snippet?: string | null;
+        };
         NotificationSettings: {
             /** @description Per notification type; a missing type gets both. */
             types: {
@@ -3667,6 +3716,28 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    search: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResults"];
+                };
+            };
         };
     };
     listNotifications: {

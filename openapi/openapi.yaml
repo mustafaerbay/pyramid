@@ -442,6 +442,29 @@ paths:
                 $ref: "#/components/schemas/ProjectHook"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/search:
+    get:
+      operationId: search
+      tags: [search]
+      summary: Find work items (title, description, comments), projects and people
+      description: >
+        Words are matched anywhere, ignoring case; every word must match. A
+        number like 42 or CAD-42 also finds that item. Up to 30 items.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
   /api/v1/notifications:
     get:
       operationId: listNotifications
@@ -4565,6 +4588,67 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ItemTemplate"
+
+    SearchResults:
+      type: object
+      required: [items, projects, people]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchItem"
+        projects:
+          type: array
+          items:
+            type: object
+            required: [id, key, name]
+            properties:
+              id:
+                type: string
+                format: uuid
+              key:
+                type: string
+              name:
+                type: string
+        people:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+
+    SearchItem:
+      type: object
+      required: [id, projectId, projectKey, number, title, type, status, matchedIn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        projectKey:
+          type: string
+        number:
+          type: integer
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/TaskType"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        matchedIn:
+          type: string
+          enum: [number, title, description, comment]
+        snippet:
+          type: string
+          nullable: true
+          description: The matching part of the description or comment.
 
     NotificationSettings:
       type: object

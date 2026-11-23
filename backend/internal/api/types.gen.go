@@ -840,6 +840,30 @@ func (e QueryGroupBy) Valid() bool {
 	}
 }
 
+// Defines values for SearchItemMatchedIn.
+const (
+	SearchItemMatchedInComment     SearchItemMatchedIn = "comment"
+	SearchItemMatchedInDescription SearchItemMatchedIn = "description"
+	SearchItemMatchedInNumber      SearchItemMatchedIn = "number"
+	SearchItemMatchedInTitle       SearchItemMatchedIn = "title"
+)
+
+// Valid indicates whether the value is a known member of the SearchItemMatchedIn enum.
+func (e SearchItemMatchedIn) Valid() bool {
+	switch e {
+	case SearchItemMatchedInComment:
+		return true
+	case SearchItemMatchedInDescription:
+		return true
+	case SearchItemMatchedInNumber:
+		return true
+	case SearchItemMatchedInTitle:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SeniorityLevel.
 const (
 	SeniorityLevelDirector  SeniorityLevel = "director"
@@ -2320,6 +2344,40 @@ type SavedQueryList struct {
 	Data []SavedQuery `json:"data"`
 }
 
+// SearchItem defines model for SearchItem.
+type SearchItem struct {
+	Id         openapi_types.UUID  `json:"id"`
+	MatchedIn  SearchItemMatchedIn `json:"matchedIn"`
+	Number     int                 `json:"number"`
+	ProjectId  openapi_types.UUID  `json:"projectId"`
+	ProjectKey string              `json:"projectKey"`
+
+	// Snippet The matching part of the description or comment.
+	Snippet *string    `json:"snippet"`
+	Status  TaskStatus `json:"status"`
+	Title   string     `json:"title"`
+
+	// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+	Type TaskType `json:"type"`
+}
+
+// SearchItemMatchedIn defines model for SearchItem.MatchedIn.
+type SearchItemMatchedIn string
+
+// SearchResults defines model for SearchResults.
+type SearchResults struct {
+	Items  []SearchItem `json:"items"`
+	People []struct {
+		Id   openapi_types.UUID `json:"id"`
+		Name string             `json:"name"`
+	} `json:"people"`
+	Projects []struct {
+		Id   openapi_types.UUID `json:"id"`
+		Key  string             `json:"key"`
+		Name string             `json:"name"`
+	} `json:"projects"`
+}
+
 // SeniorityLevel defines model for SeniorityLevel.
 type SeniorityLevel string
 
@@ -2989,6 +3047,11 @@ type ListProjectsParams struct {
 type GetProjectFlowParams struct {
 	// Days How many days back from today (7–180, default 30).
 	Days *int `form:"days,omitempty" json:"days,omitempty"`
+}
+
+// SearchParams defines parameters for Search.
+type SearchParams struct {
+	Q string `form:"q" json:"q"`
 }
 
 // ListSprintsParams defines parameters for ListSprints.
