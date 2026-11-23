@@ -11,12 +11,15 @@ RUN apk add --no-cache git
 COPY . .
 RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/seed ./cmd/seed
 
 # ---- runtime stage ----
 FROM alpine:3.20 AS run
 RUN apk add --no-cache ca-certificates wget && adduser -D -u 10001 app
 WORKDIR /app
 COPY --from=build /out/server /app/server
+# Demo data loader: /app/seed --wipe (deletes everything but sign-in accounts).
+COPY --from=build /out/seed /app/seed
 # Attached files live here (a volume in compose); owned by app so a fresh
 # named volume inherits a writable directory.
 RUN mkdir -p /data/uploads && chown app:app /data/uploads
