@@ -1462,6 +1462,28 @@ paths:
                 $ref: "#/components/schemas/Error"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/v1/projects/{id}/flow:
+    get:
+      operationId: getProjectFlow
+      tags: [projects]
+      summary: Cumulative flow by day, and lead/cycle times of finished items
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+        - name: days
+          in: query
+          required: false
+          description: How many days back from today (7–180, default 30).
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Flow data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectFlow"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/tags:
     get:
       operationId: listTags
@@ -3980,6 +4002,59 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Attachment"
+
+    FlowDay:
+      type: object
+      required: [date, counts]
+      properties:
+        date:
+          type: string
+          format: date
+        counts:
+          type: object
+          description: Items in each status at the end of the day (cancelled left out).
+          additionalProperties:
+            type: integer
+
+    FlowItem:
+      type: object
+      required: [taskId, number, title, type, completedAt, leadDays, cycleDays]
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/TaskType"
+        completedAt:
+          type: string
+          format: date-time
+        leadDays:
+          type: number
+          format: double
+          description: Created to done, in days.
+        cycleDays:
+          type: number
+          format: double
+          nullable: true
+          description: First "in progress" to done, in days (null when never in progress on record).
+
+    ProjectFlow:
+      type: object
+      required: [days, completed]
+      properties:
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowDay"
+        completed:
+          type: array
+          description: Items finished in the period, latest first.
+          items:
+            $ref: "#/components/schemas/FlowItem"
 
     TagList:
       type: object

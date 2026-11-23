@@ -57,6 +57,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		v1.GET("/projects/:id", h.GetProject)
 		v1.PATCH("/projects/:id", h.UpdateProject)
 		v1.DELETE("/projects/:id", h.DeleteProject)
+		v1.GET("/projects/:id/flow", h.GetProjectFlow)
 
 		v1.GET("/project-members", h.ListProjectMembers)
 		v1.POST("/project-members", h.CreateProjectMember)

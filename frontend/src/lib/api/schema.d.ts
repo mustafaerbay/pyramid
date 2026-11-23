@@ -757,6 +757,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/flow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cumulative flow by day, and lead/cycle times of finished items */
+        get: operations["getProjectFlow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tags": {
         parameters: {
             query?: never;
@@ -1952,6 +1969,38 @@ export interface components {
         };
         AttachmentList: {
             data: components["schemas"]["Attachment"][];
+        };
+        FlowDay: {
+            /** Format: date */
+            date: string;
+            /** @description Items in each status at the end of the day (cancelled left out). */
+            counts: {
+                [key: string]: number;
+            };
+        };
+        FlowItem: {
+            /** Format: uuid */
+            taskId: string;
+            number: number;
+            title: string;
+            type: components["schemas"]["TaskType"];
+            /** Format: date-time */
+            completedAt: string;
+            /**
+             * Format: double
+             * @description Created to done, in days.
+             */
+            leadDays: number;
+            /**
+             * Format: double
+             * @description First "in progress" to done, in days (null when never in progress on record).
+             */
+            cycleDays: number | null;
+        };
+        ProjectFlow: {
+            days: components["schemas"]["FlowDay"][];
+            /** @description Items finished in the period, latest first. */
+            completed: components["schemas"]["FlowItem"][];
         };
         TagList: {
             data: string[];
@@ -4105,6 +4154,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getProjectFlow: {
+        parameters: {
+            query?: {
+                /** @description How many days back from today (7–180, default 30). */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["IdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Flow data */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectFlow"];
                 };
             };
             404: components["responses"]["NotFound"];

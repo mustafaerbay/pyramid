@@ -14,6 +14,7 @@
 		{ href: '/people', label: 'People' },
 		{ href: '/projects', label: 'Projects' },
 		{ href: '/queries', label: 'Queries' },
+		{ href: '/plans', label: 'Plans' },
 		{ href: '/contributions', label: 'Contributions' },
 		{ href: '/goals', label: 'Growth' },
 		{ href: '/time-off', label: 'Time Off' }

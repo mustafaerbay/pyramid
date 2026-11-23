@@ -809,6 +809,30 @@ type Error struct {
 	Message string  `json:"message"`
 }
 
+// FlowDay defines model for FlowDay.
+type FlowDay struct {
+	// Counts Items in each status at the end of the day (cancelled left out).
+	Counts map[string]int     `json:"counts"`
+	Date   openapi_types.Date `json:"date"`
+}
+
+// FlowItem defines model for FlowItem.
+type FlowItem struct {
+	CompletedAt time.Time `json:"completedAt"`
+
+	// CycleDays First "in progress" to done, in days (null when never in progress on record).
+	CycleDays *float64 `json:"cycleDays"`
+
+	// LeadDays Created to done, in days.
+	LeadDays float64            `json:"leadDays"`
+	Number   int                `json:"number"`
+	TaskId   openapi_types.UUID `json:"taskId"`
+	Title    string             `json:"title"`
+
+	// Type Work item type. Levels from top: epic, feature, story and bug, task. A child can't be a higher level than its parent.
+	Type TaskType `json:"type"`
+}
+
 // Goal defines model for Goal.
 type Goal struct {
 	CreatedAt     time.Time           `json:"createdAt"`
@@ -1190,6 +1214,13 @@ type ProjectCreate struct {
 	Priority    *ProjectPriority    `json:"priority,omitempty"`
 	StartDate   *openapi_types.Date `json:"startDate,omitempty"`
 	TargetDate  *openapi_types.Date `json:"targetDate,omitempty"`
+}
+
+// ProjectFlow defines model for ProjectFlow.
+type ProjectFlow struct {
+	// Completed Items finished in the period, latest first.
+	Completed []FlowItem `json:"completed"`
+	Days      []FlowDay  `json:"days"`
 }
 
 // ProjectHealth defines model for ProjectHealth.
@@ -1972,6 +2003,12 @@ type ListProjectsParams struct {
 	Page     *PageParam     `form:"page,omitempty" json:"page,omitempty"`
 	PageSize *PageSizeParam `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 	Status   *ProjectStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// GetProjectFlowParams defines parameters for GetProjectFlow.
+type GetProjectFlowParams struct {
+	// Days How many days back from today (7–180, default 30).
+	Days *int `form:"days,omitempty" json:"days,omitempty"`
 }
 
 // ListSprintsParams defines parameters for ListSprints.
