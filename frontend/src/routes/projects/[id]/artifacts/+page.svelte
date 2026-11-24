@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { page } from '$app/state';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
@@ -79,7 +80,6 @@
 
 <section class="space-y-4">
 	<div>
-		<a href="/projects/{projectId}" class="text-sm text-slate-500 hover:text-slate-700">← {project?.name ?? 'Project'}</a>
 		<h1 class="mt-1 text-2xl font-semibold tracking-tight">Artifacts</h1>
 		<p class="mt-1 text-sm text-slate-500">
 			Build outputs live in <b>arti</b>. Link this project's arti packages to see their versions, files and release notes here, and say which Pyramid
@@ -93,7 +93,7 @@
 				<button
 					type="button"
 					class="rounded-full px-3 py-1 ring-1 ring-inset {selected === p.id ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'}"
-					onclick={() => (selected = p.id)}>📦 {p.package}</button
+					onclick={() => (selected = p.id)}><Icon name="package" size={14} class="mr-1 align-[-2px]" />{p.package}</button
 				>
 			{:else}
 				<span class="text-slate-500">No packages linked yet.</span>
@@ -124,7 +124,7 @@
 			<li class="rounded-lg border border-slate-200 bg-white p-4 text-sm">
 				<div class="flex flex-wrap items-center gap-2">
 					<span class="text-base font-semibold">{v.version}</span>
-					{#if v.locked}<span class="rounded bg-slate-100 px-1.5 text-xs" title="Locked in arti">🔒 locked</span>{/if}
+					{#if v.locked}<span class="rounded bg-slate-100 px-1.5 text-xs" title="Locked in arti"><Icon name="lock" size={12} class="mr-0.5 align-[-1px]" />locked</span>{/if}
 					<span class="text-xs text-slate-500">{new Date(v.created).toLocaleDateString()}</span>
 					<label class="ml-auto flex items-center gap-1.5 text-xs text-slate-600">
 						Shipped

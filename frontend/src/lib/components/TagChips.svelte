@@ -12,7 +12,7 @@
 			{#if onSelect}
 				<button
 					type="button"
-					class="rounded-full px-1.5 py-px text-[11px] font-medium ring-1 ring-inset hover:brightness-95 {cls(tag)}"
+					class="relative rounded-full px-1.5 py-px text-xs font-medium ring-1 ring-inset after:absolute after:-inset-y-1 after:inset-x-0 after:content-[''] hover:brightness-95 {cls(tag)}"
 					title="Filter by {tag}"
 					onclick={(e) => {
 						e.stopPropagation();
@@ -20,7 +20,7 @@
 					}}>{tag}</button
 				>
 			{:else}
-				<span class="rounded-full px-1.5 py-px text-[11px] font-medium ring-1 ring-inset {cls(tag)}">{tag}</span>
+				<span class="rounded-full px-1.5 py-px text-xs font-medium ring-1 ring-inset {cls(tag)}">{tag}</span>
 			{/if}
 		{/each}
 	</span>

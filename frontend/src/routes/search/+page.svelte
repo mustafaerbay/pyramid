@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { page } from '$app/state';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
@@ -21,8 +22,8 @@
 	{#if res}
 		{#if res.projects.length || res.people.length}
 			<div class="flex flex-wrap gap-2 text-sm">
-				{#each res.projects as p (p.id)}<a class="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200 hover:bg-slate-50" href="/projects/{p.id}">📁 {p.name}</a>{/each}
-				{#each res.people as p (p.id)}<a class="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200 hover:bg-slate-50" href="/people/{p.id}">👤 {p.name}</a>{/each}
+				{#each res.projects as p (p.id)}<a class="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200 hover:bg-slate-50 inline-flex items-center gap-1.5" href="/projects/{p.id}"><Icon name="folder" size={14} class="text-slate-500" />{p.name}</a>{/each}
+				{#each res.people as p (p.id)}<a class="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200 hover:bg-slate-50 inline-flex items-center gap-1.5" href="/people/{p.id}"><Icon name="user" size={14} class="text-slate-500" />{p.name}</a>{/each}
 			</div>
 		{/if}
 		<ul class="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white text-sm">

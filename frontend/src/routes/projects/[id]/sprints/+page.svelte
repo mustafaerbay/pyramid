@@ -202,7 +202,6 @@
 
 <section class="space-y-4">
 	<div>
-		<a href="/projects/{projectId}" class="text-sm text-slate-500 hover:text-slate-700">← {projectName || 'Project'}</a>
 		<div class="mt-1 flex flex-wrap items-center justify-between gap-2">
 			<h1 class="text-2xl font-semibold tracking-tight">Sprints</h1>
 			{#if can('member')}<button data-write type="button" class="btn-primary" onclick={openNew}>+ New sprint</button>{/if}
@@ -256,7 +255,7 @@
 					class="shrink-0 rounded-lg border px-3 py-2 text-left text-sm {s.id === selectedId ? 'border-slate-900 bg-white' : 'border-slate-200 bg-white hover:border-slate-300'}"
 					onclick={() => (selectedId = s.id)}
 				>
-					<div class="flex items-center gap-2 font-medium">{s.name}<span class="rounded-full px-1.5 text-[10px] font-semibold {STATUS_TONE[s.status]}">{s.status}</span></div>
+					<div class="flex items-center gap-2 font-medium">{s.name}<span class="rounded-full px-1.5 text-xs font-semibold {STATUS_TONE[s.status]}">{s.status}</span></div>
 					<div class="text-xs text-slate-500">{range(s)} · {s.stats.doneCount}/{s.stats.taskCount} done</div>
 				</button>
 			{/each}

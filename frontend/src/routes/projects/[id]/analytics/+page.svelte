@@ -37,7 +37,6 @@
 
 <section class="space-y-4">
 	<div>
-		<a href="/projects/{projectId}" class="text-sm text-slate-500 hover:text-slate-700">← {projectName || 'Project'}</a>
 		<div class="mt-1 flex flex-wrap items-center justify-between gap-2">
 			<h1 class="text-2xl font-semibold tracking-tight">Analytics</h1>
 			<select class="input w-auto" aria-label="Period" bind:value={days}>

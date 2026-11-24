@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { applyFormat, mentionQuery, type Format } from '$lib/markdown';
 	import Markdown from './Markdown.svelte';
 
@@ -134,14 +135,16 @@
 
 <div class="relative">
 	<div class="mb-1 flex flex-wrap items-center gap-1 text-xs">
-		<button type="button" class="rounded px-2 py-0.5 {preview ? 'text-slate-500 hover:text-slate-700' : 'bg-slate-100 font-medium text-slate-800'}" onclick={() => (preview = false)}>Write</button>
-		<button type="button" class="rounded px-2 py-0.5 {preview ? 'bg-slate-100 font-medium text-slate-800' : 'text-slate-500 hover:text-slate-700'}" onclick={() => (preview = true)}>Preview</button>
+		<button type="button" class="inline-flex min-h-7 items-center rounded px-2 {preview ? 'text-slate-500 hover:text-slate-700' : 'bg-slate-100 font-medium text-slate-800'}" onclick={() => (preview = false)}>Write</button>
+		<button type="button" class="inline-flex min-h-7 items-center rounded px-2 {preview ? 'bg-slate-100 font-medium text-slate-800' : 'text-slate-500 hover:text-slate-700'}" onclick={() => (preview = true)}>Preview</button>
 		<span class="mx-1 h-4 w-px bg-slate-200"></span>
-		{#each [['bold', 'B', 'Bold', 'font-bold'], ['italic', 'I', 'Italic', 'italic'], ['code', '</>', 'Code', 'font-mono'], ['list', '•', 'List', ''], ['link', '🔗', 'Link', '']] as [f, sym, name, cls] (f)}
-			<button type="button" class="min-w-6 rounded px-1.5 py-0.5 text-slate-600 hover:bg-slate-100 {cls}" title={name} aria-label={name} onclick={() => format(f as Format)}>{sym}</button>
-		{/each}
+		<button type="button" class="tool font-bold" title="Bold (Cmd/Ctrl+B)" aria-label="Bold" onclick={() => format('bold')}>B</button>
+		<button type="button" class="tool italic" title="Italic (Cmd/Ctrl+I)" aria-label="Italic" onclick={() => format('italic')}>I</button>
+		<button type="button" class="tool" title="Code" aria-label="Code" onclick={() => format('code')}><Icon name="code" size={14} /></button>
+		<button type="button" class="tool" title="List" aria-label="List" onclick={() => format('list')}><Icon name="list" size={14} /></button>
+		<button type="button" class="tool" title="Link" aria-label="Link" onclick={() => format('link')}><Icon name="link" size={14} /></button>
 		{#if onImage}
-			<button type="button" class="rounded px-1.5 py-0.5 text-slate-600 hover:bg-slate-100" title="Add an image" aria-label="Add an image" onclick={() => picker?.click()}>🖼 Image</button>
+			<button type="button" class="tool gap-1 px-2" title="Add an image" aria-label="Add an image" onclick={() => picker?.click()}><Icon name="image" size={14} /><span>Image</span></button>
 			<input bind:this={picker} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple class="sr-only" tabindex="-1" onchange={(e) => { addImages([...(e.currentTarget.files ?? [])]); e.currentTarget.value = ''; }} />
 		{/if}
 		<span class="ml-auto self-center text-slate-400">{uploading ? 'Uploading image…' : onImage ? 'Markdown · @ to mention · paste images' : 'Markdown · @ to mention'}</span>

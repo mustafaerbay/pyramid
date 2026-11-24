@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { goto, replaceState } from '$app/navigation';
+	import { afterNavigate, goto, replaceState } from '$app/navigation';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import TaskFormModal from '$lib/components/TaskFormModal.svelte';
@@ -14,6 +14,17 @@
 	type Project = components['schemas']['Project'];
 
 	const projectId = $derived(page.params.id ?? '');
+	// Came from the board? Then "← Board" goes back in history, which keeps
+	// the board's filters and scroll position.
+	let cameFromBoard = false;
+	afterNavigate((nav) => {
+		cameFromBoard = nav.from?.url.pathname === `/projects/${projectId}/board`;
+	});
+	function backToBoard(e: MouseEvent) {
+		if (!cameFromBoard || e.metaKey || e.ctrlKey || e.shiftKey) return;
+		e.preventDefault();
+		history.back();
+	}
 	const ref = $derived(page.params.ref ?? '');
 
 	let project = $state<Project | null>(null);
@@ -104,7 +115,7 @@
 			removeError = err.message ?? 'Could not delete the item.';
 			return;
 		}
-		goto(`/projects/${projectId}`);
+		goto(`/projects/${projectId}/board`);
 	}
 	async function copy(withChildren: boolean) {
 		if (!task) return;
@@ -147,16 +158,16 @@
 
 <svelte:head><title>{task ? `${project?.key ?? ''}-${task.number} ${task.title}` : 'Item'} · Pyramid</title></svelte:head>
 
-<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-	<nav class="mb-4 flex flex-wrap items-center gap-1 text-sm text-slate-500" aria-label="Breadcrumb">
-		<a class="hover:text-slate-800 hover:underline" href="/projects/{projectId}">{project?.name ?? 'Project'}</a>
+<div>
+	<nav class="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500" aria-label="Item">
+		<a class="inline-flex min-h-6 items-center hover:text-slate-800 hover:underline" href="/projects/{projectId}/board" onclick={backToBoard}>← Board</a>
 		{#if parent}
-			<span>›</span>
-			<a class="flex items-center gap-1 hover:text-slate-800 hover:underline" href={itemHref(projectId, parent.number)}
+			<span aria-hidden="true">·</span>
+			<span>Parent:</span>
+			<a class="inline-flex min-h-6 items-center gap-1 hover:text-slate-800 hover:underline" href={itemHref(projectId, parent.number)}
 				><TypeBadge type={parent.type} /> #{parent.number} {parent.title}</a
 			>
 		{/if}
-		<span class="ml-auto"><a class="hover:text-slate-800 hover:underline" href="/projects/{projectId}">← Back to the project</a></span>
 	</nav>
 
 	{#if notice}
@@ -170,7 +181,7 @@
 	{:else if error}
 		<p class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
 	{:else if !task}
-		<p class="text-sm text-slate-600">This item doesn't exist in this project (it may have been deleted or moved). <a class="text-indigo-700 hover:underline" href="/projects/{projectId}">Back to the project</a></p>
+		<p class="text-sm text-slate-600">This item doesn't exist in this project (it may have been deleted or moved). <a class="text-indigo-700 hover:underline" href="/projects/{projectId}/board">Back to the board</a></p>
 	{:else}
 		{#key task.id}
 			<TaskFormModal
@@ -191,7 +202,7 @@
 					childKind = childType(p.type);
 					childOf = p;
 				}}
-				onClose={() => goto(`/projects/${projectId}`)}
+				onClose={() => goto(`/projects/${projectId}/board`)}
 				onSaved={saved}
 				onDelete={() => {
 					removeError = null;

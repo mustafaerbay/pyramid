@@ -56,7 +56,6 @@
 
 <section class="space-y-4">
 	<div>
-		<a href="/projects/{projectId}" class="text-sm text-slate-500 hover:text-slate-700">← {project?.name ?? 'Project'}</a>
 		<h1 class="mt-1 text-2xl font-semibold tracking-tight">Code: repos and pipelines</h1>
 		<p class="mt-1 text-sm text-slate-500">
 			Pyramid doesn't host code or run builds. Link this project's GitHub or GitLab repositories: their webhooks bring in commits, pull requests and

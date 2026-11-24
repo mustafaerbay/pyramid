@@ -23,7 +23,7 @@
 {#if size === 'compact'}
 	<div class="text-center">
 		<div class="text-sm font-semibold {danger ? 'text-red-600' : 'text-slate-900'}">{value}</div>
-		<div class="text-[11px] text-slate-500">{label}</div>
+		<div class="text-xs text-slate-500">{label}</div>
 	</div>
 {:else}
 	<div>

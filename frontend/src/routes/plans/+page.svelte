@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import { can } from '$lib/auth.svelte';
@@ -208,7 +209,7 @@
 				<button
 					type="button"
 					class="rounded-full px-3 py-1 ring-1 ring-inset {current?.id === p.id ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'}"
-					onclick={() => load(p)}>{p.name}{p.shared ? ' 👥' : ''}</button
+					onclick={() => load(p)}>{p.name}{#if p.shared}<Icon name="users" size={14} class="ml-1 align-[-2px] opacity-70" /><span class="sr-only"> (shared)</span>{/if}</button
 				>
 			{/each}
 		</div>

@@ -100,7 +100,6 @@
 
 <section class="space-y-4">
 	<div>
-		<a href="/projects/{projectId}" class="text-sm text-slate-500 hover:text-slate-700">← {project?.name ?? 'Project'}</a>
 		<h1 class="mt-1 text-2xl font-semibold tracking-tight">Wiki</h1>
 	</div>
 	<div class="grid gap-4 md:grid-cols-[14rem_minmax(0,1fr)]">

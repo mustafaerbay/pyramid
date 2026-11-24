@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
 	import { api, baseUrl } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
@@ -778,7 +779,7 @@
 	<section class="text-sm">
 		<div class="mb-1 flex items-center justify-between">
 			<h2 class="font-semibold text-slate-800">Description</h2>
-			{#if !editingDesc}<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={startDesc}>✎ Edit</button>{/if}
+			{#if !editingDesc}<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={startDesc}><Icon name="pencil" size={14} class="mr-1 align-[-2px]" />Edit</button>{/if}
 		</div>
 		{#if editingDesc}
 			<MentionTextarea bind:value={descDraft} people={assigneeOptions.map((p) => p.name)} rows={12} label="Description" onImage={addImage} autofocus />

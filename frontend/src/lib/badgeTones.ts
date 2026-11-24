@@ -33,7 +33,7 @@ export const badgeToneClass: Record<BadgeTone, string> = {
 	// than "cancelled", which reads faintest of all.
 	neutral: 'bg-slate-100 text-slate-600',
 	neutralMuted: 'bg-slate-200 text-slate-600',
-	neutralFaint: 'bg-slate-200 text-slate-400',
+	neutralFaint: 'bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200',
 	violet: 'bg-violet-100 text-violet-700',
 	orange: 'bg-orange-100 text-orange-700',
 	// Inverted/solid treatment — used for the project-member "lead" role only.

@@ -20,6 +20,11 @@
 		@apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50;
 	}
 
+	/* The Markdown editor's toolbar buttons. */
+	.tool {
+		@apply inline-flex min-h-7 min-w-7 items-center justify-center rounded px-1.5 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+	}
+
 	/* Phone card lists: each data table has one of these next to it, shown
 	   below md while the table is shown from md up (wrap it in .table-wrap). */
 	.table-wrap {
@@ -137,4 +142,26 @@
 	padding: 0 0.125rem;
 	font-weight: 500;
 	color: var(--color-indigo-700);
+}
+
+/* Keyboard focus is always visible; inputs keep their own ring. */
+:where(a, button, summary, [tabindex]):focus-visible {
+	outline: 2px solid var(--color-indigo-500);
+	outline-offset: 2px;
+	border-radius: 0.25rem;
+}
+
+/* Fingers need bigger targets than a mouse pointer. */
+@media (pointer: coarse) {
+	.btn-primary,
+	.btn-secondary,
+	.btn-danger,
+	.btn-ghost,
+	.input {
+		min-height: 44px;
+	}
+	.tool {
+		min-height: 36px;
+		min-width: 36px;
+	}
 }

@@ -330,7 +330,7 @@
 				<div>
 					{#if group.label}
 						<p class="mb-1.5 flex items-center gap-1.5 text-xs font-semibold {group.status === 'cancelled'
-							? 'text-slate-400 line-through'
+							? 'text-slate-500 line-through'
 							: 'text-slate-700'}">
 							<span class="h-1.5 w-1.5 rounded-full {versionDotClass(group.status)}"></span>
 							{group.label}
@@ -378,7 +378,7 @@
 			</div>
 
 			{#if visibleLines.length > 0}
-				<div class="relative h-5 text-[11px]">
+				<div class="relative h-5 text-xs">
 					{#each visibleLines as line (line.id)}
 						<span
 							class="absolute top-0.5 -translate-x-1/2 rounded bg-indigo-50 px-1 font-medium whitespace-nowrap text-indigo-700"
@@ -409,9 +409,9 @@
 				{#each positioned.headers as header (header.key)}
 					<div
 						class="absolute left-0 flex items-center gap-1.5 text-xs font-semibold {header.status === 'cancelled'
-							? 'text-slate-400 line-through'
+							? 'text-slate-500 line-through'
 							: header.status === null
-								? 'text-slate-400'
+								? 'text-slate-500'
 								: 'text-slate-700'}"
 						style="top: {header.lane * 2.25}rem; height: 2rem;"
 					>

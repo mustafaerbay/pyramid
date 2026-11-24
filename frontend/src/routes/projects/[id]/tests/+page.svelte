@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api } from '$lib/api/client';
@@ -155,9 +156,9 @@
 
 <section class="space-y-4">
 	<div>
-		<a href={run ? `?plan=${planId}` : planId ? '?' : `/projects/${projectId}`} class="text-sm text-slate-500 hover:text-slate-700"
-			>← {run ? detail?.name : planId ? 'All test plans' : (project?.name ?? 'Project')}</a
-		>
+		{#if planId}
+			<a href={run ? `?plan=${planId}` : '?'} class="text-sm text-slate-500 hover:text-slate-700">← {run ? detail?.name : 'All test plans'}</a>
+		{/if}
 		<h1 class="mt-1 text-2xl font-semibold tracking-tight">{run ? run.name : detail ? detail.name : 'Test plans'}</h1>
 	</div>
 	{#if error}<div class="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>{/if}
@@ -217,9 +218,9 @@
 							onchange={(e) => setResult(r, { comment: e.currentTarget.value })}
 						/>
 						{#if r.bugTaskId}
-							<a class="text-xs text-red-700 hover:underline" href="/projects/{projectId}/items/{r.bugTaskId}">🐞 Bug filed</a>
+							<a class="text-xs text-red-700 hover:underline" href="/projects/{projectId}/items/{r.bugTaskId}"><Icon name="bug" size={14} class="mr-1 align-[-2px]" />Bug filed</a>
 						{:else if r.outcome === 'failed' && writable}
-							<button type="button" class="btn-secondary px-2 py-1 text-xs" onclick={() => fileBug(r)}>🐞 File bug</button>
+							<button type="button" class="btn-secondary px-2 py-1 text-xs" onclick={() => fileBug(r)}><Icon name="bug" size={14} class="mr-1 align-[-2px]" />File bug</button>
 						{/if}
 					</div>
 				</li>

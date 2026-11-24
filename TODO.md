@@ -72,3 +72,13 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Item page** — an item opens on its own page (`/projects/…/items/12`):
       description and comments / files / history on the left, fields on the
       right, every change saved as it's made; adding an item stays a quick form
+- [x] **Project tabs** — one tab bar on every project page (Overview, Board,
+      Backlog, Sprints, Code, Artifacts, Wiki, Tests, Analytics, Settings);
+      the long project page split into Overview, Board and Settings; export
+      and import in one menu
+- [x] **Back keeps the board as it was** — filters last for the session and
+      the scroll position comes back after an item
+- [x] **UI/UX audit fixes** — no text under 12 px, 24 px minimum targets
+      (44 px on touch screens), visible keyboard focus, low-contrast texts
+      fixed, SVG icons instead of emoji, split board columns reachable
+      from the card's "Move to" menu

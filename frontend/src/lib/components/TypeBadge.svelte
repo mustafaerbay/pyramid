@@ -18,4 +18,4 @@
 	const cls = $derived(label && color ? (COLORS[color] ?? meta.badge) : meta.badge);
 </script>
 
-<span class="inline-flex shrink-0 rounded px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset {cls}">{text}</span>
+<span class="inline-flex shrink-0 rounded px-1.5 py-px text-xs font-semibold uppercase tracking-wide ring-1 ring-inset {cls}">{text}</span>

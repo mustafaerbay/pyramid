@@ -93,7 +93,7 @@
 					style="width: {timeline.elapsedFraction * 100}%"
 				></div>
 			</div>
-			<div class="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+			<div class="mt-1 flex items-center justify-between text-xs text-slate-400">
 				<span>{project.startDate}</span>
 				<span class={timeline.overdue ? 'font-medium text-red-600' : ''}>
 					{project.status === 'completed'

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { can } from '$lib/auth.svelte';
 	import type { components } from '$lib/api/schema';
 	import Badge from '$lib/components/Badge.svelte';
@@ -176,7 +177,7 @@
 <div class="mb-2 flex justify-end">
 	{#if canEditSettings}
 		<button type="button" class="btn-ghost px-2 py-1 text-xs" aria-expanded={editing} onclick={() => (editing ? (editing = false) : openSettings())}>
-			⚙ Board settings
+			<Icon name="settings" size={14} class="mr-1 align-[-2px]" />Board settings
 		</button>
 	{/if}
 </div>
@@ -366,7 +367,7 @@
 		{#if parent && settings.swimlanes !== 'parent' && shows('parent')}
 			<p class="mb-0.5 truncate text-xs text-slate-500">↳ {parent.title}</p>
 		{/if}
-		<button type="button" class="block w-full text-left font-medium text-slate-800 hover:underline" onclick={() => onOpen(task)}>
+		<button type="button" class="block min-h-6 w-full text-left font-medium text-slate-800 hover:underline" onclick={() => onOpen(task)}>
 			<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> {task.title}
 		</button>
 		{#if sub.count > 0}
@@ -384,17 +385,27 @@
 			<span class="inline-flex items-center gap-1.5">
 				{#if shows('priority')}<Badge tone={priorityTone(task.priority)}>{task.priority}</Badge>{/if}
 				{#if task.storyPoints != null && shows('points')}<span
-						class="rounded bg-slate-100 px-1.5 text-[11px] font-medium text-slate-600"
+						class="rounded bg-slate-100 px-1.5 text-xs font-medium text-slate-600"
 						title="Story points">{formatManDays(task.storyPoints)}</span
 					>{/if}
 			</span>
 			<select data-write-lock tabindex={can('member') ? 0 : -1}
 				class="min-h-8 min-w-0 max-w-full rounded-md border-0 bg-slate-100 py-0 pl-2 pr-6 text-xs text-slate-600"
 				aria-label="Move {task.title} to"
-				value={task.state}
-				onchange={(e) => onMove(task, e.currentTarget.value, e.currentTarget.value === task.state ? task.boardDone : undefined)}
+				value={split.has(task.state) ? `${task.state}|${task.boardDone ? 1 : 0}` : task.state}
+				onchange={(e) => {
+					const [key, h] = e.currentTarget.value.split('|');
+					onMove(task, key, h === undefined ? (key === task.state ? task.boardDone : undefined) : h === '1');
+				}}
 			>
-				{#each workflow as opt (opt.key)}<option value={opt.key}>{opt.label}</option>{/each}
+				{#each workflow as opt (opt.key)}
+					{#if split.has(opt.key)}
+						<option value="{opt.key}|0">{opt.label} · Doing</option>
+						<option value="{opt.key}|1">{opt.label} · Done</option>
+					{:else}
+						<option value={opt.key}>{opt.label}</option>
+					{/if}
+				{/each}
 			</select>
 		</div>
 	</li>
@@ -469,7 +480,7 @@
 								{#each items as task (task.id)}
 									{@render card(task, col.state, half)}
 								{:else}
-									<li class="rounded-md border border-dashed border-slate-200 p-3 text-center text-xs text-slate-400">
+									<li class="rounded-md border border-dashed border-slate-200 p-3 text-center text-xs text-slate-500">
 										Drop tasks here
 									</li>
 								{/each}
@@ -494,7 +505,7 @@
 										drop(col.state, half);
 									}}
 								>
-									<div class="px-2 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+									<div class="px-2 pt-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
 										{half ? 'Done' : 'Doing'} · {(half ? halves.done : halves.doing).length}
 									</div>
 									{@render list(half ? halves.done : halves.doing, half)}
