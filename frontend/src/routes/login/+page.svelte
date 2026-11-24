@@ -75,7 +75,7 @@
 			</label>
 			<button type="submit" class="btn-primary w-full" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
 			{#if sso}
-				<div class="flex items-center gap-2 text-xs text-slate-400"><span class="h-px flex-1 bg-slate-200"></span>or<span class="h-px flex-1 bg-slate-200"></span></div>
+				<div class="flex items-center gap-2 text-xs text-slate-500"><span class="h-px flex-1 bg-slate-200"></span>or<span class="h-px flex-1 bg-slate-200"></span></div>
 				<a class="btn-secondary block w-full text-center" href="{baseUrl.replace(/\/$/, '')}/api/v1/auth/oidc/start">{sso.label}</a>
 			{/if}
 			<p class="text-center text-xs text-slate-500"><a href="/forgot" class="hover:underline">Forgot your password?</a></p>

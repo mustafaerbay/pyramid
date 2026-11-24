@@ -147,12 +147,12 @@
 			<button type="button" class="tool gap-1 px-2" title="Add an image" aria-label="Add an image" onclick={() => picker?.click()}><Icon name="image" size={14} /><span>Image</span></button>
 			<input bind:this={picker} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple class="sr-only" tabindex="-1" onchange={(e) => { addImages([...(e.currentTarget.files ?? [])]); e.currentTarget.value = ''; }} />
 		{/if}
-		<span class="ml-auto self-center text-slate-400">{uploading ? 'Uploading image…' : onImage ? 'Markdown · @ to mention · paste images' : 'Markdown · @ to mention'}</span>
+		<span class="ml-auto self-center text-slate-500">{uploading ? 'Uploading image…' : onImage ? 'Markdown · @ to mention · paste images' : 'Markdown · @ to mention'}</span>
 	</div>
 	{#if imageError}<p class="mb-1 text-xs text-red-600">{imageError}</p>{/if}
 	{#if preview}
 		<div class="min-h-16 rounded-md border border-slate-200 p-2 text-sm">
-			{#if value.trim()}<Markdown text={value} {people} {images} />{:else}<span class="text-slate-400">Nothing to preview.</span>{/if}
+			{#if value.trim()}<Markdown text={value} {people} {images} />{:else}<span class="text-slate-500">Nothing to preview.</span>{/if}
 		</div>
 	{:else}
 		<!-- svelte-ignore a11y_autofocus -->

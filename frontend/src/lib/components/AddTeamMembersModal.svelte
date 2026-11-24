@@ -180,7 +180,7 @@
 			</h3>
 			<button
 				type="button"
-				class="text-slate-400 hover:text-slate-600"
+				class="text-slate-500 hover:text-slate-600"
 				onclick={onClose}
 				aria-label="Close"
 			>
@@ -276,17 +276,17 @@
 									<td class="px-2 py-2 font-medium text-slate-800">
 										{fullName(person)}
 										{#if person.title}<span class="block text-xs font-normal text-slate-500 sm:hidden">{person.title}</span>{/if}
-										<span class="block text-xs font-normal break-all text-slate-400">{person.email}</span>
+										<span class="block text-xs font-normal break-all text-slate-500">{person.email}</span>
 									</td>
 									<td class="hidden px-2 py-2 text-slate-600 sm:table-cell">{person.title ?? '—'}</td>
 									<td class="px-2 py-2">
 										{#if otherCount > 0}
-											<span class="text-xs {overCapacity ? 'font-medium text-amber-600' : 'text-slate-500'}">
+											<span class="text-xs {overCapacity ? 'font-medium text-amber-700' : 'text-slate-500'}">
 												{otherPct}% / {otherCount}
 												{otherCount === 1 ? 'project' : 'projects'}
 											</span>
 										{:else}
-											<span class="text-xs text-slate-400">free</span>
+											<span class="text-xs text-slate-500">free</span>
 										{/if}
 									</td>
 								</tr>

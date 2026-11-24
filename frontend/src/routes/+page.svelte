@@ -445,7 +445,7 @@
 			<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 				<ChartCard title="Who's off today" subtitle={offTodayList.length === 0 ? undefined : `${offTodayList.length} out today`}>
 					{#if offTodayList.length === 0}
-						<p class="text-sm text-slate-400">No one is off today.</p>
+						<p class="text-sm text-slate-500">No one is off today.</p>
 					{:else}
 						<ul class="divide-y divide-slate-100">
 							{#each offTodayList as leave (leave.id)}
@@ -456,7 +456,7 @@
 										</p>
 										<p class="text-xs text-slate-500">{leave.type.replace('_', ' ')}</p>
 									</div>
-									<span class="shrink-0 text-xs text-slate-400">through {leave.endDate}</span>
+									<span class="shrink-0 text-xs text-slate-500">through {leave.endDate}</span>
 								</li>
 							{/each}
 						</ul>

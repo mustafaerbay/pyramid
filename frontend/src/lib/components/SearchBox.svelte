@@ -106,7 +106,7 @@
 									</span>
 									{#if l.item.snippet}<span class="mt-0.5 line-clamp-1 block text-xs text-slate-500">{#if l.item.matchedIn === 'comment'}<Icon name="message" size={12} class="mr-1 align-[-1px]" /><span class="sr-only">In a comment: </span>{/if}{l.item.snippet}</span>{/if}
 								{:else}
-									<span class="text-xs uppercase text-slate-400">{l.kind}</span> <span class="text-slate-800">{l.label}</span>
+									<span class="text-xs uppercase text-slate-500">{l.kind}</span> <span class="text-slate-800">{l.label}</span>
 								{/if}
 							</a>
 						</li>

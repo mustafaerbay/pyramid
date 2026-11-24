@@ -579,7 +579,7 @@
 						<ul class="mt-2 space-y-1">
 							{#each subtasks as sub (sub.id)}
 								<li class="flex items-center justify-between gap-2 text-xs">
-									<span class="min-w-0 truncate {sub.status === 'done' || sub.status === 'cancelled' ? 'text-slate-400 line-through' : 'text-slate-700'}">
+									<span class="min-w-0 truncate {sub.status === 'done' || sub.status === 'cancelled' ? 'text-slate-500 line-through' : 'text-slate-700'}">
 										{#if onPage}<a class="hover:underline" href={childLink(sub)}>#{sub.number} {sub.title}</a>{:else}#{sub.number} {sub.title}{/if}
 									</span>
 									<span class="shrink-0 text-slate-500">{sub.status.replace('_', ' ')}</span>
@@ -633,7 +633,7 @@
 				</span>
 				<div class="max-h-56 space-y-1 overflow-y-auto rounded-md border border-slate-300 px-3 py-2">
 					{#if assigneeOptions.length === 0}
-						<p class="text-xs text-slate-400">No active team members to assign.</p>
+						<p class="text-xs text-slate-500">No active team members to assign.</p>
 					{:else}
 						{#each assigneeOptions as person (person.id)}
 							<div class="flex min-h-10 items-center gap-2 text-sm text-slate-700">
@@ -649,7 +649,7 @@
 									type="number"
 									class="input w-20 text-right tabular-nums {assigneeIds.includes(person.id)
 										? ''
-										: 'bg-slate-50 text-slate-400'}"
+										: 'bg-slate-50 text-slate-500'}"
 									min="0"
 									max="999"
 									step="0.5"
@@ -850,7 +850,7 @@
 		>
 			<div class="flex items-center justify-between">
 				<h3 id="task-modal-title" class="text-lg font-semibold text-slate-900">{isEdit ? 'Edit task' : 'Add task'}</h3>
-				<button type="button" class="text-slate-400 hover:text-slate-600" onclick={onClose} aria-label="Close">✕</button>
+				<button type="button" class="text-slate-500 hover:text-slate-600" onclick={onClose} aria-label="Close">✕</button>
 			</div>
 			<form class="mt-4 space-y-4" onsubmit={handleSubmit}>
 				{#if formError}

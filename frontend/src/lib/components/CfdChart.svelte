@@ -5,7 +5,9 @@
 	type Day = components['schemas']['FlowDay'];
 	let { days }: { days: Day[] } = $props();
 
-	const W = 640;
+	// Drawn at its on-screen width, so axis text stays 12px at any size.
+	let width = $state(640);
+	const W = $derived(Math.max(240, Math.round(width)));
 	const H = 220;
 	const pad = { l: 32, r: 8, t: 8, b: 22 };
 	const stacks = $derived(days.map((d) => stackDay(d.counts)));
@@ -38,17 +40,18 @@
 		{/each}
 		<span class="ml-auto text-slate-500">{fmt(days[at].date)}</span>
 	</div>
+	<div bind:clientWidth={width}>
 	<svg viewBox="0 0 {W} {H}" class="h-auto w-full" role="img" aria-label="Cumulative flow diagram">
 		{#each [0, yMax / 2, yMax] as t (t)}
 			<line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="#e2e8f0" />
-			<text x={pad.l - 5} y={y(t) + 3} text-anchor="end" class="fill-slate-500 text-[10px]">{Math.round(t)}</text>
+			<text x={pad.l - 5} y={y(t) + 3} text-anchor="end" class="fill-slate-600 text-xs">{Math.round(t)}</text>
 		{/each}
 		{#each FLOW_ORDER as s, k (s)}
 			<!-- 1px surface line between bands keeps neighbours apart -->
 			<path d={area(k)} fill={FLOW_COLORS[s]} stroke="white" stroke-width="1" />
 		{/each}
-		<text x={pad.l} y={H - 6} class="fill-slate-500 text-[10px]">{fmt(days[0].date)}</text>
-		<text x={W - pad.r} y={H - 6} text-anchor="end" class="fill-slate-500 text-[10px]">{fmt(days[days.length - 1].date)}</text>
+		<text x={pad.l} y={H - 6} class="fill-slate-600 text-xs">{fmt(days[0].date)}</text>
+		<text x={W - pad.r} y={H - 6} text-anchor="end" class="fill-slate-600 text-xs">{fmt(days[days.length - 1].date)}</text>
 		{#if hover != null}
 			<line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} stroke="#0f172a" stroke-width="1" stroke-dasharray="3 3" />
 		{/if}
@@ -65,8 +68,9 @@
 			/>
 		{/each}
 	</svg>
+	</div>
 	<details class="mt-2 text-xs text-slate-600">
-		<summary class="cursor-pointer text-slate-500">Show as table</summary>
+		<summary class="inline-flex min-h-7 cursor-pointer items-center text-slate-600 hover:text-slate-900">Show as table</summary>
 		<div class="overflow-x-auto">
 			<table class="mt-2 w-full text-left tabular-nums">
 				<thead class="text-slate-500"><tr><th class="py-1 pr-2 font-medium">Day</th>{#each [...FLOW_ORDER].reverse() as s (s)}<th class="pr-2 font-medium">{label(s)}</th>{/each}</tr></thead>

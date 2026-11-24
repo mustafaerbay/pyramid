@@ -2,6 +2,9 @@
 export const TR: Record<string, string> = {
   // Navigation and shell
   Dashboard: "Pano",
+  Home: "Ana sayfa",
+  Work: "İşler",
+  Admin: "Yönetim",
   "My Tasks": "Görevlerim",
   People: "Kişiler",
   Projects: "Projeler",
@@ -270,6 +273,13 @@ export const TR: Record<string, string> = {
   "Find work items across every project, chart them, and save the query for later.":
     "Tüm projelerde iş öğesi bul, grafiğe dök ve sorguyu sonrası için kaydet.",
   "New query": "Yeni sorgu",
+  "+ New query": "+ Yeni sorgu",
+  "Search projects": "Projelerde ara",
+  "Search people": "Kişilerde ara",
+  "Search goals": "Hedeflerde ara",
+  "Filter projects by status": "Projeleri duruma göre filtrele",
+  "Filter people by status": "Kişileri duruma göre filtrele",
+  "Filter goals by status": "Hedefleri duruma göre filtrele",
   "Name this query": "Sorguya ad ver",
   "Save query": "Sorguyu kaydet",
   Chart: "Grafik",

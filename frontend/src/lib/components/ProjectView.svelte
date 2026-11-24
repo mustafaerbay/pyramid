@@ -1869,7 +1869,7 @@
 								</button>
 							</div>
 							{#if group.tasks.length === 0}
-								<p class="px-4 py-3 text-sm text-slate-400">No tasks match the current filters.</p>
+								<p class="px-4 py-3 text-sm text-slate-500">No tasks match the current filters.</p>
 							{:else}
 								<ul class="divide-y divide-slate-100 md:hidden">
 									{#each nestTasks(group.tasks, tasks) as row, i (row.task.id)}
@@ -1882,7 +1882,7 @@
 												onclick={() => openEditTask(task)}
 											>
 												<span class="font-medium text-slate-800"
-													>{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> {task.title}</span
+													>{#if row.depth}<span class="text-slate-500" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> {task.title}</span
 												>
 												{#if row.depth === 0 && row.parent}
 													<span class="block text-xs text-slate-500">↳ subtask of {row.parent.title}</span>
@@ -1977,7 +1977,7 @@
 												}}
 											>
 												<td class="py-2.5 pr-4" style="padding-left: {1 + row.depth * 1.5}rem">
-													{#if row.depth}<span class="text-slate-400" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> <button
+													{#if row.depth}<span class="text-slate-500" aria-hidden="true">↳ </span>{/if}<TypeBadge type={task.type} label={task.customTypeLabel} color={task.customTypeColor} /> <button
 														type="button"
 														class="text-left font-medium text-slate-800 hover:underline"
 														onclick={() => openEditTask(task)}
@@ -2029,7 +2029,7 @@
 													{#each workflow as w (w.key)}<option value={w.key}>{w.label}</option>{/each}
 </select>
 												</td>
-												<td class="px-4 py-2.5 text-xs text-slate-400">
+												<td class="px-4 py-2.5 text-xs text-slate-500">
 													{task.dueDate ?? ''}
 												</td>
 												<td class="px-4 py-2.5 text-right whitespace-nowrap">
@@ -2130,7 +2130,7 @@
 									{personLabel(contribution.personId)} · {contributionTypeLabel(contribution.type)}
 								</p>
 							</div>
-							<span class="shrink-0 text-xs text-slate-400">
+							<span class="shrink-0 text-xs text-slate-500">
 								{contribution.occurredAt.slice(0, 10)}
 							</span>
 						</li>

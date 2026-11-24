@@ -142,7 +142,7 @@
 			</h3>
 			<button
 				type="button"
-				class="text-slate-400 hover:text-slate-600"
+				class="text-slate-500 hover:text-slate-600"
 				onclick={onClose}
 				aria-label="Close"
 			>
@@ -173,7 +173,7 @@
 			{/if}
 
 			{#if otherAllocationPct !== null && otherProjectCount > 0}
-				<p class="text-xs {wouldExceedCapacity ? 'text-amber-600' : 'text-slate-500'}">
+				<p class="text-xs {wouldExceedCapacity ? 'text-amber-700' : 'text-slate-500'}">
 					Already allocated {otherAllocationPct}% across {otherProjectCount}
 					{otherProjectCount === 1 ? 'other project' : 'other projects'}.
 					{#if wouldExceedCapacity}
@@ -219,7 +219,7 @@
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Left project on</span>
 					<input type="date" class="input" bind:value={leftAt} />
-					<span class="mt-1 block text-xs text-slate-400">
+					<span class="mt-1 block text-xs text-slate-500">
 						Leave blank while they're still active on this project.
 					</span>
 				</label>

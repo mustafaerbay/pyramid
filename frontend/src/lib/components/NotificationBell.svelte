@@ -118,7 +118,7 @@
 								<span class="min-w-0">
 									<span class="block {n.readAt ? '' : 'font-medium'}">{n.title}</span>
 									{#if n.body}<span class="mt-0.5 line-clamp-2 block text-xs text-slate-500">{n.body}</span>{/if}
-									<span class="mt-0.5 block text-xs text-slate-400">{ago(n.createdAt)}</span>
+									<span class="mt-0.5 block text-xs text-slate-500">{ago(n.createdAt)}</span>
 								</span>
 							</button>
 						</li>

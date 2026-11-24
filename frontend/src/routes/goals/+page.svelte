@@ -193,9 +193,10 @@
 	{/if}
 
 	<div class="flex flex-wrap items-center gap-3">
-		<input class="input max-w-xs" type="search" placeholder="Search goals…" bind:value={search} />
+		<input class="input max-w-xs" type="search" aria-label="Search goals" placeholder="Search goals…" bind:value={search} />
 		<select
 			class="input w-auto"
+			aria-label="Filter goals by status"
 			value={statusFilter}
 			onchange={(e) => applyStatusFilter(e.currentTarget.value)}
 		>
@@ -241,7 +242,7 @@
 							{#if goal.description}
 								<p class="mt-1 text-sm text-slate-500">{goal.description}</p>
 							{/if}
-							<p class="mt-1 text-xs text-slate-400">
+							<p class="mt-1 text-xs text-slate-500">
 								{goal.ownerPersonId ? (peopleNames[goal.ownerPersonId] ?? 'Unknown owner') : 'Unassigned'}
 								{#if goal.dueDate}
 									· Due {goal.dueDate}

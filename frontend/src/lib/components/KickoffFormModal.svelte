@@ -163,7 +163,7 @@
 			<h3 id="kickoff-modal-title" class="text-lg font-semibold text-slate-900">
 				{isEdit ? 'Edit kickoff' : 'Run kickoff'}
 			</h3>
-			<button type="button" class="text-slate-400 hover:text-slate-600" onclick={onClose} aria-label="Close">
+			<button type="button" class="text-slate-500 hover:text-slate-600" onclick={onClose} aria-label="Close">
 				✕
 			</button>
 		</div>

@@ -16,7 +16,7 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
-	<span class="w-4 text-center text-slate-400" title={e.kind.replace('_', ' ')} aria-hidden="true">{ICON[e.kind]}</span>
+	<span class="w-4 text-center text-slate-500" title={e.kind.replace('_', ' ')} aria-hidden="true">{ICON[e.kind]}</span>
 	{#if e.url}<a href={e.url} target="_blank" rel="noopener noreferrer" class="min-w-0 truncate font-medium text-slate-800 hover:underline">{e.title}</a>
 	{:else}<span class="min-w-0 truncate font-medium text-slate-800">{e.title}</span>{/if}
 	{#if e.state}<span class="rounded-full px-1.5 text-xs font-medium ring-1 ring-inset {TONE[e.state] ?? TONE.closed}">{LABEL[e.state] ?? e.state}</span>{/if}

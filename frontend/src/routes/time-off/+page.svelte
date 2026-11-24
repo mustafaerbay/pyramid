@@ -328,7 +328,7 @@
 								{#if request.status === 'pending'}
 									<button data-write
 										type="button"
-										class="btn-ghost px-2 py-1 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+										class="btn-ghost px-2 py-1 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-700"
 										onclick={() => setStatus(request, 'approved')}
 									>
 										Approve

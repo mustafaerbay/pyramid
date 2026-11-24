@@ -46,7 +46,7 @@
 				</path>
 			{/each}
 			<text x="70" y="68" text-anchor="middle" class="fill-slate-900 text-[18px] font-semibold tabular-nums">{hovered ? hovered.count : total}</text>
-			<text x="70" y="84" text-anchor="middle" class="fill-slate-500 text-[9px]">{hovered ? hovered.label.slice(0, 16) : 'items'}</text>
+			<text x="70" y="84" text-anchor="middle" class="fill-slate-600 text-xs">{hovered ? hovered.label.slice(0, 12) : 'items'}</text>
 		</svg>
 		<ul class="min-w-0 flex-1 space-y-1 text-sm">
 			{#each arcs as a (a.key)}

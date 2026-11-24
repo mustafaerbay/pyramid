@@ -88,7 +88,7 @@
 </script>
 
 {#if rows.length === 0}
-	<p class="text-sm text-slate-400">No projects have both a start and target date yet.</p>
+	<p class="text-sm text-slate-500">No projects have both a start and target date yet.</p>
 {:else}
 	<div class="relative">
 		<div class="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-slate-900/60" style="left: {todayPct}%"
@@ -128,7 +128,7 @@
 			{/each}
 		</div>
 	</div>
-	<div class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
+	<div class="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
 		<span class="inline-block h-3 w-px bg-slate-900/60"></span>
 		Today
 	</div>

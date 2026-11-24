@@ -10,7 +10,7 @@
 
 	<div class="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center">
 		<p class="text-slate-500">This module isn't wired up yet.</p>
-		<p class="mt-1 text-sm text-slate-400">
+		<p class="mt-1 text-sm text-slate-500">
 			The database schema already covers it — ask to have it built next, following the same
 			pattern as People.
 		</p>

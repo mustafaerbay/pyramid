@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
@@ -41,9 +42,9 @@
 	<div class="flex flex-wrap items-center justify-between gap-2">
 		<h2 class="text-lg font-semibold tracking-tight">Man-day capacity</h2>
 		<div class="flex items-center gap-1" role="group" aria-label="Capacity month">
-			<button type="button" class="btn-ghost px-2" aria-label="Previous month" onclick={() => changeMonth(-1)}>‹</button>
+			<button type="button" class="btn-ghost h-9 w-9 px-0" aria-label="Previous month" onclick={() => changeMonth(-1)}><Icon name="chevron-left" /></button>
 			<span class="min-w-32 text-center text-sm font-medium text-slate-700">{monthLabel(month)}</span>
-			<button type="button" class="btn-ghost px-2" aria-label="Next month" onclick={() => changeMonth(1)}>›</button>
+			<button type="button" class="btn-ghost h-9 w-9 px-0" aria-label="Next month" onclick={() => changeMonth(1)}><Icon name="chevron-right" /></button>
 		</div>
 	</div>
 

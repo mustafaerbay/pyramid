@@ -110,7 +110,7 @@
 			</h3>
 			<button
 				type="button"
-				class="text-slate-400 hover:text-slate-600"
+				class="text-slate-500 hover:text-slate-600"
 				onclick={onClose}
 				aria-label="Close"
 			>
@@ -153,7 +153,7 @@
 					<label class="block text-sm">
 						<span class="mb-1 block font-medium text-slate-700">Released on</span>
 						<input type="date" class="input" bind:value={releasedAt} />
-						<span class="mt-1 block text-xs text-slate-400">Set to today when marked released, if empty.</span>
+						<span class="mt-1 block text-xs text-slate-500">Set to today when marked released, if empty.</span>
 					</label>
 				</div>
 			{/if}

@@ -30,7 +30,7 @@
 			{#each values as v (v)}
 				<button
 					type="button"
-					class="inline-flex max-w-full items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-200"
+					class="inline-flex min-h-7 max-w-full items-center gap-1 rounded-full bg-slate-100 px-2.5 text-xs text-slate-700 hover:bg-slate-200"
 					aria-label="Remove {name(v)} from {label}"
 					onclick={() => (values = values.filter((x) => x !== v))}
 				>

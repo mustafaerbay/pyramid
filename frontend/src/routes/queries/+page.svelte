@@ -257,10 +257,10 @@
 					class="rounded-full px-3 py-1 ring-1 ring-inset {current?.id === q.id ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'}"
 					onclick={() => load(q)}
 					title={q.shared ? (q.mine ? 'Shared by you' : `Shared by ${people[q.ownerPersonId ?? ''] ?? 'someone'}`) : 'Only you'}
-					>{q.name}{#if q.shared}<Icon name="users" size={14} class="ml-1 align-[-2px] text-slate-400" /><span class="sr-only"> (shared)</span>{/if}</button
+					>{q.name}{#if q.shared}<Icon name="users" size={14} class="ml-1 align-[-2px] text-slate-500" /><span class="sr-only"> (shared)</span>{/if}</button
 				>
 			{/each}
-			<button type="button" class="text-xs text-slate-500 hover:underline" onclick={reset}>New query</button>
+			<button type="button" class="btn-ghost px-3 py-1 text-xs" onclick={reset}>+ New query</button>
 		</div>
 	{/if}
 
@@ -288,8 +288,8 @@
 	</div>
 
 	<div class="rounded-lg border border-slate-200 bg-white p-4">
-		<button type="button" class="text-sm font-medium text-slate-700" aria-expanded={advanced} onclick={() => (advanced = !advanced)}>
-			{advanced ? '▾' : '▸'} Conditions (AND / OR, custom fields, tree)
+		<button type="button" class="inline-flex min-h-8 items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-slate-900" aria-expanded={advanced} onclick={() => (advanced = !advanced)}>
+			<Icon name={advanced ? 'chevron-down' : 'chevron-right'} /> Conditions (AND / OR, custom fields, tree)
 		</button>
 		{#if advanced}
 			{@const peopleList = Object.entries(people).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))}

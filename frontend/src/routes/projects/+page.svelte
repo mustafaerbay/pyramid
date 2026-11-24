@@ -216,11 +216,13 @@
 		<input
 			class="input max-w-xs"
 			type="search"
+			aria-label="Search projects"
 			placeholder="Search by key, name, or description…"
 			bind:value={search}
 		/>
 		<select
 			class="input w-auto"
+			aria-label="Filter projects by status"
 			value={statusFilter}
 			onchange={(e) => applyStatusFilter(e.currentTarget.value)}
 		>

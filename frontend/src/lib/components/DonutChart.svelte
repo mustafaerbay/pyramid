@@ -70,7 +70,7 @@
 			<div class="absolute inset-0 flex flex-col items-center justify-center">
 				<span class="text-lg font-semibold text-slate-900">{centerValue}</span>
 				{#if centerLabel}
-					<span class="text-[10px] text-slate-500">{centerLabel}</span>
+					<span class="text-xs text-slate-500">{centerLabel}</span>
 				{/if}
 			</div>
 		{/if}
@@ -79,7 +79,7 @@
 	{#if showLegend}
 		<div class="flex flex-1 flex-col gap-1.5 text-sm">
 			{#if total === 0}
-				<p class="text-slate-400">No data yet.</p>
+				<p class="text-slate-500">No data yet.</p>
 			{:else}
 				{#each data as d (d.label)}
 					<span class="inline-flex items-center gap-1.5 text-slate-600">

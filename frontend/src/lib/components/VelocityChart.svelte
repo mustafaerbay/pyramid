@@ -34,7 +34,7 @@
 						title="{d.name}: {formatManDays(d.done)} pts done"
 					></div>
 				</div>
-				<span class="w-full truncate text-center text-[11px] text-slate-500" title={d.name}>{d.name}</span>
+				<span class="w-full truncate text-center text-xs text-slate-500" title={d.name}>{d.name}</span>
 			</div>
 		{/each}
 	</div>

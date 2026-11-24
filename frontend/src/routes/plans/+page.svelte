@@ -222,9 +222,9 @@
 				{#each rows as r, i (r.key)}
 					<li class="flex items-center gap-1">
 						<span class="min-w-0 flex-1 truncate">{r.name}{r.team ? ` · ${r.team}` : ''}</span>
-						<button type="button" class="px-1 text-slate-400 hover:text-slate-700" aria-label="Move up" onclick={() => moveLane(i, -1)}>↑</button>
-						<button type="button" class="px-1 text-slate-400 hover:text-slate-700" aria-label="Move down" onclick={() => moveLane(i, 1)}>↓</button>
-						<button type="button" class="px-1 text-slate-400 hover:text-red-600" aria-label="Remove lane" onclick={() => (lanes = lanes.filter((_, j) => j !== i))}>✕</button>
+						<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Move up" onclick={() => moveLane(i, -1)}><Icon name="chevron-up" /></button>
+						<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Move down" onclick={() => moveLane(i, 1)}><Icon name="chevron-down" /></button>
+						<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-red-600" aria-label="Remove lane" onclick={() => (lanes = lanes.filter((_, j) => j !== i))}><Icon name="x" /></button>
 					</li>
 				{/each}
 			</ul>
@@ -262,7 +262,7 @@
 					<select class="input w-auto py-1 text-xs" aria-label="Marker colour" bind:value={m.color}>
 						{#each Object.keys(MARK) as c (c)}<option value={c}>{c}</option>{/each}
 					</select>
-					<button type="button" class="px-1 text-slate-400 hover:text-red-600" aria-label="Remove marker" onclick={() => (markers = markers.filter((_, j) => j !== i))}>✕</button>
+					<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-red-600" aria-label="Remove marker" onclick={() => (markers = markers.filter((_, j) => j !== i))}><Icon name="x" /></button>
 				</div>
 			{/each}
 			<button
@@ -294,14 +294,14 @@
 
 	<div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
 		<div class="min-w-[44rem] rounded-lg border border-slate-200 bg-white">
-			<div class="relative ml-40 h-7 border-b border-slate-200 text-[11px] text-slate-500">
+			<div class="relative ml-40 h-7 border-b border-slate-200 text-xs text-slate-500">
 				{#each monthTicks as m (m.left)}
 					<span class="absolute top-1.5 border-l border-slate-200 pl-1" style="left:{m.left}%">{m.label}</span>
 				{/each}
 				{#each markers.filter((m) => m.date && m.label.trim()) as m, i (i)}
 					{@const left = pct(m.date)}
 					{#if left >= 0 && left <= 100}
-						<span class="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded px-1 text-[10px] font-medium text-white" style="left:{left}%; background:{MARK[m.color]}" title="{m.label} · {m.date}">{m.label}</span>
+						<span class="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded px-1 text-xs font-medium text-white" style="left:{left}%; background:{MARK[m.color]}" title="{m.label} · {m.date}">{m.label}</span>
 					{/if}
 				{/each}
 			</div>
@@ -326,7 +326,7 @@
 								{@const b = planBar(s.startDate, s.endDate, range)}
 								{#if b}
 									<span
-										class="absolute h-5 truncate rounded-b bg-slate-100 px-1 text-[10px] leading-5 text-slate-500"
+										class="absolute h-5 truncate rounded-b bg-slate-100 px-1 text-xs leading-5 text-slate-600"
 										style="left:{b.left}%; width:{b.width}%; top:{layout.tops[li]}px"
 										title="{s.name}: {s.startDate} – {s.endDate}">{s.name}</span
 									>

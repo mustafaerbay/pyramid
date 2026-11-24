@@ -10,7 +10,7 @@
 
 <div class="space-y-2.5">
 	{#if data.length === 0}
-		<p class="text-sm text-slate-400">No data yet.</p>
+		<p class="text-sm text-slate-500">No data yet.</p>
 	{:else}
 		{#each data as item (item.label)}
 			<div class="flex items-center gap-3 text-sm">

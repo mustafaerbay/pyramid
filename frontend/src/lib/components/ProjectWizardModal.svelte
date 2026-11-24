@@ -261,7 +261,7 @@
 			</div>
 			<button
 				type="button"
-				class="text-slate-400 hover:text-slate-600"
+				class="text-slate-500 hover:text-slate-600"
 				onclick={onClose}
 				aria-label="Close"
 				disabled={creating}
@@ -413,7 +413,7 @@
 												onchange={() => toggleCandidate(p.id)}
 											/>
 											<span class="text-slate-800">{fullName(p)}</span>
-											<span class="text-xs text-slate-400">{p.email}</span>
+											<span class="text-xs text-slate-500">{p.email}</span>
 										</label>
 									</li>
 								{/each}
@@ -516,19 +516,19 @@
 						{/if}
 						<dl class="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
 							<div>
-								<dt class="text-xs text-slate-400">Priority</dt>
+								<dt class="text-xs text-slate-500">Priority</dt>
 								<dd class="text-slate-700 capitalize">{priority}</dd>
 							</div>
 							<div>
-								<dt class="text-xs text-slate-400">Start</dt>
+								<dt class="text-xs text-slate-500">Start</dt>
 								<dd class="text-slate-700">{startDate || '—'}</dd>
 							</div>
 							<div>
-								<dt class="text-xs text-slate-400">Target</dt>
+								<dt class="text-xs text-slate-500">Target</dt>
 								<dd class="text-slate-700">{targetDate || '—'}</dd>
 							</div>
 							<div>
-								<dt class="text-xs text-slate-400">Lead</dt>
+								<dt class="text-xs text-slate-500">Lead</dt>
 								<dd class="text-slate-700">
 									{leadId ? leadName(leadId) : '—'}
 								</dd>
@@ -541,7 +541,7 @@
 							Team ({draftTeam.length})
 						</h5>
 						{#if draftTeam.length === 0}
-							<p class="mt-1 text-sm text-slate-400">No team members staged yet.</p>
+							<p class="mt-1 text-sm text-slate-500">No team members staged yet.</p>
 						{:else}
 							<ul class="mt-1 space-y-1 text-sm text-slate-700">
 								{#each draftTeam as m (m.personId)}
@@ -559,7 +559,7 @@
 							Milestones ({draftMilestones.length})
 						</h5>
 						{#if draftMilestones.length === 0}
-							<p class="mt-1 text-sm text-slate-400">No milestones staged yet.</p>
+							<p class="mt-1 text-sm text-slate-500">No milestones staged yet.</p>
 						{:else}
 							<ul class="mt-1 space-y-1 text-sm text-slate-700">
 								{#each draftMilestones as m, i (i)}

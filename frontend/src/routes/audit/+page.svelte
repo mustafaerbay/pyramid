@@ -40,7 +40,7 @@
 					<tr class={e.action === 'failed sign in' ? 'bg-red-50' : ''}>
 						<td class="whitespace-nowrap px-3 py-1.5 text-slate-600">{new Date(e.at).toLocaleString()}</td>
 						<td class="px-3 py-1.5">{e.actor}</td>
-						<td class="px-3 py-1.5">{e.action}{e.entityId ? '' : ''}<span class="ml-1 text-xs text-slate-400">{e.entityId ? e.entityId.slice(0, 8) : ''}</span></td>
+						<td class="px-3 py-1.5">{e.action}{e.entityId ? '' : ''}<span class="ml-1 text-xs text-slate-500">{e.entityId ? e.entityId.slice(0, 8) : ''}</span></td>
 						<td class="px-3 py-1.5 text-xs text-slate-500">{e.fields.join(', ')}</td>
 						<td class="px-3 py-1.5 text-xs text-slate-500">{e.via}{e.ip ? ` · ${e.ip}` : ''}</td>
 					</tr>

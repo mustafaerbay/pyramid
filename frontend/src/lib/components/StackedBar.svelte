@@ -22,7 +22,7 @@
 	</div>
 	<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
 		{#if total === 0}
-			<span class="text-slate-400">No data yet.</span>
+			<span class="text-slate-500">No data yet.</span>
 		{:else}
 			{#each data as seg (seg.label)}
 				<span class="inline-flex items-center gap-1.5">

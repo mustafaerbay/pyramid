@@ -29,7 +29,7 @@
 		<ul class="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white text-sm">
 			{#each res.items as i (i.id)}
 				<li class="px-4 py-2.5">
-					<a href="/projects/{i.projectId}/items/{i.id}" class="flex items-center gap-2 hover:underline">
+					<a href="/projects/{i.projectId}/items/{i.id}" class="flex min-h-8 items-center gap-2 hover:underline">
 						<TypeBadge type={i.type} />
 						<span class="text-xs tabular-nums text-slate-500">{i.projectKey}-{i.number}</span>
 						<span class="font-medium text-slate-800">{i.title}</span>

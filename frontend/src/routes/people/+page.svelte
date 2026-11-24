@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api/client';
@@ -224,11 +225,13 @@
 		<input
 			class="input max-w-xs"
 			type="search"
+			aria-label="Search people"
 			placeholder="Search by name, email, or title…"
 			bind:value={search}
 		/>
 		<select
 			class="input w-auto"
+			aria-label="Filter people by status"
 			value={statusFilter}
 			onchange={(e) => applyStatusFilter(e.currentTarget.value)}
 		>
@@ -239,9 +242,9 @@
 			<option value="inactive">Inactive</option>
 		</select>
 		<div class="flex items-center gap-1 sm:ml-auto" role="group" aria-label="Workload month">
-			<button type="button" class="btn-ghost px-2" aria-label="Previous month" onclick={() => changeMonth(-1)}>‹</button>
+			<button type="button" class="btn-ghost h-9 w-9 px-0" aria-label="Previous month" onclick={() => changeMonth(-1)}><Icon name="chevron-left" /></button>
 			<span class="min-w-32 text-center text-sm font-medium text-slate-700">{monthLabel(month)}</span>
-			<button type="button" class="btn-ghost px-2" aria-label="Next month" onclick={() => changeMonth(1)}>›</button>
+			<button type="button" class="btn-ghost h-9 w-9 px-0" aria-label="Next month" onclick={() => changeMonth(1)}><Icon name="chevron-right" /></button>
 		</div>
 	</div>
 

@@ -74,7 +74,7 @@
 </script>
 
 {#if groups.length === 0}
-	<p class="text-sm text-slate-400">No versions yet. Add one to plan releases.</p>
+	<p class="text-sm text-slate-500">No versions yet. Add one to plan releases.</p>
 {:else}
 	<div class="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
 		{#each groups as group (group.version?.id ?? '__none__')}
@@ -99,7 +99,7 @@
 								Target {fmt(v.targetDate)}{isOverdue(v, today) ? ' · overdue' : ''}
 							</span>
 						{:else}
-							<span class="text-xs text-slate-400">No target date</span>
+							<span class="text-xs text-slate-500">No target date</span>
 						{/if}
 						<span class="ml-auto flex items-center gap-2">
 							<span
@@ -156,7 +156,7 @@
 						{/each}
 					</ul>
 				{:else if v}
-					<p class="mt-2 text-xs text-slate-400">No milestones in this version yet.</p>
+					<p class="mt-2 text-xs text-slate-500">No milestones in this version yet.</p>
 				{/if}
 			</div>
 		{/each}

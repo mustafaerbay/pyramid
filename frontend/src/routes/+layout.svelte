@@ -11,20 +11,43 @@
 	let { children } = $props();
 	onMount(() => watchTranslations());
 
-	// One entry per module. New modules get a tab here as they're built.
-	const baseNav = [
-		{ href: '/', label: 'Dashboard' },
+	// Top-level sections. A section with pages shows them as a second row of
+	// tabs, so the top row stays short enough to fit on a tablet.
+	type NavLink = { href: string; label: string };
+	type NavSection = NavLink & { pages?: NavLink[] };
+	const baseNav: NavSection[] = [
+		{ href: '/', label: 'Home' },
 		{ href: '/me', label: 'My Tasks' },
-		{ href: '/people', label: 'People' },
 		{ href: '/projects', label: 'Projects' },
-		{ href: '/queries', label: 'Queries' },
-		{ href: '/dashboards', label: 'Dashboards' },
-		{ href: '/plans', label: 'Plans' },
-		{ href: '/contributions', label: 'Contributions' },
-		{ href: '/goals', label: 'Growth' },
-		{ href: '/time-off', label: 'Time Off' }
+		{
+			href: '/queries',
+			label: 'Work',
+			pages: [
+				{ href: '/queries', label: 'Queries' },
+				{ href: '/dashboards', label: 'Dashboards' },
+				{ href: '/plans', label: 'Plans' }
+			]
+		},
+		{
+			href: '/people',
+			label: 'Team',
+			pages: [
+				{ href: '/people', label: 'People' },
+				{ href: '/contributions', label: 'Contributions' },
+				{ href: '/goals', label: 'Growth' },
+				{ href: '/time-off', label: 'Time Off' }
+			]
+		}
 	];
-	const navItems = $derived(can('admin') ? [...baseNav, { href: '/users', label: 'Accounts' }, { href: '/audit', label: 'Audit' }] : baseNav);
+	const adminNav: NavSection = {
+		href: '/users',
+		label: 'Admin',
+		pages: [
+			{ href: '/users', label: 'Accounts' },
+			{ href: '/audit', label: 'Audit' }
+		]
+	};
+	const navItems = $derived(can('admin') ? [...baseNav, adminNav] : baseNav);
 
 	// Every page but /login needs a signed-in account.
 	// Pages that work signed out.
@@ -51,9 +74,14 @@
 	const firstName = $derived(session.me?.person.firstName ?? '');
 
 	function isActive(href: string): boolean {
-		if (href === '/') return page.url.pathname === '/';
-		return page.url.pathname.startsWith(href);
+		const path = page.url.pathname;
+		if (href === '/') return path === '/';
+		return path === href || path.startsWith(href + '/');
 	}
+	function sectionActive(s: NavSection): boolean {
+		return s.pages ? s.pages.some((p) => isActive(p.href)) : isActive(s.href);
+	}
+	const section = $derived(navItems.find(sectionActive));
 
 	// Phone menu: closed again whenever the route changes.
 	let menuOpen = $state(false);
@@ -62,7 +90,7 @@
 		menuOpen = false;
 	});
 
-	const currentLabel = $derived(navItems.find((i) => isActive(i.href))?.label ?? '');
+	const currentLabel = $derived(section?.pages?.find((p) => isActive(p.href))?.label ?? section?.label ?? '');
 </script>
 
 <svelte:head><title>{onLogin ? (page.url.pathname === '/login' ? 'Sign in · Pyramid' : 'Password · Pyramid') : 'Pyramid'}</title></svelte:head>
@@ -76,23 +104,23 @@
 	<header class="border-b border-slate-200 bg-white">
 		<div class="mx-auto max-w-6xl px-4 sm:px-6">
 			<div class="flex items-center gap-2 py-3 md:py-4">
-				<span class="text-lg font-semibold tracking-tight">▲ Pyramid</span>
+				<a href="/" class="inline-flex min-h-8 shrink-0 items-center gap-1.5 text-lg font-semibold tracking-tight"><span aria-hidden="true">▲</span> Pyramid</a>
 				<span class="hidden text-sm text-slate-500 sm:inline">Software Department Management</span>
-				<span class="text-sm text-slate-500 sm:hidden">{currentLabel}</span>
-				<div class="ml-auto flex items-center gap-2"><SearchBox /><NotificationBell /></div>
-				<div class="hidden items-center gap-3 text-sm md:flex">
+				<span class="min-w-0 truncate text-sm text-slate-500 sm:hidden">{currentLabel}</span>
+				<div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-2"><SearchBox /><NotificationBell /></div>
+				<div class="hidden items-center gap-1 text-sm md:flex">
 					<button
 						type="button"
-						class="rounded px-1.5 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
+						class="inline-flex h-8 min-w-8 items-center justify-center rounded px-1.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"
 						title={i18n.locale === 'tr' ? 'Switch to English' : 'Türkçe’ye geç'}
 						onclick={() => setLocale(i18n.locale === 'tr' ? 'en' : 'tr')}>{i18n.locale === 'tr' ? 'EN' : 'TR'}</button
 					>
-					<a href="/account" class="font-medium text-slate-700 hover:underline" title="Your account">{firstName}</a>
-					<button type="button" class="text-slate-500 hover:text-slate-800 hover:underline" onclick={doSignOut}>Sign out</button>
+					<a href="/account" class="inline-flex h-8 items-center rounded px-1.5 font-medium text-slate-700 hover:bg-slate-50 hover:underline" title="Your account">{firstName}</a>
+					<button type="button" class="inline-flex h-8 items-center rounded px-1.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900" onclick={doSignOut}>Sign out</button>
 				</div>
 				<button
 					type="button"
-					class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 md:hidden"
+					class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 md:hidden"
 					aria-label={menuOpen ? 'Close menu' : 'Open menu'}
 					aria-expanded={menuOpen}
 					aria-controls="mobile-nav"
@@ -107,16 +135,21 @@
 			</div>
 			{#if menuOpen}
 				<nav id="mobile-nav" class="border-t border-slate-100 pb-3 pt-2 md:hidden" aria-label="Primary">
-					{#each navItems as item (item.href)}
-						<a
-							href={item.href}
-							class="flex min-h-11 items-center rounded-md px-3 text-base font-medium {isActive(item.href)
-								? 'bg-slate-100 text-slate-900'
-								: 'text-slate-600 hover:bg-slate-50'}"
-							aria-current={isActive(item.href) ? 'page' : undefined}
-						>
-							{item.label}
-						</a>
+					{#each navItems as item (item.label)}
+						{#if item.pages}
+							<p class="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{item.label}</p>
+						{/if}
+						{#each item.pages ?? [item] as link (link.href)}
+							<a
+								href={link.href}
+								class="flex min-h-11 items-center rounded-md text-base font-medium {item.pages ? 'pl-5 pr-3' : 'px-3'} {isActive(link.href)
+									? 'bg-slate-100 text-slate-900'
+									: 'text-slate-600 hover:bg-slate-50'}"
+								aria-current={isActive(link.href) ? 'page' : undefined}
+							>
+								{link.label}
+							</a>
+						{/each}
 					{/each}
 					<div class="mt-2 border-t border-slate-100 pt-2">
 						<a href="/account" class="flex min-h-11 items-center rounded-md px-3 text-base font-medium text-slate-600 hover:bg-slate-50"
@@ -136,15 +169,14 @@
 				</nav>
 			{/if}
 			<nav class="-mb-px hidden gap-1 md:flex" aria-label="Primary">
-				{#each navItems as item (item.href)}
+				{#each navItems as item (item.label)}
+					{@const on = sectionActive(item)}
 					<a
 						href={item.href}
-						class="whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors {isActive(
-							item.href
-						)
+						class="whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors {on
 							? 'border-slate-900 text-slate-900'
-							: 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'}"
-						aria-current={isActive(item.href) ? 'page' : undefined}
+							: 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900'}"
+						aria-current={on && !item.pages ? 'page' : undefined}
 					>
 						{item.label}
 					</a>
@@ -152,6 +184,25 @@
 			</nav>
 		</div>
 	</header>
+	{#if section?.pages}
+		<nav class="border-b border-slate-200 bg-white" aria-label={section.label}>
+			<ul class="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 py-1.5 sm:px-6">
+				{#each section.pages as sub (sub.href)}
+					<li>
+						<a
+							href={sub.href}
+							class="inline-flex min-h-9 items-center whitespace-nowrap rounded-md px-3 text-sm font-medium {isActive(sub.href)
+								? 'bg-slate-100 text-slate-900'
+								: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}"
+							aria-current={isActive(sub.href) ? 'page' : undefined}
+						>
+							{sub.label}
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</nav>
+	{/if}
 	<main class="mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-8">
 		{@render children()}
 	</main>

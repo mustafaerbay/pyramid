@@ -225,7 +225,7 @@
 							>
 								{group.name}
 							</a>
-							<span class="font-mono text-xs text-slate-400">{group.key}</span>
+							<span class="font-mono text-xs text-slate-500">{group.key}</span>
 							<span class="text-xs text-slate-500">
 								{group.tasks.length}
 								{group.tasks.length === 1 ? 'task' : 'tasks'}
@@ -285,7 +285,7 @@
 												{task.title}
 											</a>
 											{#if task.milestoneId && milestones[task.milestoneId]}
-												<span class="ml-1.5 text-xs text-slate-400">
+												<span class="ml-1.5 text-xs text-slate-500">
 													· {milestones[task.milestoneId].name}
 												</span>
 											{/if}
@@ -311,7 +311,7 @@
 												<option value="cancelled">cancelled</option>
 											</select>
 										</td>
-										<td class="px-4 py-2.5 text-xs text-slate-400">
+										<td class="px-4 py-2.5 text-xs text-slate-500">
 											{task.dueDate ?? ''}
 										</td>
 									</tr>

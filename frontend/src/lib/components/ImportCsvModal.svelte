@@ -91,7 +91,7 @@
 				{#if parsed.ok.length}
 					<ul class="max-h-48 divide-y divide-slate-100 overflow-y-auto rounded-md border border-slate-200 text-xs">
 						{#each parsed.ok.slice(0, 50) as r (r.line)}
-							<li class="flex gap-2 px-2 py-1"><span class="text-slate-400">{r.line}</span><span class="truncate">{r.body.title}</span><span class="ml-auto shrink-0 text-slate-500">{r.body.type ?? 'task'} · {r.body.status ?? 'backlog'}</span></li>
+							<li class="flex gap-2 px-2 py-1"><span class="text-slate-500">{r.line}</span><span class="truncate">{r.body.title}</span><span class="ml-auto shrink-0 text-slate-500">{r.body.type ?? 'task'} · {r.body.status ?? 'backlog'}</span></li>
 						{/each}
 						{#if parsed.ok.length > 50}<li class="px-2 py-1 text-slate-500">…and {parsed.ok.length - 50} more</li>{/if}
 					</ul>

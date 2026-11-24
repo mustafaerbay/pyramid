@@ -4,7 +4,9 @@
 	// Validated pair on the light surface: open = indigo, done = teal.
 	const INDIGO = '#6366f1';
 	const TEAL = '#0d9488';
-	const W = 480;
+	// Drawn at its on-screen width, so axis text stays 12px at any size.
+	let width = $state(480);
+	const W = $derived(Math.max(240, Math.round(width)));
 	const H = 160;
 	const pad = { l: 28, r: 8, t: 8, b: 20 };
 	const max = $derived(Math.max(1, ...data.flatMap((d) => [d.open, d.done])));
@@ -20,7 +22,7 @@
 	}
 </script>
 
-<div class="space-y-1">
+<div class="space-y-1" bind:clientWidth={width}>
 	<ul class="flex gap-3 text-xs text-slate-600">
 		<li class="flex items-center gap-1.5"><span class="h-0.5 w-3" style:background={INDIGO}></span>Open</li>
 		<li class="flex items-center gap-1.5"><span class="h-0.5 w-3" style:background={TEAL}></span>Done</li>
@@ -29,11 +31,11 @@
 	<svg viewBox="0 0 {W} {H}" class="w-full" role="img" aria-label="Open and done items over time" onmousemove={move} onmouseleave={() => (hover = null)}>
 		{#each [0, 0.5, 1] as f (f)}
 			<line x1={pad.l} x2={W - pad.r} y1={y(max * f)} y2={y(max * f)} stroke="#e2e8f0" />
-			<text x={pad.l - 4} y={y(max * f) + 3} text-anchor="end" class="fill-slate-500 text-[9px] tabular-nums">{Math.round(max * f)}</text>
+			<text x={pad.l - 4} y={y(max * f) + 3} text-anchor="end" class="fill-slate-600 text-xs tabular-nums">{Math.round(max * f)}</text>
 		{/each}
 		{#if data.length}
-			<text x={pad.l} y={H - 4} class="fill-slate-500 text-[9px]">{fmt(data[0].day)}</text>
-			<text x={W - pad.r} y={H - 4} text-anchor="end" class="fill-slate-500 text-[9px]">{fmt(data[data.length - 1].day)}</text>
+			<text x={pad.l} y={H - 4} class="fill-slate-600 text-xs">{fmt(data[0].day)}</text>
+			<text x={W - pad.r} y={H - 4} text-anchor="end" class="fill-slate-600 text-xs">{fmt(data[data.length - 1].day)}</text>
 		{/if}
 		<path d={line('open')} fill="none" stroke={INDIGO} stroke-width="2" />
 		<path d={line('done')} fill="none" stroke={TEAL} stroke-width="2" />

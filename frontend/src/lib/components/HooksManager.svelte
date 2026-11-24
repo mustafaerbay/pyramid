@@ -86,7 +86,7 @@
 			{#each hooks as h (h.id)}
 				<li class="flex flex-wrap items-center gap-2 px-3 py-2">
 					<span class="rounded bg-slate-100 px-1.5 text-xs font-medium uppercase text-slate-600">{h.kind}</span>
-					<span class="font-medium {h.active ? '' : 'text-slate-400 line-through'}">{h.name}</span>
+					<span class="font-medium {h.active ? '' : 'text-slate-500 line-through'}">{h.name}</span>
 					<span class="text-xs text-slate-500">{h.events.length} events</span>
 					{#if h.lastAt}
 						<span class="text-xs {h.lastError ? 'text-red-700' : 'text-emerald-700'}" title={h.lastError ?? ''}>

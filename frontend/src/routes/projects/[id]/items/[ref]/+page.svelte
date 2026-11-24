@@ -172,7 +172,7 @@
 
 	{#if notice}
 		<div class="mb-4 flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-			<span>{notice}</span><button type="button" class="text-slate-400 hover:text-slate-600" aria-label="Dismiss" onclick={() => (notice = null)}>✕</button>
+			<span>{notice}</span><button type="button" class="text-slate-500 hover:text-slate-600" aria-label="Dismiss" onclick={() => (notice = null)}>✕</button>
 		</div>
 	{/if}
 

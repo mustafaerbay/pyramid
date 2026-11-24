@@ -61,7 +61,7 @@
 				>
 					{#if m.planned > 0}
 						<span
-							class="mb-0.5 hidden text-center text-[10px] font-medium tabular-nums sm:block {over
+							class="mb-0.5 hidden text-center text-xs font-medium tabular-nums sm:block {over
 								? 'text-red-700'
 								: 'text-slate-600'}"
 						>
@@ -94,7 +94,7 @@
 			class="pointer-events-none absolute inset-x-0 z-10 border-t border-dashed border-slate-500"
 			style="bottom: {at(capacityRatio)}"
 		>
-			<span class="absolute -top-4 left-0 rounded bg-white/90 px-1 text-[10px] font-medium text-slate-600">
+			<span class="absolute -top-5 left-0 rounded bg-white/90 px-1 text-xs font-medium text-slate-600">
 				{formatManDays(capacity)} md capacity
 			</span>
 		</div>
@@ -102,7 +102,7 @@
 	<div class="mt-1 flex gap-1 border-t border-slate-200 pt-1 sm:gap-2">
 		{#each months as m (m.month)}
 			<span
-				class="min-w-0 flex-1 truncate text-center text-[10px] sm:text-xs {m.month === selected
+				class="min-w-0 flex-1 truncate text-center text-xs {m.month === selected
 					? 'font-semibold text-slate-900'
 					: 'text-slate-500'}"
 			>

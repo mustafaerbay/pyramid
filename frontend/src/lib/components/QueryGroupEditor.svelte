@@ -97,7 +97,7 @@
 			{/if}
 			<button
 				type="button"
-				class="px-1 text-slate-400 hover:text-red-600"
+				class="px-1 text-slate-500 hover:text-red-600"
 				aria-label="Remove condition"
 				onclick={() => (group.conditions = group.conditions.filter((_, j) => j !== i))}>✕</button
 			>

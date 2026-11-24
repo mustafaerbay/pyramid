@@ -17,7 +17,9 @@
 	const INDIGO = '#6366f1';
 	const TEAL = '#0d9488';
 
-	const W = 640;
+	// Drawn at its on-screen width, so axis text stays 12px at any size.
+	let width = $state(640);
+	const W = $derived(Math.max(240, Math.round(width)));
 	const H = 220;
 	const pad = { l: 36, r: 12, t: 12, b: 26 };
 	const unit = $derived(metric === 'points' ? 'pts' : metric === 'count' ? 'items' : 'md');
@@ -47,7 +49,7 @@
 	const hovered = $derived(hover != null && hover < values.length ? hover : values.length - 1);
 </script>
 
-<div>
+<div bind:clientWidth={width}>
 	<div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
 		{#each series as s (s.key)}
 			<span class="inline-flex items-center gap-1.5"><span class="h-0.5 w-4 rounded" style="background:{s.color}"></span>{s.label}</span>
@@ -73,10 +75,10 @@
 		<svg viewBox="0 0 {W} {H}" class="h-auto w-full" role="img" aria-label="{mode === 'burndown' ? 'Burndown' : 'Burnup'} chart">
 			{#each ticks as t (t)}
 				<line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} stroke="#e2e8f0" stroke-width="1" />
-				<text x={pad.l - 6} y={y(t) + 3} text-anchor="end" class="fill-slate-500 text-[10px]">{formatManDays(t)}</text>
+				<text x={pad.l - 6} y={y(t) + 3} text-anchor="end" class="fill-slate-600 text-xs">{formatManDays(t)}</text>
 			{/each}
-			<text x={pad.l} y={H - 8} class="fill-slate-500 text-[10px]">{label(0)}</text>
-			<text x={W - pad.r} y={H - 8} text-anchor="end" class="fill-slate-500 text-[10px]">{label(length - 1)}</text>
+			<text x={pad.l} y={H - 8} class="fill-slate-600 text-xs">{label(0)}</text>
+			<text x={W - pad.r} y={H - 8} text-anchor="end" class="fill-slate-600 text-xs">{label(length - 1)}</text>
 
 			{#if mode === 'burndown'}
 				<line x1={x(0)} y1={y(startTotal)} x2={x(length - 1)} y2={y(0)} stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 4" />
@@ -105,7 +107,7 @@
 		</svg>
 
 		<details class="mt-2 text-xs text-slate-600">
-			<summary class="cursor-pointer text-slate-500">Show as table</summary>
+			<summary class="inline-flex min-h-7 cursor-pointer items-center text-slate-600 hover:text-slate-900">Show as table</summary>
 			<table class="mt-2 w-full text-left tabular-nums">
 				<thead class="text-slate-500"><tr><th class="py-1 font-medium">Day</th><th class="font-medium">Scope</th><th class="font-medium">Done</th><th class="font-medium">Left</th></tr></thead>
 				<tbody>

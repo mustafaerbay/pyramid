@@ -321,7 +321,7 @@
 
 <div class="space-y-3">
 	{#if milestones.length === 0}
-		<p class="text-sm text-slate-400">No milestones yet.</p>
+		<p class="text-sm text-slate-500">No milestones yet.</p>
 	{:else}
 		<!-- Phones: the Gantt view can't fit 375px, so show a plain list
 		     (grouped by version when the project has versions). -->
@@ -439,7 +439,7 @@
 		</div>
 
 		{#if clippedCount > 0}
-			<p class="text-xs text-slate-400">
+			<p class="text-xs text-slate-500">
 				{clippedCount}
 				{clippedCount === 1 ? 'milestone is' : 'milestones are'} further out than this view shows.
 			</p>

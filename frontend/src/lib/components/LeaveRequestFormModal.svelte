@@ -121,7 +121,7 @@
 			</h3>
 			<button
 				type="button"
-				class="text-slate-400 hover:text-slate-600"
+				class="text-slate-500 hover:text-slate-600"
 				onclick={onClose}
 				aria-label="Close"
 			>

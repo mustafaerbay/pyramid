@@ -59,8 +59,8 @@
 			{#each list as s, i (s.key)}
 				<li class="flex flex-wrap items-center gap-2 text-sm">
 					<span class="flex flex-col">
-						<button type="button" class="px-1 leading-none text-slate-400 hover:text-slate-700 disabled:opacity-30" aria-label="Move {s.label} up" disabled={i === 0} onclick={() => move(i, -1)}>▲</button>
-						<button type="button" class="px-1 leading-none text-slate-400 hover:text-slate-700 disabled:opacity-30" aria-label="Move {s.label} down" disabled={i === list.length - 1} onclick={() => move(i, 1)}>▼</button>
+						<button type="button" class="px-1 leading-none text-slate-500 hover:text-slate-700 disabled:opacity-30" aria-label="Move {s.label} up" disabled={i === 0} onclick={() => move(i, -1)}>▲</button>
+						<button type="button" class="px-1 leading-none text-slate-500 hover:text-slate-700 disabled:opacity-30" aria-label="Move {s.label} down" disabled={i === list.length - 1} onclick={() => move(i, 1)}>▼</button>
 					</span>
 					<input class="input min-w-0 flex-1" maxlength="40" aria-label="Name of state {i + 1}" bind:value={list[i].label} />
 					<select class="input w-auto" aria-label="Category of {s.label}" bind:value={list[i].category}>

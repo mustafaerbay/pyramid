@@ -82,3 +82,11 @@ Notes say what was built where it is simpler than ADO.
       (44 px on touch screens), visible keyboard focus, low-contrast texts
       fixed, SVG icons instead of emoji, split board columns reachable
       from the card's "Move to" menu
+- [x] **Main menu in sections** — Home, My Tasks, Projects, Work (Queries,
+      Dashboards, Plans), Team (People, Contributions, Growth, Time Off) and
+      Admin (Accounts, Audit); a section's pages show as a second row of tabs,
+      so the menu fits on a tablet and the page no longer scrolls sideways
+- [x] **UI/UX audit of every main page** — secondary text darkened to pass
+      4.5:1 everywhere, chart axis text drawn at 12 px at any width, 24 px
+      targets in the header and on the people / plans / queries controls,
+      labelled search and status filters, no sideways scroll on phones

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { page } from '$app/state';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
@@ -181,9 +182,9 @@
 					</p>
 				</div>
 				<div class="flex items-center gap-1" role="group" aria-label="Year">
-					<button type="button" class="btn-ghost px-2" aria-label="Previous year" onclick={() => changeYear(-1)}>‹</button>
+					<button type="button" class="btn-ghost h-9 w-9 px-0" aria-label="Previous year" onclick={() => changeYear(-1)}><Icon name="chevron-left" /></button>
 					<span class="w-12 text-center text-sm font-medium text-slate-700">{year}</span>
-					<button type="button" class="btn-ghost px-2" aria-label="Next year" onclick={() => changeYear(1)}>›</button>
+					<button type="button" class="btn-ghost h-9 w-9 px-0" aria-label="Next year" onclick={() => changeYear(1)}><Icon name="chevron-right" /></button>
 				</div>
 			</div>
 

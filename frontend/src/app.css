@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* Secondary text is slate-500; this step is a little darker than Tailwind's so
+   it keeps 4.5:1 contrast on white, the slate-50 page and slate-100 fills. */
+@theme {
+	--color-slate-500: oklch(0.53 0.046 257.417);
+}
+
 @layer components {
 	.input {
 		@apply block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500;
@@ -151,6 +157,14 @@
 	border-radius: 0.25rem;
 }
 
+/* Checkboxes and radios a little larger than the browser's 13px. */
+input[type='checkbox'],
+input[type='radio'] {
+	width: 1rem;
+	height: 1rem;
+	accent-color: var(--color-slate-800);
+}
+
 /* Fingers need bigger targets than a mouse pointer. */
 @media (pointer: coarse) {
 	.btn-primary,
@@ -163,5 +177,10 @@
 	.tool {
 		min-height: 36px;
 		min-width: 36px;
+	}
+	input[type='checkbox'],
+	input[type='radio'] {
+		width: 1.25rem;
+		height: 1.25rem;
 	}
 }

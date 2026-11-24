@@ -37,7 +37,7 @@
 				<span class="w-5 pt-2 text-right text-xs text-slate-500">{i + 1}.</span>
 				<input class="input flex-1" placeholder="Action" aria-label="Step {i + 1} action" maxlength="2000" bind:value={st.action} />
 				<input class="input flex-1" placeholder="Expected result" aria-label="Step {i + 1} expected" maxlength="2000" bind:value={st.expected} />
-				<button type="button" class="px-1 text-slate-400 hover:text-red-600" aria-label="Remove step {i + 1}" onclick={() => (steps = steps.filter((_, j) => j !== i))}>✕</button>
+				<button type="button" class="px-1 text-slate-500 hover:text-red-600" aria-label="Remove step {i + 1}" onclick={() => (steps = steps.filter((_, j) => j !== i))}>✕</button>
 			</li>
 		{/each}
 	</ol>

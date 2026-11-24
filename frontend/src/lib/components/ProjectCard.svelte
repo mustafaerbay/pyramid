@@ -93,7 +93,7 @@
 					style="width: {timeline.elapsedFraction * 100}%"
 				></div>
 			</div>
-			<div class="mt-1 flex items-center justify-between text-xs text-slate-400">
+			<div class="mt-1 flex items-center justify-between text-xs text-slate-500">
 				<span>{project.startDate}</span>
 				<span class={timeline.overdue ? 'font-medium text-red-600' : ''}>
 					{project.status === 'completed'
@@ -107,7 +107,7 @@
 				<span>{project.targetDate}</span>
 			</div>
 		{:else}
-			<p class="text-xs text-slate-400">No timeline set.</p>
+			<p class="text-xs text-slate-500">No timeline set.</p>
 		{/if}
 	</div>
 
