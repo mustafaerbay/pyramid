@@ -1,0 +1,14 @@
+{
+  "name": "pyramid-readme-posters",
+  "private": true,
+  "type": "module",
+  "description": "Renders the README posters from real screens of a local Pyramid with the demo data.",
+  "scripts": {
+    "shots": "node shoot.mjs",
+    "render": "node render.mjs",
+    "build": "node shoot.mjs && node render.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}

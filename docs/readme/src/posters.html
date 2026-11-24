@@ -1,0 +1,131 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=Instrument+Serif:ital@1&display=block" rel="stylesheet">
+<style>
+:root{--orange:#FF5B14;--ink:#0B1020;--indigo:#4F46E5;--cream:#FFF1E6;--white:#fff}
+*{box-sizing:border-box;margin:0}
+body{background:#888;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.poster{position:relative;overflow:hidden;width:2400px}
+.panel{position:absolute;top:0;bottom:0;overflow:hidden}
+h1,h2{font-weight:900;letter-spacing:-0.045em;line-height:.9}
+em{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;letter-spacing:-0.01em;font-size:1.18em;line-height:.8}
+.sub{font-weight:600;letter-spacing:-0.01em;line-height:1.25}
+.win{position:absolute;border-radius:22px;overflow:hidden;background:#fff;box-shadow:0 40px 90px rgba(0,0,0,.35),0 0 0 2px rgba(0,0,0,.06)}
+.win .bar{height:46px;background:#F1F5F9;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid #E2E8F0}
+.win .bar i{width:15px;height:15px;border-radius:50%;background:#CBD5E1;display:block}
+.win .bar i:nth-child(1){background:#FF5F57}.win .bar i:nth-child(2){background:#FEBC2E}.win .bar i:nth-child(3){background:#28C840}
+.win .bar b{margin-left:18px;flex:1;max-width:520px;height:26px;border-radius:8px;background:#fff;color:#64748B;font:500 15px Inter;display:flex;align-items:center;padding-left:14px}
+.crop{background-repeat:no-repeat}
+.card{position:absolute;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 30px 70px rgba(0,0,0,.35),0 0 0 2px rgba(0,0,0,.05)}
+.phone{position:absolute;border-radius:64px;background:#0B1020;padding:16px;box-shadow:0 40px 90px rgba(0,0,0,.45)}
+.phone .scr{border-radius:50px;overflow:hidden;background:#fff}
+.chip{display:inline-flex;align-items:center;height:64px;padding:0 28px;border-radius:999px;font-weight:700;font-size:30px;letter-spacing:-0.01em}
+.brand{display:inline-flex;align-items:center;gap:14px;font-weight:800;font-size:40px;letter-spacing:-0.03em}
+.tag{position:absolute;font-weight:800;font-size:34px;padding:14px 26px;border-radius:16px;letter-spacing:-0.02em;box-shadow:0 20px 40px rgba(0,0,0,.25)}
+</style></head><body>
+
+<!-- HERO -->
+<div class="poster" id="hero" style="height:1200px;background:var(--orange)">
+  <div style="position:absolute;left:130px;top:110px;width:1100px;color:var(--ink)">
+    <div class="brand"><span style="font-size:34px">▲</span> Pyramid</div>
+    <h1 style="font-size:176px;margin-top:70px">Your whole<br><em style="color:#fff">dev team,</em><br>one place.</h1>
+    <p class="sub" style="font-size:44px;margin-top:56px;max-width:900px">Projects, sprints, people and capacity — on your own server.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:56px;max-width:1000px">
+      <span class="chip" style="background:var(--ink);color:#fff">Kanban</span>
+      <span class="chip" style="background:var(--ink);color:#fff">Sprints</span>
+      <span class="chip" style="background:var(--ink);color:#fff">Capacity</span>
+      <span class="chip" style="background:var(--ink);color:#fff">Dashboards</span>
+      <span class="chip" style="background:#fff;color:var(--ink)">TR · EN</span>
+    </div>
+  </div>
+  <div class="win" style="left:1270px;top:150px;width:1560px;transform:rotate(-6deg);transform-origin:left top">
+    <div class="bar"><i></i><i></i><i></i><b>pyramid · Cadence Notifications · Board</b></div>
+    <div class="crop" data-img="kanban" data-x="150" data-y="140" data-w="1150" data-h="760" data-s="1.36"></div>
+  </div>
+  <div class="card" style="left:1180px;top:760px;transform:rotate(4deg)">
+    <div class="crop" data-img="sprints" data-x="168" data-y="512" data-w="651" data-h="380" data-s="1.15"></div>
+  </div>
+  <div class="phone" style="left:1950px;top:560px;transform:rotate(9deg)">
+    <div class="scr"><div class="crop" data-img="m_person" data-x="0" data-y="0" data-w="390" data-h="844" data-s="1.0"></div></div>
+  </div>
+</div>
+
+<!-- ROW 1: sprints | capacity -->
+<div class="poster" id="row1" style="height:1300px">
+  <div class="panel" style="left:0;width:1200px;background:var(--indigo);color:#fff">
+    <div style="position:absolute;left:100px;top:100px">
+      <h2 style="font-size:168px">Sprints,<br><em style="color:#FFD2BD">sorted.</em></h2>
+      <p class="sub" style="font-size:40px;margin-top:40px;max-width:900px;color:#E0E7FF">Board, backlog and burndown — every item a page of its own.</p>
+    </div>
+    <div class="win" style="left:90px;top:640px;width:1280px;transform:rotate(-5deg);transform-origin:left top">
+      <div class="bar"><i></i><i></i><i></i><b>Board</b></div>
+      <div class="crop" data-img="kanban" data-x="160" data-y="420" data-w="1120" data-h="480" data-s="1.14"></div>
+    </div>
+  </div>
+  <div class="panel" style="left:1200px;width:1200px;background:var(--ink);color:#fff">
+    <div style="position:absolute;left:150px;top:100px">
+      <h2 style="font-size:168px">Who's<br><em style="color:var(--orange)">free?</em></h2>
+      <p class="sub" style="font-size:40px;margin-top:40px;max-width:640px;color:#CBD5E1">Man-days per person, per month — approved leave taken out.</p>
+    </div>
+    <div class="phone" style="left:760px;top:420px;transform:rotate(7deg)">
+      <div class="scr"><div class="crop" data-img="m_person" data-x="0" data-y="0" data-w="390" data-h="844" data-s="0.98"></div></div>
+    </div>
+  </div>
+  <!-- straddles the seam -->
+  <div class="card" style="left:940px;top:690px;transform:rotate(-3deg)">
+    <div class="crop" data-img="sprints" data-x="837" data-y="512" data-w="435" data-h="380" data-s="1.45"></div>
+  </div>
+</div>
+
+<!-- ROW 2: plans | dashboards -->
+<div class="poster" id="row2" style="height:1300px">
+  <div class="panel" style="left:0;width:1200px;background:var(--cream);color:var(--ink)">
+    <div style="position:absolute;left:100px;top:100px">
+      <h2 style="font-size:168px">Ship<br><em style="color:var(--orange)">on time.</em></h2>
+      <p class="sub" style="font-size:40px;margin-top:40px;max-width:900px;color:#334155">One timeline for every project, with sprints and a today line.</p>
+    </div>
+    <div class="win" style="left:80px;top:700px;width:1400px;transform:rotate(-4deg);transform-origin:left top">
+      <div class="bar"><i></i><i></i><i></i><b>Delivery plans</b></div>
+      <div class="crop" data-img="plans" data-x="160" data-y="596" data-w="1120" data-h="304" data-s="1.25"></div>
+    </div>
+  </div>
+  <div class="panel" style="left:1200px;width:1200px;background:var(--orange);color:var(--ink)">
+    <div style="position:absolute;left:150px;top:100px">
+      <h2 style="font-size:168px">Charts,<br><em style="color:#fff">zero setup.</em></h2>
+      <p class="sub" style="font-size:40px;margin-top:40px;max-width:900px">Pick a widget: burndown, velocity, workload, open vs done.</p>
+    </div>
+    <div class="card" style="left:620px;top:640px;transform:rotate(6deg)">
+      <div class="crop" data-img="dash" data-x="168" data-y="272" data-w="357" data-h="384" data-s="1.4"></div>
+    </div>
+    <div class="card" style="left:210px;top:760px;transform:rotate(-5deg)">
+      <div class="crop" data-img="dash" data-x="541" data-y="272" data-w="357" data-h="384" data-s="1.3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="poster" id="cta" style="height:500px;background:var(--ink);color:#fff">
+  <div style="position:absolute;left:130px;top:110px">
+    <h2 style="font-size:150px">Run it <em style="color:var(--orange)">yourself.</em></h2>
+    <p class="sub" style="font-size:40px;margin-top:40px;color:#CBD5E1">Go · SvelteKit · Postgres · Docker — your server, your data.</p>
+  </div>
+  <div style="position:absolute;right:120px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:22px;align-items:flex-end">
+    <span class="chip" style="background:var(--orange);color:var(--ink)">Two-factor &amp; SSO</span>
+    <span class="chip" style="background:#fff;color:var(--ink)">Türkçe · English</span>
+    <span class="chip" style="background:var(--indigo);color:#fff">Typed API from one OpenAPI file</span>
+  </div>
+</div>
+
+<script>
+const BASE = 'shots/';
+for (const el of document.querySelectorAll('.crop')) {
+  const d = el.dataset, s = +d.s, mobile = d.img.startsWith('m_');
+  const pageW = mobile ? 390 : 1440;
+  el.style.width = d.w * s + 'px';
+  el.style.height = d.h * s + 'px';
+  el.style.backgroundImage = `url(${BASE}${d.img}.png)`;
+  el.style.backgroundSize = pageW * s + 'px auto';
+  el.style.backgroundPosition = `${-d.x * s}px ${-d.y * s}px`;
+}
+</script>
+</body></html>

@@ -26,3 +26,6 @@ npm-debug.log*
 # local cleanup (safe to delete)
 _to_delete/
 .DS_Store
+
+# README poster builder
+docs/readme/src/shots/
