@@ -1,6 +1,36 @@
-# Pyramid
+<p align="center">
+  <img src="docs/readme/hero.png" alt="Pyramid — your whole dev team, one place. Projects, sprints, people and capacity on your own server." width="100%">
+</p>
 
-An all-in-one management system for a software department — people, projects, contributions, growth, and time off. This repository is a monorepo with a Go backend and a Svelte frontend that share a single, generated type contract.
+<p align="center">
+  <b>Pyramid</b> runs a software department in one self-hosted app:<br>
+  projects and sprints, people and their capacity, dashboards and delivery plans — in Turkish or English.
+</p>
+
+<p align="center">
+  <a href="#quick-start"><b>Quick start</b></a> ·
+  <a href="#whats-inside"><b>What's inside</b></a> ·
+  <a href="#architecture"><b>Architecture</b></a>
+</p>
+
+<p align="center">
+  <img src="docs/readme/row1.png" alt="Sprints, sorted: board, backlog and burndown. Who's free: man-days per person, per month, with approved leave taken out." width="100%">
+  <img src="docs/readme/row2.png" alt="Ship on time: one delivery timeline for every project. Charts, zero setup: burndown, velocity, workload and open vs done widgets." width="100%">
+  <img src="docs/readme/cta.png" alt="Run it yourself: Go, SvelteKit, Postgres and Docker. Two-factor and SSO, Turkish and English, a typed API from one OpenAPI file." width="100%">
+</p>
+
+## What's inside
+
+| | |
+|---|---|
+| **Projects** | Board and list views, backlog levels with a forecast, sprints with burndown, burnup and team capacity, milestones, item pages with Markdown, pasted screenshots, comments and @mentions |
+| **People** | Monthly load per person in man-days, time off that lowers capacity, contributions, growth goals |
+| **Planning** | Delivery plans across projects, saved queries with a query language, dashboards built from chart widgets |
+| **Engineering** | Wiki, test plans, repos and pipelines, artifacts, Git linking, webhooks, Excel import and export |
+| **Admin** | Accounts and per-project permissions, teams, process templates and work item rules, two-factor sign-in, OpenID Connect SSO, API tokens, audit log |
+| **Everywhere** | Full-text search, notifications and follows, Turkish and English interface, works on phones |
+
+Under the hood it is a monorepo with a Go backend and a Svelte frontend that share a single, generated type contract.
 
 ## Architecture
 
@@ -34,13 +64,13 @@ pyramid/
 │   │   ├── api/                # Generated DTOs (types.gen.go) + enums
 │   │   ├── config/             # Env-based configuration
 │   │   ├── database/           # GORM connection
-│   │   ├── handlers/           # Gin handlers (health, people)
+│   │   ├── handlers/           # Gin handlers, one file per resource
 │   │   └── models/             # GORM models + DTO conversion
 │   └── oapi-codegen.yaml       # Go type generation config
 ├── frontend/                   # SvelteKit 2 + Svelte 5 + Tailwind v4
 │   └── src/
 │       ├── lib/api/            # schema.d.ts (generated) + typed client
-│       └── routes/             # Pages (People list demo)
+│       └── routes/             # Pages
 └── Makefile                    # generate / setup / dev / build
 ```
 
@@ -80,11 +110,3 @@ Configuration is via environment variables; copy `backend/.env.example` and `fro
 - **Frontend** — `openapi-typescript` writes `frontend/src/lib/api/schema.d.ts` (TS `paths`/`components`), consumed by the `openapi-fetch` client in `frontend/src/lib/api/client.ts`.
 
 Add a field to a schema in the contract, run `make generate`, and both sides update together. The enums in the contract mirror the Postgres enum types in `db/schema.sql`.
-
-## Current scope
-
-This is the foundation plus one vertical slice — the **People** resource, end to end (list, create, get, update, delete) — which establishes the pattern to replicate for the remaining modules (projects, tasks, contributions, goals, leave). The schema for all modules is already in `db/schema.sql`.
-
-## A note on how this was generated
-
-The frontend was fully built and type-checked in the authoring environment (SvelteKit build + `svelte-check` pass with zero errors, TS types generated from the contract). The backend's `api` and `models` packages were compiled and verified there as well; the `handlers`/`main` packages use standard Gin/GORM calls but could not be compiled in that sandbox because its network egress blocked the Go module proxy and vanity-domain dependencies. On a normal machine, `make setup && make generate && make build` compiles the whole backend. If you hit any issue, that's the place to look first.
