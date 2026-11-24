@@ -668,4 +668,23 @@ export const TR: Record<string, string> = {
   "Set priority": "Öncelik belirle",
   "Set type": "Tür belirle",
   "Assign a person": "Kişi ata",
+  // Item page and editor
+  "✎ Edit": "✎ Düzenle",
+  "Save description": "Açıklamayı kaydet",
+  "Add a description: steps, expected and actual result, screenshots (paste or drop them in)…":
+    "Açıklama ekle: adımlar, beklenen ve gerçekleşen sonuç, ekran görüntüleri (yapıştır ya da sürükle)…",
+  "Changes save automatically": "Değişiklikler otomatik kaydedilir",
+  "✓ Saved": "✓ Kaydedildi",
+  "Not saved": "Kaydedilmedi",
+  "← Back to the project": "← Projeye dön",
+  "Back to the project": "Projeye dön",
+  "Delete item": "Öğeyi sil",
+  "🖼 Image": "🖼 Resim",
+  "Add an image": "Resim ekle",
+  Bold: "Kalın",
+  Italic: "İtalik",
+  Link: "Bağlantı",
+  "Uploading image…": "Resim yükleniyor…",
+  "Markdown · @ to mention · paste images": "Markdown · @ ile bahset · resim yapıştır",
+  "Open in a new tab": "Yeni sekmede aç",
 };

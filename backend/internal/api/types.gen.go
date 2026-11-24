@@ -2011,7 +2011,7 @@ type Notification struct {
 	CreatedAt time.Time          `json:"createdAt"`
 	Id        openapi_types.UUID `json:"id"`
 
-	// Link Path in the app to open, e.g. /projects/{id}?task={taskId}.
+	// Link Path in the app to open, e.g. /projects/{id}/items/{number}.
 	Link   *string          `json:"link"`
 	ReadAt *time.Time       `json:"readAt"`
 	Title  string           `json:"title"`

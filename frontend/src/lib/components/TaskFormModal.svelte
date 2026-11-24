@@ -1,6 +1,6 @@
 <script lang="ts">
 	import MentionTextarea from './MentionTextarea.svelte';
-	import { api } from '$lib/api/client';
+	import { api, baseUrl } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import { formatManDays, splitEvenly } from '$lib/capacity';
 	import TagInput from './TagInput.svelte';
@@ -11,6 +11,9 @@
 	import { areaLabel } from '$lib/areas';
 	import { valuesForSave } from '$lib/customFields';
 	import { blockerOptions } from '$lib/dependencies';
+	import Markdown from './Markdown.svelte';
+	import { fillPending } from '$lib/markdown';
+	import { imageName, itemHref, uploadImage } from '$lib/itemFiles';
 
 	type Task = components['schemas']['Task'];
 	type TaskStatus = components['schemas']['TaskStatus'];
@@ -39,7 +42,10 @@
 		onCopy,
 		onTransfer,
 		onSaveTemplate,
-		onDeleteTemplate
+		onDeleteTemplate,
+		variant = 'modal',
+		projectKey = '',
+		version = 0
 	}: {
 		projectId: string;
 		task?: Task | null;
@@ -83,7 +89,14 @@
 		onTransfer?: (projectId: string) => void;
 		onSaveTemplate?: (name: string) => void;
 		onDeleteTemplate?: (id: string) => void;
+		/** "page": the item's own page, two columns, every change saved as it's made. */
+		variant?: 'modal' | 'page';
+		projectKey?: string;
+		/** Bumped by the page after a save, so history reloads. */
+		version?: number;
 	} = $props();
+	// svelte-ignore state_referenced_locally
+	const onPage = variant === 'page';
 	let templateId = $state('');
 	let moveTo = $state('');
 	function applyTemplate(id: string) {
@@ -133,10 +146,8 @@
 		customKey ? ((itemTypes.find((t) => t.key === customKey)?.base as WorkItemType) ?? 'task') : (typeChoice as WorkItemType)
 	);
 	const parentChoices = $derived(parentOptions(projectTasks, initial?.id ?? null, type));
-	// svelte-ignore state_referenced_locally
-	const subtasks = initial ? projectTasks.filter((t) => t.parentId === initial.id) : [];
-	// svelte-ignore state_referenced_locally
-	const summary = initial ? subtaskSummary(initial.id, projectTasks) : null;
+	const subtasks = $derived(initial ? projectTasks.filter((t) => t.parentId === initial.id) : []);
+	const summary = $derived(initial ? subtaskSummary(initial.id, projectTasks) : null);
 	// svelte-ignore state_referenced_locally
 	let blockedByIds = $state<string[]>([...(initial?.blockedByIds ?? [])]);
 	// svelte-ignore state_referenced_locally
@@ -223,97 +234,86 @@
 		if (Number(total) > 0) spreadTotal();
 	}
 
+	// Images pasted before a new item exists wait here (pending:N → file)
+	// and are uploaded once it's created.
+	let pending = $state<Record<string, { file: File; url: string }>>({});
+	const pendingUrls = $derived(Object.fromEntries(Object.entries(pending).map(([k, v]) => [k, v.url])));
+	let pendingCount = 0;
+	async function addImage(file: File): Promise<string | null> {
+		if (task) return uploadImage(task.id, file);
+		const key = `pending:${++pendingCount}`;
+		pending = { ...pending, [key]: { file, url: URL.createObjectURL(file) } };
+		return `![${imageName(file).replace(/[[\]]/g, '')}](${key})`;
+	}
+
+	function check(): string | null {
+		if (!title.trim()) return 'Title is required.';
+		if (startDate && dueDate && startDate > dueDate) return 'Start date must be on or before the due date.';
+		const estimateManDays = total == null ? undefined : Number(total) || 0;
+		if (estimateManDays !== undefined && (estimateManDays < 0 || estimateManDays > 9999)) return 'Man-days must be between 0 and 9999.';
+		if (assigneeIds.some((id) => (Number(manDays[id]) || 0) < 0 || (Number(manDays[id]) || 0) > 999)) return 'Man-days must be between 0 and 999.';
+		return null;
+	}
+	function editBody() {
+		return {
+			title,
+			description: description || undefined,
+			// Explicit null (not undefined) so the backend can tell
+			// "clear this" apart from "field wasn't touched".
+			type,
+			customType: customKey,
+			milestoneId: milestoneId || null,
+			sprintId: sprintId || null,
+			areaId: areaId || null,
+			customValues: valuesForSave(customFields, custom),
+			parentId: parentId || null,
+			// The full set of assignees always replaces the old one.
+			assignments: assigneeIds.map((personId) => ({ personId, manDays: Number(manDays[personId]) || 0 })),
+			estimateManDays: total == null ? undefined : Number(total) || 0,
+			storyPoints: num(storyPoints),
+			remainingManDays: num(remaining),
+			completedManDays: num(completed),
+			...(workflow.length ? { state: wfState } : { status }),
+			priority,
+			startDate: startDate || undefined,
+			dueDate: dueDate || undefined,
+			tags,
+			blockedByIds,
+			relatedIds,
+			duplicateOfId: duplicateOfId || null
+		};
+	}
+
+	async function saveEdit(): Promise<boolean> {
+		if (!task) return false;
+		const { data, error } = await api.PATCH('/api/v1/tasks/{id}', { params: { path: { id: task.id } }, body: editBody() });
+		if (error) {
+			formError = error.message ?? 'Failed to update task.';
+			return false;
+		}
+		if (data) onSaved(data);
+		return true;
+	}
+
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
-		formError = null;
-
-		if (!title.trim()) {
-			formError = 'Title is required.';
-			return;
-		}
-		if (startDate && dueDate && startDate > dueDate) {
-			formError = 'Start date must be on or before the due date.';
-			return;
-		}
-		const assignments = assigneeIds.map((personId) => ({
-			personId,
-			manDays: Number(manDays[personId]) || 0
-		}));
-		const estimateManDays = total == null ? undefined : Number(total) || 0;
-		if (estimateManDays !== undefined && (estimateManDays < 0 || estimateManDays > 9999)) {
-			formError = 'Man-days must be between 0 and 9999.';
-			return;
-		}
-		if (assignments.some((a) => a.manDays < 0 || a.manDays > 999)) {
-			formError = 'Man-days must be between 0 and 999.';
-			return;
-		}
-
+		formError = check();
+		if (formError) return;
 		saving = true;
 		try {
 			if (isEdit && task) {
-				const { data, error } = await api.PATCH('/api/v1/tasks/{id}', {
-					params: { path: { id: task.id } },
-					body: {
-						title,
-						description: description || undefined,
-						// Explicit null (not undefined) so the backend can tell
-						// "clear this" apart from "field wasn't touched".
-						type,
-						customType: customKey,
-						milestoneId: milestoneId || null,
-						sprintId: sprintId || null,
-						areaId: areaId || null,
-						customValues: valuesForSave(customFields, custom),
-						parentId: parentId || null,
-						// assigneeIds always replaces the full set — sending it
-						// (even as []) is how the backend knows to update it, vs.
-						// omitting the field entirely to leave it untouched.
-						assignments,
-						estimateManDays,
-						storyPoints: num(storyPoints),
-						remainingManDays: num(remaining),
-						completedManDays: num(completed),
-						...(workflow.length ? { state: wfState } : { status }),
-						priority,
-						startDate: startDate || undefined,
-						dueDate: dueDate || undefined,
-						tags,
-						blockedByIds,
-						relatedIds,
-						duplicateOfId: duplicateOfId || null
-					}
-				});
-				if (error) {
-					formError = error.message ?? 'Failed to update task.';
-					return;
-				}
-				if (data) onSaved(data);
+				await saveEdit();
 			} else {
+				const b = editBody();
 				const { data, error } = await api.POST('/api/v1/tasks', {
 					body: {
+						...b,
 						projectId,
-						type,
 						customType: customKey ?? undefined,
 						milestoneId: milestoneId || undefined,
 						sprintId: sprintId || undefined,
 						areaId: areaId || undefined,
-						customValues: valuesForSave(customFields, custom),
 						parentId: parentId || undefined,
-						title,
-						description: description || undefined,
-						assignments,
-						estimateManDays,
-						storyPoints: num(storyPoints),
-						remainingManDays: num(remaining),
-						completedManDays: num(completed),
-						...(workflow.length ? { state: wfState } : { status }),
-						priority,
-						startDate: startDate || undefined,
-						dueDate: dueDate || undefined,
-						tags,
-						blockedByIds,
-						relatedIds,
 						duplicateOfId: duplicateOfId || undefined
 					}
 				});
@@ -321,47 +321,80 @@
 					formError = error.message ?? 'Failed to create task.';
 					return;
 				}
-				if (data) onSaved(data);
+				if (!data) return;
+				let saved = data;
+				const used = Object.keys(pending).filter((k) => description.includes(`(${k})`));
+				if (used.length) {
+					const ids: Record<string, string> = {};
+					const fd = (f: File) => {
+						const x = new FormData();
+						x.append('file', f, imageName(f));
+						return x;
+					};
+					for (const k of used) {
+						const res = await fetch(`${baseUrl}/api/v1/tasks/${data.id}/attachments`, { method: 'POST', body: fd(pending[k].file), credentials: 'include' });
+						if (res.ok) ids[k] = ((await res.json()) as { id: string }).id;
+					}
+					const { data: upd } = await api.PATCH('/api/v1/tasks/{id}', { params: { path: { id: data.id } }, body: { description: fillPending(description, ids) } });
+					if (upd) saved = upd;
+				}
+				onSaved(saved);
 			}
 		} finally {
 			saving = false;
 		}
 	}
+
+	// On the page every change is saved shortly after it's made.
+	let saveState = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let lastSent = '';
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		if (!onPage || !task) return;
+		const snap = JSON.stringify(editBody());
+		if (!lastSent) {
+			lastSent = snap;
+			return;
+		}
+		if (snap === lastSent) return;
+		clearTimeout(timer);
+		timer = setTimeout(async () => {
+			const problem = check();
+			if (problem) {
+				formError = problem;
+				saveState = 'error';
+				return;
+			}
+			formError = null;
+			lastSent = snap;
+			saveState = 'saving';
+			saveState = (await saveEdit()) ? 'saved' : 'error';
+			if (saveState === 'error') lastSent = '';
+		}, 700);
+		return () => clearTimeout(timer);
+	});
+
+	// The description on the page is read until "Edit" is clicked.
+	let editingDesc = $state(false);
+	let descDraft = $state('');
+	function startDesc() {
+		descDraft = description;
+		editingDesc = true;
+	}
+	function doneDesc() {
+		description = descDraft;
+		editingDesc = false;
+	}
+	const childLink = (t: Task) => itemHref(t.projectId, t.number);
+	const itemLink = (n: number) => {
+		const t = projectTasks.find((x) => x.number === n);
+		return t ? childLink(t) : null;
+	};
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && onClose()} />
+<svelte:window onkeydown={(e) => !onPage && e.key === 'Escape' && onClose()} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 sm:p-4"
-	role="presentation"
-	onclick={onClose}
->
-	<div
-		class="h-dvh max-h-dvh w-full max-w-lg overflow-y-auto bg-white p-4 sm:p-6 shadow-xl sm:h-auto sm:max-h-[90vh] sm:rounded-lg"
-		role="dialog"
-		tabindex="-1"
-		aria-modal="true"
-		aria-labelledby="task-modal-title"
-		onclick={(e) => e.stopPropagation()}
-	>
-		<div class="flex items-center justify-between">
-			<h3 id="task-modal-title" class="text-lg font-semibold text-slate-900">
-				{isEdit ? 'Edit task' : 'Add task'}
-			</h3>
-			<button type="button" class="text-slate-400 hover:text-slate-600" onclick={onClose} aria-label="Close">
-				✕
-			</button>
-		</div>
-
-		<form class="mt-4 space-y-4" onsubmit={handleSubmit}>
-			{#if formError}
-				<div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-					{formError}
-				</div>
-			{/if}
-
+{#snippet templatePicker()}
 			{#if !isEdit && templates.length}
 				<div class="flex items-center gap-2 text-sm">
 					<span class="text-slate-600">Start from</span>
@@ -386,8 +419,10 @@
 					{/if}
 				</div>
 			{/if}
+{/snippet}
 
-			<div class="flex gap-2">
+{#snippet headF()}
+			<div class="flex flex-wrap gap-2">
 				<label class="block w-32 shrink-0 text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Type</span>
 					<select class="input" bind:value={typeChoice}>
@@ -403,22 +438,21 @@
 						{/if}
 					</select>
 				</label>
-				<label class="block min-w-0 flex-1 text-sm">
+				<label class="block min-w-48 flex-1 text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Title *</span>
-					<input class="input" bind:value={title} placeholder="e.g. Wire up auth middleware" required />
+					<input class="input {onPage ? 'text-base font-semibold' : ''}" bind:value={title} placeholder="e.g. Wire up auth middleware" required />
 				</label>
 			</div>
+{/snippet}
 
-			<div class="block text-sm">
-				<span class="mb-1 block font-medium text-slate-700">Description</span>
-				<MentionTextarea bind:value={description} people={assigneeOptions.map((p) => p.name)} rows={4} label="Description" />
-			</div>
-
+{#snippet tagsF()}
 			<div class="block text-sm">
 				<span class="mb-1 block font-medium text-slate-700">Tags</span>
 				<TagInput bind:tags />
 			</div>
+{/snippet}
 
+{#snippet milestoneF()}
 			<label class="block text-sm">
 				<span class="mb-1 block font-medium text-slate-700">Milestone</span>
 				<select class="input" bind:value={milestoneId}>
@@ -428,7 +462,9 @@
 					{/each}
 				</select>
 			</label>
+{/snippet}
 
+{#snippet customF()}
 			{#if customFields.length > 0}
 				<div class="grid gap-3 sm:grid-cols-2">
 					{#each customFields as f (f.key)}
@@ -450,7 +486,9 @@
 					{/each}
 				</div>
 			{/if}
+{/snippet}
 
+{#snippet areaF()}
 			{#if areaOptions.length > 0}
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Area</span>
@@ -462,7 +500,9 @@
 					</select>
 				</label>
 			{/if}
+{/snippet}
 
+{#snippet sprintF()}
 			{#if sprintOptions.length > 0 || sprintId}
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Sprint</span>
@@ -477,7 +517,9 @@
 					</select>
 				</label>
 			{/if}
+{/snippet}
 
+{#snippet parentF()}
 			{#if parentChoices.length > 0 || parentId}
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Parent task</span>
@@ -489,7 +531,9 @@
 					</select>
 				</label>
 			{/if}
+{/snippet}
 
+{#snippet linksF()}
 			{#if blockerChoices.length > 0 || blockedByIds.length > 0}
 				<TaskPicker
 					label="Waiting on"
@@ -513,7 +557,9 @@
 					</select>
 				</label>
 			{/if}
+{/snippet}
 
+{#snippet childrenF()}
 			{#if isEdit && initial}
 				<div class="rounded-md border border-slate-200 p-3 text-sm">
 					<div class="flex items-center justify-between gap-2">
@@ -533,7 +579,7 @@
 							{#each subtasks as sub (sub.id)}
 								<li class="flex items-center justify-between gap-2 text-xs">
 									<span class="min-w-0 truncate {sub.status === 'done' || sub.status === 'cancelled' ? 'text-slate-400 line-through' : 'text-slate-700'}">
-										#{sub.number} {sub.title}
+										{#if onPage}<a class="hover:underline" href={childLink(sub)}>#{sub.number} {sub.title}</a>{:else}#{sub.number} {sub.title}{/if}
 									</span>
 									<span class="shrink-0 text-slate-500">{sub.status.replace('_', ' ')}</span>
 								</li>
@@ -547,7 +593,9 @@
 					{/if}
 				</div>
 			{/if}
+{/snippet}
 
+{#snippet effortF()}
 			<div class="block text-sm">
 				<label class="mb-3 block">
 					<span class="mb-1 block font-medium text-slate-700">Man-days (task size)</span>
@@ -616,7 +664,9 @@
 					{/if}
 				</div>
 			</div>
+{/snippet}
 
+{#snippet datesF()}
 			<div class="grid grid-cols-2 gap-4">
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Start date</span>
@@ -630,7 +680,9 @@
 			<p class="-mt-2 text-xs text-slate-500">
 				Man-days are spread over the working days between start and due date.
 			</p>
+{/snippet}
 
+{#snippet pointsF()}
 			<div class="grid grid-cols-3 gap-3">
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">Story points</span>
@@ -645,7 +697,9 @@
 					<input type="number" class="input" min="0" max="9999" step="0.5" bind:value={completed} />
 				</label>
 			</div>
+{/snippet}
 
+{#snippet statePriF()}
 			<div class="grid grid-cols-2 gap-4">
 				<label class="block text-sm">
 					<span class="mb-1 block font-medium text-slate-700">State</span>
@@ -672,10 +726,11 @@
 					</select>
 				</label>
 			</div>
+{/snippet}
 
-			<div class="flex items-center justify-between gap-2 pt-2">
-				{#if isEdit && onDelete}
-					<span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+{#snippet actionsF()}
+	{#if isEdit && onDelete}
+		<span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
 						<button type="button" class="text-red-600 hover:text-red-700 hover:underline" onclick={onDelete}>Delete task</button>
 						{#if onCopy}
 							<button type="button" class="text-slate-600 hover:underline" onclick={() => onCopy(false)}>Copy</button>
@@ -709,19 +764,123 @@
 							</select>
 						{/if}
 					</span>
-				{:else}
-					<span></span>
-				{/if}
-				<div class="flex gap-2">
-					<button type="button" class="btn-secondary" onclick={onClose}>Cancel</button>
-					<button type="submit" class="btn-primary" disabled={saving}>
-						{saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add task'}
-					</button>
-				</div>
+	{/if}
+{/snippet}
+
+{#snippet descModal()}
+			<div class="block text-sm">
+				<span class="mb-1 block font-medium text-slate-700">Description</span>
+				<MentionTextarea bind:value={description} people={assigneeOptions.map((p) => p.name)} rows={4} label="Description" onImage={addImage} images={pendingUrls} />
 			</div>
-		</form>
-		{#if isEdit && initial}
-			<TaskActivity task={initial} {projectTasks} {milestoneOptions} />
+{/snippet}
+
+{#snippet descPage()}
+	<section class="text-sm">
+		<div class="mb-1 flex items-center justify-between">
+			<h2 class="font-semibold text-slate-800">Description</h2>
+			{#if !editingDesc}<button type="button" class="btn-ghost px-2 py-1 text-xs" onclick={startDesc}>✎ Edit</button>{/if}
+		</div>
+		{#if editingDesc}
+			<MentionTextarea bind:value={descDraft} people={assigneeOptions.map((p) => p.name)} rows={12} label="Description" onImage={addImage} autofocus />
+			<div class="mt-2 flex gap-2">
+				<button type="button" class="btn-primary px-3 py-1 text-xs" onclick={doneDesc}>Save description</button>
+				<button type="button" class="btn-ghost px-3 py-1 text-xs" onclick={() => (editingDesc = false)}>Cancel</button>
+			</div>
+		{:else if description.trim()}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="rounded-md border border-transparent p-1 hover:border-slate-200" ondblclick={startDesc}>
+				<Markdown text={description} people={assigneeOptions.map((p) => p.name)} class="text-slate-700" item={itemLink} />
+			</div>
+		{:else}
+			<button
+				type="button"
+				class="w-full rounded-md border border-dashed border-slate-300 px-3 py-6 text-slate-500 hover:border-slate-400 hover:text-slate-700"
+				onclick={startDesc}>Add a description: steps, expected and actual result, screenshots (paste or drop them in)…</button
+			>
 		{/if}
+	</section>
+{/snippet}
+
+{#if onPage}
+	<form class="space-y-4" onsubmit={(e) => e.preventDefault()}>
+		<div class="flex flex-wrap items-center gap-2 text-sm">
+			<span class="font-mono text-slate-500">{projectKey ? `${projectKey}-` : '#'}{task?.number}</span>
+			<span class="ml-auto text-xs {saveState === 'error' ? 'text-red-600' : 'text-slate-500'}" aria-live="polite">
+				{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : saveState === 'error' ? 'Not saved' : 'Changes save automatically'}
+			</span>
+		</div>
+		{#if formError}
+			<div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
+		{/if}
+		<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+			<div class="min-w-0 space-y-5">
+				{@render headF()}
+				{@render descPage()}
+				{@render childrenF()}
+				{#if initial}<TaskActivity task={initial} {projectTasks} {milestoneOptions} {version} />{/if}
+			</div>
+			<aside class="space-y-4 rounded-lg border border-slate-200 bg-slate-50/60 p-4 lg:self-start">
+				{@render statePriF()}
+				{@render effortF()}
+				{@render sprintF()}
+				{@render milestoneF()}
+				{@render areaF()}
+				{@render datesF()}
+				{@render pointsF()}
+				{@render tagsF()}
+				{@render parentF()}
+				{@render linksF()}
+				{@render customF()}
+				<div class="border-t border-slate-200 pt-3">{@render actionsF()}</div>
+			</aside>
+		</div>
+	</form>
+{:else}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 sm:p-4" role="presentation" onclick={onClose}>
+		<div
+			class="h-dvh max-h-dvh w-full max-w-lg overflow-y-auto bg-white p-4 sm:p-6 shadow-xl sm:h-auto sm:max-h-[90vh] sm:rounded-lg"
+			role="dialog"
+			tabindex="-1"
+			aria-modal="true"
+			aria-labelledby="task-modal-title"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<div class="flex items-center justify-between">
+				<h3 id="task-modal-title" class="text-lg font-semibold text-slate-900">{isEdit ? 'Edit task' : 'Add task'}</h3>
+				<button type="button" class="text-slate-400 hover:text-slate-600" onclick={onClose} aria-label="Close">✕</button>
+			</div>
+			<form class="mt-4 space-y-4" onsubmit={handleSubmit}>
+				{#if formError}
+					<div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
+				{/if}
+				{@render templatePicker()}
+				{@render headF()}
+				{@render descModal()}
+				{@render tagsF()}
+				{@render milestoneF()}
+				{@render customF()}
+				{@render areaF()}
+				{@render sprintF()}
+				{@render parentF()}
+				{@render linksF()}
+				{@render childrenF()}
+				{@render effortF()}
+				{@render datesF()}
+				{@render pointsF()}
+				{@render statePriF()}
+				<div class="flex items-center justify-between gap-2 pt-2">
+					{#if isEdit && onDelete}{@render actionsF()}{:else}<span></span>{/if}
+					<div class="flex gap-2">
+						<button type="button" class="btn-secondary" onclick={onClose}>Cancel</button>
+						<button type="submit" class="btn-primary" disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add task'}</button>
+					</div>
+				</div>
+			</form>
+			{#if isEdit && initial}
+				<TaskActivity task={initial} {projectTasks} {milestoneOptions} />
+			{/if}
+		</div>
 	</div>
-</div>
+{/if}

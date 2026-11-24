@@ -7,6 +7,7 @@
 	import Markdown from './Markdown.svelte';
 	import MentionTextarea from './MentionTextarea.svelte';
 	import GitEventRow from './GitEventRow.svelte';
+	import { itemHref, uploadImage } from '$lib/itemFiles';
 
 	type Task = components['schemas']['Task'];
 	type Comment = components['schemas']['TaskComment'];
@@ -15,8 +16,20 @@
 	let {
 		task,
 		projectTasks = [],
-		milestoneOptions = []
-	}: { task: Task; projectTasks?: Task[]; milestoneOptions?: { id: string; name: string }[] } = $props();
+		milestoneOptions = [],
+		version = 0
+	}: {
+		task: Task;
+		projectTasks?: Task[];
+		milestoneOptions?: { id: string; name: string }[];
+		/** Bumped after the item is saved, to reload its history and files. */
+		version?: number;
+	} = $props();
+	const addImage = async (file: File) => {
+		const md = await uploadImage(task.id, file);
+		loadFiles();
+		return md;
+	};
 
 	let tab = $state<'comments' | 'history' | 'files' | 'dev'>('comments');
 	let dev = $state<components['schemas']['GitEvent'][]>([]);
@@ -69,7 +82,7 @@
 	const personNames = $derived(Object.values(people).sort((a, b) => a.localeCompare(b)));
 	const itemLink = (n: number) => {
 		const t = projectTasks.find((x) => x.number === n);
-		return t ? `/projects/${t.projectId}?task=${t.id}` : null;
+		return t ? itemHref(t.projectId, t.number) : null;
 	};
 	let sprintNames = $state<Record<string, string>>({});
 	let areaNames = $state<Record<string, string>>({});
@@ -97,6 +110,11 @@
 	$effect(() => {
 		task.id;
 		load();
+	});
+	$effect(() => {
+		if (!version) return;
+		api.GET('/api/v1/tasks/{id}/history', { params: { path: { id: task.id } } }).then((h) => (history = h.data?.data ?? history));
+		loadFiles();
 	});
 
 	const names: Names = {
@@ -238,7 +256,7 @@
 						{/if}
 					</div>
 					{#if editingId === c.id}
-						<div class="mt-1"><MentionTextarea bind:value={editDraft} people={personNames} rows={3} maxlength={5000} label="Edit comment" /></div>
+						<div class="mt-1"><MentionTextarea bind:value={editDraft} people={personNames} rows={3} maxlength={5000} label="Edit comment" onImage={addImage} /></div>
 						<div class="mt-1 flex gap-2">
 							<button type="button" class="btn-primary px-3 py-1 text-xs" onclick={() => saveEdit(c)}>Save</button>
 							<button type="button" class="btn-ghost px-3 py-1 text-xs" onclick={() => (editingId = null)}>Cancel</button>
@@ -251,7 +269,7 @@
 		</ul>
 		{#if can('member')}
 			<form class="mt-3 space-y-2" onsubmit={post}>
-				<MentionTextarea bind:value={draft} people={personNames} rows={2} maxlength={5000} placeholder="Write a comment… (Markdown, @ to mention)" label="New comment" />
+				<MentionTextarea bind:value={draft} people={personNames} rows={2} maxlength={5000} placeholder="Write a comment… (Markdown, @ to mention)" label="New comment" onImage={addImage} />
 				<button type="submit" class="btn-secondary" disabled={busy || !draft.trim()}>{busy ? 'Posting…' : 'Comment'}</button>
 			</form>
 		{/if}

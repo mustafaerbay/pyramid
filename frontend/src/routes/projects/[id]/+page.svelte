@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { itemHref } from '$lib/itemFiles';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import ProjectFormModal from '$lib/components/ProjectFormModal.svelte';
@@ -580,23 +582,15 @@
 		taskModalMode = 'create';
 	}
 
+	// An item opens on its own page.
 	function openEditTask(t: Task) {
-		editingTask = t;
-		taskModalMilestoneId = null;
-		taskModalParentId = null;
-		taskModalMode = 'edit';
+		goto(itemHref(projectId, t.number));
 	}
 
-	// A link with ?task=<id> (from a notification) opens that task once.
-	let openedFromLink = $state<string | null>(null);
+	// Older links (?task=<id>, from notifications) go to the item's page.
 	$effect(() => {
 		const wanted = page.url.searchParams.get('task');
-		if (!wanted || wanted === openedFromLink || tasks.length === 0) return;
-		const t = tasks.find((x) => x.id === wanted);
-		if (t) {
-			openedFromLink = wanted;
-			openEditTask(t);
-		}
+		if (wanted) goto(itemHref(projectId, wanted), { replaceState: true });
 	});
 
 	function openAddSubtask(parent: Task) {

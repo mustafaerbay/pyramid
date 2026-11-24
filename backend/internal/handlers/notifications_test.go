@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/mustafaerbay/pyramid/backend/internal/api"
+	"github.com/mustafaerbay/pyramid/backend/internal/models"
 )
 
 type sentMail struct{ to, subject, body string }
@@ -77,7 +79,7 @@ func TestNotifications_TaskEvents(t *testing.T) {
 	if l.UnreadCount != 1 || len(l.Data) != 1 || l.Data[0].Type != api.NotificationTypeAssignment {
 		t.Fatalf("amy after assignment = %+v", l)
 	}
-	if !strings.Contains(l.Data[0].Title, "Ship it") || l.Data[0].Link == nil || !strings.Contains(*l.Data[0].Link, task.Id.String()) {
+	if !strings.Contains(l.Data[0].Title, "Ship it") || l.Data[0].Link == nil || *l.Data[0].Link != fmt.Sprintf("/projects/%s/items/%d", task.ProjectId, task.Number) {
 		t.Errorf("assignment notification = %+v", l.Data[0])
 	}
 	if n := inbox(t, r, admin).UnreadCount; n != 0 {
@@ -188,5 +190,13 @@ func TestNotifications_DescriptionMentions(t *testing.T) {
 	call(t, r, http.MethodPatch, "/api/v1/tasks/"+task.Id.String(), map[string]any{"description": "Please review now, @P bob@x.dev"}, amy, nil)
 	if n := inbox(t, r, bob).UnreadCount; n != 1 {
 		t.Errorf("bob unread after edit = %d, want 1", n)
+	}
+}
+
+func TestTaskLinkOpensTheItemPage(t *testing.T) {
+	pid := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	got := taskLink(models.Task{ProjectID: pid, Number: 12})
+	if got != "/projects/11111111-1111-1111-1111-111111111111/items/12" {
+		t.Fatalf("link = %q", got)
 	}
 }

@@ -116,8 +116,10 @@ func (h *Handler) notify(c *gin.Context, people []uuid.UUID, typ api.Notificatio
 	}
 }
 
-func taskLink(t models.Task) string { return fmt.Sprintf("/projects/%s?task=%s", t.ProjectID, t.ID) }
-func taskRef(t models.Task) string  { return fmt.Sprintf("#%d %s", t.Number, oneLine(t.Title)) }
+func taskLink(t models.Task) string {
+	return fmt.Sprintf("/projects/%s/items/%d", t.ProjectID, t.Number)
+}
+func taskRef(t models.Task) string { return fmt.Sprintf("#%d %s", t.Number, oneLine(t.Title)) }
 
 func excerpt(s string, n int) string {
 	if utf8.RuneCountInString(s) <= n {

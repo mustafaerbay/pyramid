@@ -382,7 +382,7 @@
 					{#each inSprint as t (t.id)}
 						<li class="flex items-center gap-2 py-2">
 							<TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} />
-							<a href="/projects/{projectId}?task={t.id}" class="min-w-0 flex-1 truncate hover:underline {t.status === 'done' ? 'text-slate-400 line-through' : ''}">{t.title}</a>
+							<a href="/projects/{projectId}/items/{t.id}" class="min-w-0 flex-1 truncate hover:underline {t.status === 'done' ? 'text-slate-400 line-through' : ''}">{t.title}</a>
 							<span class="shrink-0 text-xs text-slate-500">{t.status.replace('_', ' ')}{t.storyPoints != null ? ` · ${formatManDays(t.storyPoints)} pts` : ''}</span>
 							{#if can('member')}
 								<button type="button" class="shrink-0 px-1 text-slate-400 hover:text-red-600" aria-label="Take {t.title} out of the sprint" onclick={() => plan(t, null)}>×</button>

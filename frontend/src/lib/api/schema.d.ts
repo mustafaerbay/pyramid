@@ -3314,7 +3314,7 @@ export interface components {
             type: components["schemas"]["NotificationType"];
             title: string;
             body: string | null;
-            /** @description Path in the app to open, e.g. /projects/{id}?task={taskId}. */
+            /** @description Path in the app to open, e.g. /projects/{id}/items/{number}. */
             link: string | null;
             /** Format: date-time */
             readAt: string | null;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { mentionQuery } from '$lib/markdown';
+	import { applyFormat, mentionQuery, type Format } from '$lib/markdown';
 	import Markdown from './Markdown.svelte';
 
 	// A textarea for Markdown with Write / Preview and @person suggestions.
@@ -10,7 +10,10 @@
 		placeholder = '',
 		label,
 		maxlength,
-		id
+		id,
+		onImage,
+		images = {},
+		autofocus = false
 	}: {
 		value: string;
 		/** Display names ("First Last") to suggest after @. */
@@ -20,7 +23,68 @@
 		label: string;
 		maxlength?: number;
 		id?: string;
+		/** Uploads a pasted / dropped / picked image; returns the Markdown to insert, or null. */
+		onImage?: (file: File) => Promise<string | null>;
+		/** Local previews of images not uploaded yet (pending:N → blob: URL). */
+		images?: Record<string, string>;
+		autofocus?: boolean;
 	} = $props();
+	let uploading = $state(0);
+	let dragging = $state(false);
+	let imageError = $state<string | null>(null);
+	let picker = $state<HTMLInputElement | null>(null);
+	function setSelection(a: number, b: number) {
+		queueMicrotask(() => {
+			el?.focus();
+			el?.setSelectionRange(a, b);
+		});
+	}
+	function format(f: Format) {
+		preview = false;
+		const a = el?.selectionStart ?? value.length;
+		const b = el?.selectionEnd ?? value.length;
+		const r = applyFormat(value, a, b, f);
+		value = r.text;
+		setSelection(r.start, r.end);
+	}
+	async function addImages(files: File[]) {
+		const list = files.filter((f) => f.type.startsWith('image/'));
+		if (!list.length || !onImage) return;
+		imageError = null;
+		preview = false;
+		for (const file of list) {
+			if (file.size > 10 << 20) {
+				imageError = `${file.name || 'The image'} is over 10 MB.`;
+				continue;
+			}
+			uploading++;
+			const md = await onImage(file).catch(() => null);
+			uploading--;
+			if (!md) {
+				imageError = `Could not add ${file.name || 'the image'}.`;
+				continue;
+			}
+			const at = el?.selectionEnd ?? value.length;
+			const before = value.slice(0, at);
+			const pre = before && !before.endsWith('\n') ? '\n' : '';
+			const insert = `${pre}${md}\n`;
+			value = before + insert + value.slice(at);
+			setSelection(at + insert.length, at + insert.length);
+		}
+	}
+	function paste(e: ClipboardEvent) {
+		const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+		if (!files.length || !onImage) return;
+		e.preventDefault();
+		addImages(files);
+	}
+	function drop(e: DragEvent) {
+		dragging = false;
+		const files = [...(e.dataTransfer?.files ?? [])];
+		if (!files.some((f) => f.type.startsWith('image/')) || !onImage) return;
+		e.preventDefault();
+		addImages(files);
+	}
 
 	let el = $state<HTMLTextAreaElement | null>(null);
 	let preview = $state(false);
@@ -50,6 +114,11 @@
 			(e.currentTarget as HTMLTextAreaElement).form?.requestSubmit();
 			return;
 		}
+		if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'i')) {
+			e.preventDefault();
+			format(e.key === 'b' ? 'bold' : 'italic');
+			return;
+		}
 		if (!matches.length) return;
 		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 			e.preventDefault();
@@ -64,20 +133,31 @@
 </script>
 
 <div class="relative">
-	<div class="mb-1 flex gap-1 text-xs">
+	<div class="mb-1 flex flex-wrap items-center gap-1 text-xs">
 		<button type="button" class="rounded px-2 py-0.5 {preview ? 'text-slate-500 hover:text-slate-700' : 'bg-slate-100 font-medium text-slate-800'}" onclick={() => (preview = false)}>Write</button>
 		<button type="button" class="rounded px-2 py-0.5 {preview ? 'bg-slate-100 font-medium text-slate-800' : 'text-slate-500 hover:text-slate-700'}" onclick={() => (preview = true)}>Preview</button>
-		<span class="ml-auto self-center text-slate-400">Markdown · @ to mention</span>
+		<span class="mx-1 h-4 w-px bg-slate-200"></span>
+		{#each [['bold', 'B', 'Bold', 'font-bold'], ['italic', 'I', 'Italic', 'italic'], ['code', '</>', 'Code', 'font-mono'], ['list', '•', 'List', ''], ['link', '🔗', 'Link', '']] as [f, sym, name, cls] (f)}
+			<button type="button" class="min-w-6 rounded px-1.5 py-0.5 text-slate-600 hover:bg-slate-100 {cls}" title={name} aria-label={name} onclick={() => format(f as Format)}>{sym}</button>
+		{/each}
+		{#if onImage}
+			<button type="button" class="rounded px-1.5 py-0.5 text-slate-600 hover:bg-slate-100" title="Add an image" aria-label="Add an image" onclick={() => picker?.click()}>🖼 Image</button>
+			<input bind:this={picker} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple class="sr-only" tabindex="-1" onchange={(e) => { addImages([...(e.currentTarget.files ?? [])]); e.currentTarget.value = ''; }} />
+		{/if}
+		<span class="ml-auto self-center text-slate-400">{uploading ? 'Uploading image…' : onImage ? 'Markdown · @ to mention · paste images' : 'Markdown · @ to mention'}</span>
 	</div>
+	{#if imageError}<p class="mb-1 text-xs text-red-600">{imageError}</p>{/if}
 	{#if preview}
 		<div class="min-h-16 rounded-md border border-slate-200 p-2 text-sm">
-			{#if value.trim()}<Markdown text={value} {people} />{:else}<span class="text-slate-400">Nothing to preview.</span>{/if}
+			{#if value.trim()}<Markdown text={value} {people} {images} />{:else}<span class="text-slate-400">Nothing to preview.</span>{/if}
 		</div>
 	{:else}
+		<!-- svelte-ignore a11y_autofocus -->
 		<textarea
 			bind:this={el}
 			{id}
-			class="input"
+			{autofocus}
+			class="input {dragging ? 'ring-2 ring-indigo-300' : ''}"
 			{rows}
 			{placeholder}
 			{maxlength}
@@ -87,6 +167,15 @@
 			oninput={update}
 			onclick={update}
 			onkeydown={keydown}
+			onpaste={paste}
+			ondragover={(e) => {
+				if (onImage && e.dataTransfer?.types.includes('Files')) {
+					e.preventDefault();
+					dragging = true;
+				}
+			}}
+			ondragleave={() => (dragging = false)}
+			ondrop={drop}
 			onblur={() => setTimeout(() => (q = null), 150)}
 		></textarea>
 		{#if matches.length}

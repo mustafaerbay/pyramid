@@ -15,7 +15,7 @@
 	const links = $derived(
 		res
 			? [
-					...res.items.slice(0, 8).map((i) => ({ key: i.id, href: `/projects/${i.projectId}?task=${i.id}`, kind: 'item' as const, item: i })),
+					...res.items.slice(0, 8).map((i) => ({ key: i.id, href: `/projects/${i.projectId}/items/${i.id}`, kind: 'item' as const, item: i })),
 					...res.projects.map((p) => ({ key: p.id, href: `/projects/${p.id}`, kind: 'project' as const, label: `${p.name} (${p.key})` })),
 					...res.people.map((p) => ({ key: p.id, href: `/people/${p.id}`, kind: 'person' as const, label: p.name }))
 				]

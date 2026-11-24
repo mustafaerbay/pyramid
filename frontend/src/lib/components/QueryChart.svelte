@@ -36,7 +36,7 @@
 {:else if chart === 'list'}
 	<ul class="max-h-64 divide-y divide-slate-100 overflow-y-auto text-sm">
 		{#each rows.slice(0, 50) as t (t.id)}
-			<li class="truncate py-1.5"><a href="/projects/{t.projectId}?task={t.id}" class="text-slate-800 hover:underline">{t.title}</a></li>
+			<li class="truncate py-1.5"><a href="/projects/{t.projectId}/items/{t.id}" class="text-slate-800 hover:underline">{t.title}</a></li>
 		{:else}
 			<li class="py-3 text-slate-500">Nothing matches.</li>
 		{/each}

@@ -217,7 +217,7 @@
 							onchange={(e) => setResult(r, { comment: e.currentTarget.value })}
 						/>
 						{#if r.bugTaskId}
-							<a class="text-xs text-red-700 hover:underline" href="/projects/{projectId}?task={r.bugTaskId}">🐞 Bug filed</a>
+							<a class="text-xs text-red-700 hover:underline" href="/projects/{projectId}/items/{r.bugTaskId}">🐞 Bug filed</a>
 						{:else if r.outcome === 'failed' && writable}
 							<button type="button" class="btn-secondary px-2 py-1 text-xs" onclick={() => fileBug(r)}>🐞 File bug</button>
 						{/if}
@@ -260,7 +260,7 @@
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="font-medium">{c.title}</span>
 									<span class="text-xs text-slate-500">{c.steps.length} steps</span>
-									{#if c.taskId}<a class="text-xs text-indigo-700 hover:underline" href="/projects/{projectId}?task={c.taskId}">{items.find((i) => i.id === c.taskId)?.label ?? 'item'}</a>{/if}
+									{#if c.taskId}<a class="text-xs text-indigo-700 hover:underline" href="/projects/{projectId}/items/{c.taskId}">{items.find((i) => i.id === c.taskId)?.label ?? 'item'}</a>{/if}
 									{#if writable}
 										<span class="ml-auto flex gap-2 text-xs">
 											<button type="button" class="hover:underline" onclick={() => editCase(s.id, c)}>Edit</button>

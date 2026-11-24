@@ -74,7 +74,7 @@
 					<tbody class="divide-y divide-slate-100">
 						{#each flow.completed as c (c.taskId)}
 							<tr>
-								<td class="py-1.5 pr-2"><TypeBadge type={c.type} /> <a class="hover:underline" href="/projects/{projectId}?task={c.taskId}">#{c.number} {c.title}</a></td>
+								<td class="py-1.5 pr-2"><TypeBadge type={c.type} /> <a class="hover:underline" href="/projects/{projectId}/items/{c.taskId}">#{c.number} {c.title}</a></td>
 								<td class="whitespace-nowrap pr-2 text-slate-600">{new Date(c.completedAt).toLocaleDateString()}</td>
 								<td class="text-right tabular-nums">{show(c.leadDays)}</td>
 								<td class="text-right tabular-nums">{show(c.cycleDays ?? null)}</td>

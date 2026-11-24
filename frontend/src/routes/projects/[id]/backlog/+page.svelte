@@ -152,7 +152,7 @@
 					>
 						<td class="px-3 py-2">
 							<TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} />
-							<a href="/projects/{projectId}?task={t.id}" class="font-medium text-slate-800 hover:underline">{t.title}</a>
+							<a href="/projects/{projectId}/items/{t.id}" class="font-medium text-slate-800 hover:underline">{t.title}</a>
 							{#if t.parentId}<div class="text-xs text-slate-500">↳ {parentTitle(t.parentId)}</div>{/if}
 							<div class="text-xs text-slate-500">{t.assigneeIds.map((p) => people[p] ?? '?').join(', ')}</div>
 						</td>

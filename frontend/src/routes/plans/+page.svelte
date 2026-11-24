@@ -334,7 +334,7 @@
 							{#each r.placed as { t, bar }, i (t.id)}
 								{@const waits = t.blockedByIds.map((id) => byId.get(id)).filter(Boolean)}
 								<a
-									href="/projects/{t.projectId}?task={t.id}"
+									href="/projects/{t.projectId}/items/{t.id}"
 									class="absolute z-10 flex h-6 items-center gap-1 overflow-hidden rounded border px-1.5 text-xs {BAR[t.type] ?? BAR.task} {t.status === 'done' ? 'opacity-60' : ''}"
 									style="left:{bar!.left}%; width:{bar!.width}%; top:{layout.tops[li] + SIZE.head + i * SIZE.row}px"
 									title="{typeMeta(t.type).label} #{t.number} {t.title} · {t.startDate ?? '?'} → {t.dueDate ?? '?'} · {t.status.replace('_', ' ')}{waits.length
@@ -381,7 +381,7 @@
 			<summary class="cursor-pointer font-medium">Items without dates</summary>
 			<ul class="mt-2 space-y-1">
 				{#each rows.flatMap((r) => r.undated.map((t) => ({ t, lane: r.name + (r.team ? ` · ${r.team}` : ''), key: r.key }))) as { t, lane, key } (key + t.id)}
-					<li><TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} /> <a class="hover:underline" href="/projects/{t.projectId}?task={t.id}">{t.title}</a> <span class="text-slate-500">· {lane}</span></li>
+					<li><TypeBadge type={t.type} label={t.customTypeLabel} color={t.customTypeColor} /> <a class="hover:underline" href="/projects/{t.projectId}/items/{t.id}">{t.title}</a> <span class="text-slate-500">· {lane}</span></li>
 				{/each}
 			</ul>
 		</details>

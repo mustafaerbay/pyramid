@@ -6329,7 +6329,7 @@ components:
         link:
           type: string
           nullable: true
-          description: Path in the app to open, e.g. /projects/{id}?task={taskId}.
+          description: Path in the app to open, e.g. /projects/{id}/items/{number}.
         readAt:
           type: string
           format: date-time

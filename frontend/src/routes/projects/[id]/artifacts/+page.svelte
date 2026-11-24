@@ -147,7 +147,7 @@
 						<div class="text-xs font-medium text-slate-600">{v.versionName}: {v.items.length} finished {v.items.length === 1 ? 'item' : 'items'}</div>
 						<ul class="mt-1 space-y-0.5">
 							{#each v.items as t (t.id)}
-								<li><TypeBadge type={t.type} /> <a class="hover:underline" href="/projects/{projectId}?task={t.id}">#{t.number} {t.title}</a></li>
+								<li><TypeBadge type={t.type} /> <a class="hover:underline" href="/projects/{projectId}/items/{t.id}">#{t.number} {t.title}</a></li>
 							{/each}
 						</ul>
 					</div>

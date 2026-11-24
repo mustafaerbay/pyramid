@@ -63,3 +63,12 @@ Notes say what was built where it is simpler than ADO.
 - [x] **Artifacts** — with the [arti](../arti) artifact repository: link a project
       to its arti packages, show versions and release notes, tie Pyramid versions
       to arti versions and list the items shipped in each
+
+## 4. Item page
+
+- [x] **Images in descriptions and comments** — paste, drop or pick a screenshot;
+      it's attached to the item and shown in the text (click to enlarge); a
+      toolbar for bold, italic, code, list and link
+- [x] **Item page** — an item opens on its own page (`/projects/…/items/12`):
+      description and comments / files / history on the left, fields on the
+      right, every change saved as it's made; adding an item stays a quick form

@@ -9,7 +9,22 @@ export type MarkdownOptions = {
 	people?: string[];
 	/** Link for an item number (#12), or null. */
 	item?: (n: number) => string | null;
+	/** Where an image's src loads from: a Pyramid attachment path or a
+	 * pending:N placeholder. Return null to not show it. */
+	image?: (src: string) => string | null;
 };
+
+const ATTACHMENT_SRC = /^\/api\/v1\/attachments\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/download\?inline=1$/;
+
+/** Markdown for an uploaded image attachment. */
+export function attachmentImage(id: string, name: string): string {
+	return `![${name.replace(/[[\]\n]/g, '').trim() || 'image'}](/api/v1/attachments/${id}/download?inline=1)`;
+}
+
+/** Swaps pending:N placeholders for the attachments they became. */
+export function fillPending(text: string, ids: Record<string, string>): string {
+	return text.replace(/!\[([^\]]*)\]\((pending:\d+)\)/g, (m, alt, key) => (ids[key] ? attachmentImage(ids[key], alt) : m));
+}
 
 function inline(raw: string, o: MarkdownOptions): string {
 	// Code spans first, kept out of the other rules.
@@ -19,6 +34,18 @@ function inline(raw: string, o: MarkdownOptions): string {
 		return `\u0000${codes.length - 1}\u0000`;
 	});
 	const links: string[] = [];
+	// Images only from Pyramid's own attachments (or a placeholder the
+	// resolver knows); any other image is shown as a plain link.
+	s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt, url) => {
+		const known = ATTACHMENT_SRC.test(url) || /^pending:\d+$/.test(url);
+		const src = known ? (o.image ? o.image(url) : ATTACHMENT_SRC.test(url) ? url : null) : null;
+		if (src) {
+			links.push(`<img src="${esc(src)}" alt="${esc(alt)}" loading="lazy">`);
+		} else if (/^https?:\/\//i.test(url)) {
+			links.push(`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(alt || url)}</a>`);
+		} else return m;
+		return `\u0001${links.length - 1}\u0001`;
+	});
 	s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, text, url) => {
 		if (!/^(https?:\/\/|mailto:|\/(?!\/))/i.test(url)) return m;
 		const ext = /^https?:/i.test(url);
@@ -107,4 +134,31 @@ export function mentionQuery(text: string, caret: number): { start: number; quer
 	const q = before.slice(at + 1);
 	if (q.length > 30 || /[^\p{L}\p{M}' -]/u.test(q) || / {2}/.test(q)) return null;
 	return { start: at, query: q };
+}
+
+export type Format = 'bold' | 'italic' | 'code' | 'list' | 'link';
+
+/** Applies a toolbar format to text[start, end); returns the new text and selection. */
+export function applyFormat(text: string, start: number, end: number, f: Format): { text: string; start: number; end: number } {
+	const sel = text.slice(start, end);
+	if (f === 'list') {
+		const from = text.lastIndexOf('\n', start - 1) + 1;
+		const toNl = text.indexOf('\n', Math.max(end - 1, from));
+		const to = toNl < 0 ? text.length : toNl;
+		const block = text
+			.slice(from, to)
+			.split('\n')
+			.map((l) => (/^\s*[-*]\s/.test(l) ? l : `- ${l}`))
+			.join('\n');
+		return { text: text.slice(0, from) + block + text.slice(to), start: from, end: from + block.length };
+	}
+	if (f === 'link') {
+		const label = sel || 'link';
+		const out = `[${label}](https://)`;
+		const urlAt = start + label.length + 3;
+		return { text: text.slice(0, start) + out + text.slice(end), start: urlAt, end: urlAt + 8 };
+	}
+	const mark = f === 'bold' ? '**' : f === 'italic' ? '*' : '`';
+	const inner = sel || 'text';
+	return { text: text.slice(0, start) + mark + inner + mark + text.slice(end), start: start + mark.length, end: start + mark.length + inner.length };
 }
