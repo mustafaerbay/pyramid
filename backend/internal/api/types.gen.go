@@ -3594,6 +3594,9 @@ type ListGoalsParams struct {
 	Page     *PageParam     `form:"page,omitempty" json:"page,omitempty"`
 	PageSize *PageSizeParam `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 	Status   *GoalStatus    `form:"status,omitempty" json:"status,omitempty"`
+
+	// OwnerPersonId Only goals owned by this person.
+	OwnerPersonId *openapi_types.UUID `form:"ownerPersonId,omitempty" json:"ownerPersonId,omitempty"`
 }
 
 // ListItemTemplatesParams defines parameters for ListItemTemplates.

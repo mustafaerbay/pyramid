@@ -1,11 +1,11 @@
 <script lang="ts">
+	import { goalStatusTone } from '$lib/growth';
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import GoalFormModal from '$lib/components/GoalFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
-	import type { BadgeTone } from '$lib/badgeTones';
 
 	type Goal = components['schemas']['Goal'];
 	type GoalStatus = components['schemas']['GoalStatus'];
@@ -134,21 +134,6 @@
 		load();
 	}
 
-	function statusTone(status: GoalStatus): BadgeTone {
-		switch (status) {
-			case 'active':
-				return 'success';
-			case 'draft':
-				return 'neutralMuted';
-			case 'achieved':
-				return 'info';
-			case 'partially_achieved':
-				return 'warning';
-			case 'missed':
-			case 'cancelled':
-				return 'danger';
-		}
-	}
 
 	function prevPage() {
 		if (currentPage > 1) {
@@ -236,7 +221,7 @@
 						<div>
 							<div class="flex items-center gap-2">
 								<h3 class="font-medium text-slate-900">{goal.title}</h3>
-								<Badge tone={statusTone(goal.status)}>{goal.status.replace('_', ' ')}</Badge>
+								<Badge tone={goalStatusTone(goal.status)}>{goal.status.replace('_', ' ')}</Badge>
 								<Badge tone="neutral" capitalize>{goal.scope}</Badge>
 							</div>
 							{#if goal.description}

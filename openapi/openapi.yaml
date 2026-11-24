@@ -3157,6 +3157,13 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/GoalStatus"
+        - name: ownerPersonId
+          in: query
+          required: false
+          description: Only goals owned by this person.
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: A page of goals

@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { contributionTypeTone } from '$lib/growth';
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api/client';
 	import type { components } from '$lib/api/schema';
 	import ContributionFormModal from '$lib/components/ContributionFormModal.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Badge from '$lib/components/Badge.svelte';
-	import { badgeToneClass, type BadgeTone } from '$lib/badgeTones';
+	import { badgeToneClass } from '$lib/badgeTones';
 
 	type Contribution = components['schemas']['Contribution'];
 	type ContributionType = components['schemas']['ContributionType'];
@@ -165,22 +166,6 @@
 		load();
 	}
 
-	function typeTone(type: ContributionType): BadgeTone {
-		switch (type) {
-			case 'commit':
-				return 'neutralMuted';
-			case 'pull_request':
-				return 'violet';
-			case 'code_review':
-				return 'info';
-			case 'issue':
-				return 'warning';
-			case 'deployment':
-				return 'success';
-			default:
-				return 'neutral';
-		}
-	}
 
 	function prevPage() {
 		if (currentPage > 1) {
@@ -230,7 +215,7 @@
 			<button
 				type="button"
 				class="rounded-full px-2.5 py-1 text-xs font-medium transition-colors {selected
-					? badgeToneClass[typeTone(opt.value)] + ' ring-1 ring-inset ring-transparent'
+					? badgeToneClass[contributionTypeTone(opt.value)] + ' ring-1 ring-inset ring-transparent'
 					: 'bg-white text-slate-500 ring-1 ring-inset ring-slate-200 hover:bg-slate-50'}"
 				aria-pressed={selected}
 				onclick={() => toggleTypeFilter(opt.value)}
@@ -269,7 +254,7 @@
 				<li class="m-card">
 					<div class="flex items-start justify-between gap-2">
 						<p class="font-medium text-slate-900">{personName(contribution.personId)}</p>
-						<Badge tone={typeTone(contribution.type)}>{contribution.type.replace('_', ' ')}</Badge>
+						<Badge tone={contributionTypeTone(contribution.type)}>{contribution.type.replace('_', ' ')}</Badge>
 					</div>
 					<p class="mt-1 break-words text-slate-700">
 						{#if contribution.url}
@@ -324,7 +309,7 @@
 						<tr class="cursor-pointer hover:bg-slate-50" onclick={() => openEdit(contribution)}>
 							<td class="px-4 py-3 font-medium">{personName(contribution.personId)}</td>
 							<td class="px-4 py-3">
-								<Badge tone={typeTone(contribution.type)}>{contribution.type.replace('_', ' ')}</Badge>
+								<Badge tone={contributionTypeTone(contribution.type)}>{contribution.type.replace('_', ' ')}</Badge>
 							</td>
 							<td class="px-4 py-3 text-slate-600">
 								{#if contribution.url}

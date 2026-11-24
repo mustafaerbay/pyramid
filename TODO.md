@@ -90,3 +90,6 @@ Notes say what was built where it is simpler than ADO.
       4.5:1 everywhere, chart axis text drawn at 12 px at any width, 24 px
       targets in the header and on the people / plans / queries controls,
       labelled search and status filters, no sideways scroll on phones
+- [x] **Growth goals and contributions on the person page** — the goals a
+      person owns with their progress, and their contributions newest first
+      with "Show more"; goals list takes `?ownerPersonId=`

@@ -19,7 +19,9 @@ const PATTERNS: [RegExp, string][] = [
 	[/^Copied as #(\d+)\.$/, '#$1 olarak kopyalandı.'],
 	[/^Results for “(.+)”$/, '“$1” için sonuçlar'],
 	[/^All results for “(.+)” →$/, '“$1” için tüm sonuçlar →'],
-	[/^Page (\d+) of (\d+)$/, 'Sayfa $1 / $2']
+	[/^Page (\d+) of (\d+)$/, 'Sayfa $1 / $2'],
+	[/^(\d+) in total$/, 'Toplam $1'],
+	[/^(.+) progress$/, '$1 ilerlemesi']
 ];
 
 /** The Turkish for an English UI text, or the text itself. */

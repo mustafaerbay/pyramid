@@ -10,9 +10,12 @@
 	import type { BadgeTone } from '$lib/badgeTones';
 	import { chartColors, type ChartColor } from '$lib/chartColors';
 	import { fitText, formatManDays, loadBand, monthKey, monthLabel } from '$lib/capacity';
+	import { contributionTypeTone, goalStatusTone } from '$lib/growth';
 
 	type Person = components['schemas']['Person'];
 	type PersonWorkload = components['schemas']['PersonWorkload'];
+	type Goal = components['schemas']['Goal'];
+	type Contribution = components['schemas']['Contribution'];
 
 	const id = $derived(page.params.id ?? '');
 
@@ -53,10 +56,40 @@
 		projectNames = Object.fromEntries((data?.data ?? []).map((p) => [p.id, p.name]));
 	}
 
+	// Growth goals this person owns, and the contributions logged for them.
+	let goals = $state<Goal[] | null>(null);
+	let contributions = $state<Contribution[]>([]);
+	let contributionsTotal = $state(0);
+	let contributionsPage = $state(0);
+	let contributionsLoading = $state(false);
+	const contributionsPageSize = 10;
+
+	async function loadGoals() {
+		const { data } = await api.GET('/api/v1/goals', {
+			params: { query: { ownerPersonId: id, page: 1, pageSize: 100 } }
+		});
+		goals = data?.data ?? [];
+	}
+
+	async function loadContributions(more = false) {
+		contributionsLoading = true;
+		const next = more ? contributionsPage + 1 : 1;
+		const { data } = await api.GET('/api/v1/contributions', {
+			params: { query: { personId: id, page: next, pageSize: contributionsPageSize } }
+		});
+		contributionsLoading = false;
+		if (!data) return;
+		contributions = more ? [...contributions, ...data.data] : data.data;
+		contributionsTotal = data.pagination.total;
+		contributionsPage = next;
+	}
+
 	$effect(() => {
 		if (!id) return;
 		loadPerson();
 		loadProjects();
+		loadGoals();
+		loadContributions();
 	});
 	$effect(() => {
 		if (!id) return;
@@ -287,6 +320,92 @@
 				</div>
 			</div>
 		{/if}
+
+		<div class="grid gap-4 lg:grid-cols-2">
+			<div class="rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+				<div class="mb-3 flex items-baseline justify-between gap-2">
+					<h2 class="text-lg font-semibold tracking-tight">Growth goals</h2>
+					<a href="/goals" class="text-sm text-slate-600 hover:text-slate-900 hover:underline">All goals</a>
+				</div>
+				{#if goals === null}
+					<p class="text-sm text-slate-500">Loading…</p>
+				{:else if goals.length === 0}
+					<p class="text-sm text-slate-500">No goals yet. Goals show up here once this person is set as their owner.</p>
+				{:else}
+					<ul class="divide-y divide-slate-100">
+						{#each goals as goal (goal.id)}
+							<li class="py-3 text-sm">
+								<div class="flex flex-wrap items-center gap-2">
+									<span class="min-w-0 font-medium text-slate-800">{goal.title}</span>
+									<Badge tone={goalStatusTone(goal.status)}>{goal.status.replace('_', ' ')}</Badge>
+								</div>
+								<div class="mt-2 flex items-center gap-2">
+									<div
+										class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100"
+										role="progressbar"
+										aria-label="{goal.title} progress"
+										aria-valuenow={goal.progressPct}
+										aria-valuemin={0}
+										aria-valuemax={100}
+									>
+										<div class="h-full rounded-full bg-slate-900" style="width: {goal.progressPct}%"></div>
+									</div>
+									<span class="w-10 text-right text-xs tabular-nums text-slate-600">{goal.progressPct}%</span>
+								</div>
+								{#if goal.dueDate}
+									<p class="mt-1 text-xs text-slate-500">Due {goal.dueDate}</p>
+								{/if}
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+
+			<div class="rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+				<div class="mb-3 flex items-baseline justify-between gap-2">
+					<h2 class="text-lg font-semibold tracking-tight">Contributions</h2>
+					<span class="text-sm tabular-nums text-slate-500">{contributionsTotal} in total</span>
+				</div>
+				{#if contributions.length === 0}
+					<p class="text-sm text-slate-500">
+						{contributionsLoading ? 'Loading…' : 'No contributions logged for this person yet.'}
+					</p>
+				{:else}
+					<ul class="divide-y divide-slate-100">
+						{#each contributions as c (c.id)}
+							<li class="py-2.5 text-sm">
+								<div class="flex items-start justify-between gap-3">
+									<span class="min-w-0 break-words text-slate-800">
+										{#if c.url}
+											<a href={c.url} target="_blank" rel="noopener noreferrer" class="underline decoration-slate-300 hover:decoration-slate-500">
+												{c.title ?? c.url}
+											</a>
+										{:else}
+											{c.title ?? '—'}
+										{/if}
+									</span>
+									<Badge tone={contributionTypeTone(c.type)}>{c.type.replace('_', ' ')}</Badge>
+								</div>
+								<div class="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-500">
+									{#if c.projectId}<span>{projectName(c.projectId)}</span>{/if}
+									<span>{c.occurredAt.slice(0, 10)}</span>
+								</div>
+							</li>
+						{/each}
+					</ul>
+					{#if contributions.length < contributionsTotal}
+						<button
+							type="button"
+							class="btn-secondary mt-3 w-full"
+							disabled={contributionsLoading}
+							onclick={() => loadContributions(true)}
+						>
+							{contributionsLoading ? 'Loading…' : 'Show more'}
+						</button>
+					{/if}
+				{/if}
+			</div>
+		</div>
 	{:else if !error}
 		<p class="text-slate-500">Loading…</p>
 	{/if}

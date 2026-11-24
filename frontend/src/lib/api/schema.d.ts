@@ -8090,6 +8090,8 @@ export interface operations {
                 page?: components["parameters"]["PageParam"];
                 pageSize?: components["parameters"]["PageSizeParam"];
                 status?: components["schemas"]["GoalStatus"];
+                /** @description Only goals owned by this person. */
+                ownerPersonId?: string;
             };
             header?: never;
             path?: never;

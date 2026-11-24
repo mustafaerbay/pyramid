@@ -22,6 +22,9 @@ func (h *Handler) ListGoals(c *gin.Context) {
 	if s := c.Query("status"); s != "" {
 		q = q.Where("status = ?", s)
 	}
+	if o := c.Query("ownerPersonId"); o != "" {
+		q = q.Where("owner_person_id = ?", o)
+	}
 
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
